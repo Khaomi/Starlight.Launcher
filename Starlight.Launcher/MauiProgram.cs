@@ -1,27 +1,38 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Serilog;
+using Microsoft.Extensions.Logging;
+using Starlight.Launcher.Services.Settings;
 
-namespace Starlight.Launcher
+namespace Starlight.Launcher;
+
+public static class MauiProgram
 {
-    public static class MauiProgram
+    public static MauiApp CreateMauiApp()
     {
-        public static MauiApp CreateMauiApp()
-        {
-            var builder = MauiApp.CreateBuilder();
-            builder
-                .UseMauiApp<App>()
-                .ConfigureFonts(fonts =>
-                {
-                    fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
-                });
+        var builder = MauiApp.CreateBuilder();
 
-            builder.Services.AddMauiBlazorWebView();
+        var logger = new LoggerConfiguration().WriteTo.Debug().WriteTo.File(Path.Combine(FileSystem.Current.AppDataDirectory, "log.txt"), rollingInterval: RollingInterval.Day).CreateLogger();
+
+        builder.Logging.ClearProviders();
+        builder.Logging.AddSerilog(logger);
+
+        logger.Information("Yes");
+
+        builder
+            .UseMauiApp<App>()
+            .ConfigureFonts(fonts =>
+            {
+                fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+            });
+
+        builder.Services.AddSingleton<SettingsService>();
+        builder.Services.AddMauiBlazorWebView();
 
 #if DEBUG
-    		builder.Services.AddBlazorWebViewDeveloperTools();
-    		builder.Logging.AddDebug();
+		builder.Services.AddBlazorWebViewDeveloperTools();
 #endif
 
-            return builder.Build();
-        }
+        var app = builder.Build();
+
+        return app;
     }
 }
