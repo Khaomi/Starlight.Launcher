@@ -1,0 +1,8 @@
+.settings-tabs {
+    background-color: transparent !important;
+}
+
+    .settings-tabs .mud-tabs-panels,
+    .settings-tabs .mud-tab-panel {
+        background-color: transparent !important;
+    }

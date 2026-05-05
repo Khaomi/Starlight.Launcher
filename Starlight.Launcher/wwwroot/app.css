@@ -162,3 +162,10 @@ h1:focus {
         padding-left: env(safe-area-inset-left);
     }
 }
+
+.mud-appbar,
+.mud-drawer,
+.mud-paper {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}

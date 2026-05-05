@@ -13,12 +13,18 @@
 
 <MudLayout>
     <MudAppBar Elevation="1">
-        <MudText Typo="Typo.h5" Class="ml-3">STARLIGHT</MudText>
+        @if (_bottomNavigation)
+        {
+            <MudText Typo="Typo.h5" Class="ml-3">STARLIGHT</MudText>
+        }
     </MudAppBar>
 
     @if (!_bottomNavigation)
     {
         <MudDrawer Elevation="1" ClipMode="DrawerClipMode.Never" Open="true" Variant="@DrawerVariant.Responsive">
+            <MudDrawerHeader>
+                <MudText Typo="Typo.h5" Class="ml-3">STARLIGHT</MudText>
+            </MudDrawerHeader>
             <MudNavMenu Dense="true" Margin="Margin.Normal" Rounded="true" Color="Color.Primary" Class="pa-2">
                 <MudNavLink Icon="@Icons.Material.Filled.Home" Href="/" Match="NavLinkMatch.All">
                     Home
@@ -78,85 +84,164 @@
     private bool _bottomNavigation;
     private MudTheme _theme = new()
     {
-        PaletteLight = new PaletteLight(),
-        PaletteDark = new PaletteDark()
+        PaletteLight = new PaletteLight()
         {
-            Primary = "#776BE7",
-            PrimaryDarken = "#776BE7",
-            PrimaryLighten = "#978CEC",
-            PrimaryContrastText = "rgba(4,4,4,1)",
+            Primary = "#10B981",
+            PrimaryDarken = "#059669",
+            PrimaryLighten = "#34D399",
+            PrimaryContrastText = "rgba(255,255,255,1)",
 
-            Secondary = "rgba(255,64,129,1)",
-            SecondaryDarken = "rgb(255,31,105)",
-            SecondaryLighten = "rgb(255,102,153)",
+            Secondary = "#F43F5E",
+            SecondaryDarken = "#E11D48",
+            SecondaryLighten = "#FB7185",
             SecondaryContrastText = "rgba(255,255,255,1)",
 
-            Tertiary = "rgba(30,200,165,1)",
-            TertiaryDarken = "rgb(25,169,140)",
-            TertiaryLighten = "rgb(42,223,187)",
+            Tertiary = "#0891B2",
+            TertiaryDarken = "#0E7490",
+            TertiaryLighten = "#22D3EE",
             TertiaryContrastText = "rgba(255,255,255,1)",
 
-            Info = "rgba(50,153,255,1)",
-            InfoDarken = "rgb(10,133,255)",
-            InfoLighten = "rgb(92,173,255)",
+            Info = "#0EA5E9",
+            InfoDarken = "#0284C7",
+            InfoLighten = "#38BDF8",
             InfoContrastText = "rgba(255,255,255,1)",
 
-            Success = "rgba(11,186,131,1)",
-            SuccessDarken = "rgb(9,154,108)",
-            SuccessLighten = "rgb(13,222,156)",
+            Success = "#10B981",
+            SuccessDarken = "#059669",
+            SuccessLighten = "#34D399",
             SuccessContrastText = "rgba(255,255,255,1)",
 
-            Warning = "rgba(255,168,0,1)",
-            WarningDarken = "rgb(214,143,0)",
-            WarningLighten = "rgb(255,182,36)",
+            Warning = "#F59E0B",
+            WarningDarken = "#D97706",
+            WarningLighten = "#FBBF24",
             WarningContrastText = "rgba(255,255,255,1)",
 
-            Error = "rgba(246,78,98,1)",
-            ErrorDarken = "rgb(244,47,70)",
-            ErrorLighten = "rgb(248,119,134)",
+            Error = "#EF4444",
+            ErrorDarken = "#DC2626",
+            ErrorLighten = "#F87171",
             ErrorContrastText = "rgba(255,255,255,1)",
 
-            Dark = "rgba(39,39,47,1)",
-            DarkDarken = "rgb(23,23,28)",
-            DarkLighten = "rgb(56,56,67)",
+            Dark = "#1E293B",
+            DarkDarken = "#0F172A",
+            DarkLighten = "#334155",
             DarkContrastText = "rgba(255,255,255,1)",
 
-            Background = "rgba(17,17,18,0.9)",
-            Surface = "rgba(0,0,0,0.9)",
-            DrawerBackground = "rgba(17,17,18,0.9)",
-            AppbarBackground = "rgba(17,17,18,0.9)",
+            Background = "rgba(241,245,249,0.85)",      // slate-100
+            Surface = "rgba(248,250,252,0.9)",           // slate-50
+            DrawerBackground = "rgba(241,245,249,0.85)",
+            AppbarBackground = "rgba(241,245,249,0.75)",
 
-            TextPrimary = "rgba(172,172,172,1)",
-            TextSecondary = "rgba(172,172,172,1)",
-            TextDisabled = "rgba(255,255,255,0.2)",
+            TextPrimary = "rgba(15,23,42,0.92)",         // slate-900
+            TextSecondary = "rgba(71,85,105,0.85)",      // slate-600
+            TextDisabled = "rgba(15,23,42,0.38)",
 
-            DrawerText = "rgba(220,220,220,1)",
-            DrawerIcon = "rgba(255,255,255,0.498)",
-            AppbarText = "rgba(255,255,255,0.698)",
+            DrawerText = "rgba(30,41,59,0.92)",          // slate-800
+            DrawerIcon = "rgba(71,85,105,0.75)",
+            AppbarText = "rgba(30,41,59,0.87)",
 
-            Divider = "rgba(220,220,220,0.27)",
-            DividerLight = "rgba(255,255,255,0.059)",
-            LinesDefault = "rgba(30,30,30,1)",
-            LinesInputs = "rgba(220,220,220,0.21)",
+            Divider = "rgba(148,163,184,0.25)",          // slate-400
+            DividerLight = "rgba(148,163,184,0.12)",
+            LinesDefault = "rgba(203,213,225,1)",        // slate-300
+            LinesInputs = "rgba(148,163,184,0.4)",
 
-            ActionDefault = "rgba(200,200,200,0.8)",
-            ActionDisabled = "rgba(255,255,255,0.259)",
-            ActionDisabledBackground = "rgba(255,255,255,0.118)",
+            ActionDefault = "rgba(71,85,105,0.85)",
+            ActionDisabled = "rgba(15,23,42,0.26)",
+            ActionDisabledBackground = "rgba(15,23,42,0.08)",
 
-            TableLines = "rgba(255,255,255,0.118)",
-            TableStriped = "rgba(255,255,255,0.2)",
-            TableHover = "rgba(0,0,0,0.039)",
+            TableLines = "rgba(148,163,184,0.2)",
+            TableStriped = "rgba(148,163,184,0.08)",
+            TableHover = "rgba(16,185,129,0.06)",
 
-            OverlayDark = "rgba(33,33,33,0.498)",
-            OverlayLight = "rgba(255,255,255,0.498)",
+            OverlayDark = "rgba(15,23,42,0.5)",
+            OverlayLight = "rgba(248,250,252,0.5)",
 
-            GrayDefault = "#9E9E9E",
-            GrayLight = "#BDBDBD",
-            GrayLighter = "#E0E0E0",
-            GrayDark = "#757575",
-            GrayDarker = "rgba(0,0,0,0.9)",
+            GrayDefault = "#64748B",
+            GrayLight = "#94A3B8",
+            GrayLighter = "#CBD5E1",
+            GrayDark = "#475569",
+            GrayDarker = "#334155",
 
-            Black = "rgba(39,39,47,1)",
+            Black = "#0F172A",
+            White = "rgba(255,255,255,1)",
+        },
+        PaletteDark = new PaletteDark()
+        {
+            Primary = "#34D399",
+            PrimaryDarken = "#10B981",
+            PrimaryLighten = "#6EE7B7",
+            PrimaryContrastText = "rgba(4,18,12,1)",
+
+            Secondary = "#FB7185",
+            SecondaryDarken = "#F43F5E",
+            SecondaryLighten = "#FDA4AF",
+            SecondaryContrastText = "rgba(255,255,255,1)",
+
+            Tertiary = "#22D3EE",
+            TertiaryDarken = "#06B6D4",
+            TertiaryLighten = "#67E8F9",
+            TertiaryContrastText = "rgba(4,18,20,1)",
+
+            Info = "#38BDF8",
+            InfoDarken = "#0EA5E9",
+            InfoLighten = "#7DD3FC",
+            InfoContrastText = "rgba(255,255,255,1)",
+
+            Success = "#34D399",
+            SuccessDarken = "#10B981",
+            SuccessLighten = "#6EE7B7",
+            SuccessContrastText = "rgba(4,18,12,1)",
+
+            Warning = "#FBBF24",
+            WarningDarken = "#F59E0B",
+            WarningLighten = "#FCD34D",
+            WarningContrastText = "rgba(20,14,4,1)",
+
+            Error = "#F87171",
+            ErrorDarken = "#EF4444",
+            ErrorLighten = "#FCA5A5",
+            ErrorContrastText = "rgba(255,255,255,1)",
+
+            Dark = "rgba(15,23,42,1)",
+            DarkDarken = "rgba(8,12,24,1)",
+            DarkLighten = "rgba(30,41,59,1)",
+            DarkContrastText = "rgba(255,255,255,1)",
+
+            Background = "rgba(10,15,20,0.88)",
+            Surface = "rgba(15,23,32,0.85)",
+            DrawerBackground = "rgba(10,15,20,0.85)",
+            AppbarBackground = "rgba(10,15,20,0.75)",
+
+            TextPrimary = "rgba(226,232,240,0.95)",      // slate-200
+            TextSecondary = "rgba(148,163,184,0.9)",     // slate-400
+            TextDisabled = "rgba(255,255,255,0.3)",
+
+            DrawerText = "rgba(226,232,240,0.92)",
+            DrawerIcon = "rgba(148,163,184,0.75)",
+            AppbarText = "rgba(226,232,240,0.85)",
+
+            Divider = "rgba(148,163,184,0.18)",
+            DividerLight = "rgba(148,163,184,0.08)",
+            LinesDefault = "rgba(30,41,59,1)",
+            LinesInputs = "rgba(148,163,184,0.25)",
+
+            ActionDefault = "rgba(203,213,225,0.85)",
+            ActionDisabled = "rgba(255,255,255,0.26)",
+            ActionDisabledBackground = "rgba(255,255,255,0.1)",
+
+            TableLines = "rgba(148,163,184,0.12)",
+            TableStriped = "rgba(148,163,184,0.05)",
+            TableHover = "rgba(52,211,153,0.08)",
+
+            OverlayDark = "rgba(8,12,24,0.6)",
+            OverlayLight = "rgba(255,255,255,0.4)",
+
+            GrayDefault = "#94A3B8",
+            GrayLight = "#CBD5E1",
+            GrayLighter = "#E2E8F0",
+            GrayDark = "#64748B",
+            GrayDarker = "#334155",
+
+            Black = "rgba(15,23,42,1)",
             White = "rgba(255,255,255,1)",
         },
 
@@ -180,14 +265,14 @@
             Subtitle2 = new Subtitle2Typography() { FontFamily = new[] { "EB Garamond", "serif" }, FontSize = ".875rem", FontWeight = "500", LineHeight = "1.57", LetterSpacing = ".00714em" },
             Body1 = new Body1Typography() { FontFamily = new[] { "EB Garamond", "serif" }, FontSize = "1rem", FontWeight = "400", LineHeight = "1.5", LetterSpacing = ".00938em" },
             Body2 = new Body2Typography() { FontFamily = new[] { "EB Garamond", "serif" }, FontSize = ".875rem", FontWeight = "400", LineHeight = "1.43", LetterSpacing = ".01071em" },
-            Button = new ButtonTypography() { FontFamily = new[] { "EB Garamond", "serif" }, FontSize = ".875rem", FontWeight = "500", LineHeight = "1.75", LetterSpacing = ".02857em", TextTransform = "uppercase" },
+            Button = new ButtonTypography() { FontFamily = new[] { "EB Garamond", "serif" }, FontSize = ".875rem", FontWeight = "500", LineHeight = "1.75", LetterSpacing = ".02857em", TextTransform = "none" },
             Caption = new CaptionTypography() { FontFamily = new[] { "EB Garamond", "serif" }, FontSize = ".75rem", FontWeight = "400", LineHeight = "1.66", LetterSpacing = ".03333em" },
-            Overline = new OverlineTypography() { FontFamily = new[] { "EB Garamond", "serif" }, FontSize = ".75rem", FontWeight = "400", LineHeight = "2.66", LetterSpacing = ".08333em" },
+            Overline = new OverlineTypography() { FontFamily = new[] { "EB Garamond", "serif" }, FontSize = ".75rem", FontWeight = "500", LineHeight = "2.66", LetterSpacing = ".08333em", TextTransform = "uppercase" },
         },
 
         LayoutProperties = new LayoutProperties
         {
-            DefaultBorderRadius = "4px",
+            DefaultBorderRadius = "8px",
             DrawerWidthLeft = "240px",
             DrawerWidthRight = "240px",
             DrawerMiniWidthLeft = "56px",
