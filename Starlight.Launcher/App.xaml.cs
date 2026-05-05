@@ -1,6 +1,4 @@
-﻿using Serilog;
-
-namespace Starlight.Launcher;
+﻿namespace Starlight.Launcher;
 
 public partial class App : Application
 {

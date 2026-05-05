@@ -16,9 +16,9 @@ public class SettingsService : IAsyncDisposable
 
     public SettingsService(ILogger<SettingsService> logger)
     {
+        _logger = logger;
         _filePath = Path.Combine(FileSystem.AppDataDirectory, "settings.json");
         _settings = Load();
-        _logger = logger;
     }
 
     private static readonly JsonSerializerOptions JsonOptions = new()

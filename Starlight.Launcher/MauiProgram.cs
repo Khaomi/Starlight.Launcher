@@ -15,8 +15,6 @@ public static class MauiProgram
         builder.Logging.ClearProviders();
         builder.Logging.AddSerilog(logger);
 
-        logger.Information("Yes");
-
         builder
             .UseMauiApp<App>()
             .ConfigureFonts(fonts =>
