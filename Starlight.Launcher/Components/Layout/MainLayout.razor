@@ -7,19 +7,44 @@
 
 <MudThemeProvider Theme="_theme" IsDarkMode="_isDarkMode"/>
 
-<div data-theme="@ThemeAttr" class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<MudLayout>
+    <MudAppBar Elevation="1">
+        <MudText Typo="Typo.h5" Class="ml-3">STARLIGHT</MudText>
+    </MudAppBar>
 
-    <main>
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
+    <MudDrawer Elevation="1" ClipMode="DrawerClipMode.Always" @bind-Open="@_open" Variant="@DrawerVariant.Mini">
+        <MudNavMenu Rounded="true" Color="Color.Primary" Bordered="true">
+            <MudNavLink Icon="@Icons.Material.Filled.Home" Href="/" Match="NavLinkMatch.All">
+                Home
+            </MudNavLink>
+            <MudNavLink Icon="@Icons.Material.Filled.Settings" Href="/settings" Match="NavLinkMatch.All">
+                Settings
+            </MudNavLink>
+        </MudNavMenu>
+    </MudDrawer>
+
+    <MudMainContent>
+        <ErrorBoundary @ref="_errorBoundary">
+            <ChildContent>
+                @Body
+            </ChildContent>
+            <ErrorContent Context="ex">
+                <MudAlert Severity="Severity.Error" Class="ma-4">
+                    <MudText>Something went wrong. Please try refreshing the page.</MudText>
+                </MudAlert>
+            </ErrorContent>
+        </ErrorBoundary>
+    </MudMainContent>
+</MudLayout>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
 </div>
 
 @code {
+    private ErrorBoundary? _errorBoundary;
     private string ThemeAttr => _isDarkMode ? "dark" : "light";
     private bool _isDarkMode;
     private MudTheme _theme = new()
@@ -152,9 +177,21 @@
         },
     };
 
+    protected override void OnParametersSet()
+    {
+        _errorBoundary?.Recover();
+    }
+
     protected override async Task OnInitializedAsync()
     {
         var settings = await Settings.GetSettingsAsync();
         _isDarkMode = settings.Theme == AppTheme.Light ? false : true;
+    }
+
+    private bool _open = false;
+
+    private void ToggleDrawer()
+    {
+        _open = !_open;
     }
 }
