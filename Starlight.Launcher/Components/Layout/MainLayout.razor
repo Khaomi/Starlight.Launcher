@@ -1,17 +1,160 @@
-﻿@inherits LayoutComponentBase
+﻿@using Starlight.Launcher.Services.Settings
+@using Starlight.Launcher.Models.Settings
 
-<div class="page">
+@inherits LayoutComponentBase
+
+@inject SettingsService Settings
+
+<MudThemeProvider Theme="_theme" IsDarkMode="_isDarkMode"/>
+
+<div data-theme="@ThemeAttr" class="page">
     <div class="sidebar">
         <NavMenu />
     </div>
 
     <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
-
         <article class="content px-4">
             @Body
         </article>
     </main>
 </div>
+
+@code {
+    private string ThemeAttr => _isDarkMode ? "dark" : "light";
+    private bool _isDarkMode;
+    private MudTheme _theme = new()
+    {
+        PaletteLight = new PaletteLight(),
+        PaletteDark = new PaletteDark()
+        {
+            Primary = "#776BE7",
+            PrimaryDarken = "#776BE7",
+            PrimaryLighten = "#978CEC",
+            PrimaryContrastText = "rgba(4,4,4,1)",
+
+            Secondary = "rgba(255,64,129,1)",
+            SecondaryDarken = "rgb(255,31,105)",
+            SecondaryLighten = "rgb(255,102,153)",
+            SecondaryContrastText = "rgba(255,255,255,1)",
+
+            Tertiary = "rgba(30,200,165,1)",
+            TertiaryDarken = "rgb(25,169,140)",
+            TertiaryLighten = "rgb(42,223,187)",
+            TertiaryContrastText = "rgba(255,255,255,1)",
+
+            Info = "rgba(50,153,255,1)",
+            InfoDarken = "rgb(10,133,255)",
+            InfoLighten = "rgb(92,173,255)",
+            InfoContrastText = "rgba(255,255,255,1)",
+
+            Success = "rgba(11,186,131,1)",
+            SuccessDarken = "rgb(9,154,108)",
+            SuccessLighten = "rgb(13,222,156)",
+            SuccessContrastText = "rgba(255,255,255,1)",
+
+            Warning = "rgba(255,168,0,1)",
+            WarningDarken = "rgb(214,143,0)",
+            WarningLighten = "rgb(255,182,36)",
+            WarningContrastText = "rgba(255,255,255,1)",
+
+            Error = "rgba(246,78,98,1)",
+            ErrorDarken = "rgb(244,47,70)",
+            ErrorLighten = "rgb(248,119,134)",
+            ErrorContrastText = "rgba(255,255,255,1)",
+
+            Dark = "rgba(39,39,47,1)",
+            DarkDarken = "rgb(23,23,28)",
+            DarkLighten = "rgb(56,56,67)",
+            DarkContrastText = "rgba(255,255,255,1)",
+
+            Background = "rgba(17,17,18,0.9)",
+            Surface = "rgba(0,0,0,0.9)",
+            DrawerBackground = "rgba(17,17,18,0.9)",
+            AppbarBackground = "rgba(17,17,18,0.9)",
+
+            TextPrimary = "rgba(172,172,172,1)",
+            TextSecondary = "rgba(172,172,172,1)",
+            TextDisabled = "rgba(255,255,255,0.2)",
+
+            DrawerText = "rgba(220,220,220,1)",
+            DrawerIcon = "rgba(255,255,255,0.498)",
+            AppbarText = "rgba(255,255,255,0.698)",
+
+            Divider = "rgba(220,220,220,0.27)",
+            DividerLight = "rgba(255,255,255,0.059)",
+            LinesDefault = "rgba(30,30,30,1)",
+            LinesInputs = "rgba(220,220,220,0.21)",
+
+            ActionDefault = "rgba(200,200,200,0.8)",
+            ActionDisabled = "rgba(255,255,255,0.259)",
+            ActionDisabledBackground = "rgba(255,255,255,0.118)",
+
+            TableLines = "rgba(255,255,255,0.118)",
+            TableStriped = "rgba(255,255,255,0.2)",
+            TableHover = "rgba(0,0,0,0.039)",
+
+            OverlayDark = "rgba(33,33,33,0.498)",
+            OverlayLight = "rgba(255,255,255,0.498)",
+
+            GrayDefault = "#9E9E9E",
+            GrayLight = "#BDBDBD",
+            GrayLighter = "#E0E0E0",
+            GrayDark = "#757575",
+            GrayDarker = "rgba(0,0,0,0.9)",
+
+            Black = "rgba(39,39,47,1)",
+            White = "rgba(255,255,255,1)",
+        },
+
+        Typography = new Typography
+        {
+            Default = new DefaultTypography()
+            {
+                FontFamily = new[] { "EB Garamond", "serif" },
+                FontSize = ".875rem",
+                FontWeight = "400",
+                LineHeight = "1.43",
+                LetterSpacing = ".01071em",
+            },
+            H1 = new H1Typography() { FontFamily = new[] { "EB Garamond", "serif" }, FontSize = "6rem", FontWeight = "300", LineHeight = "1.167", LetterSpacing = "-.01562em" },
+            H2 = new H2Typography() { FontFamily = new[] { "EB Garamond", "serif" }, FontSize = "3.75rem", FontWeight = "300", LineHeight = "1.2", LetterSpacing = "-.00833em" },
+            H3 = new H3Typography() { FontFamily = new[] { "EB Garamond", "serif" }, FontSize = "3rem", FontWeight = "400", LineHeight = "1.167", LetterSpacing = "0" },
+            H4 = new H4Typography() { FontFamily = new[] { "EB Garamond", "serif" }, FontSize = "2.125rem", FontWeight = "400", LineHeight = "1.235", LetterSpacing = ".00735em" },
+            H5 = new H5Typography() { FontFamily = new[] { "EB Garamond", "serif" }, FontSize = "1.5rem", FontWeight = "400", LineHeight = "1.334", LetterSpacing = "0" },
+            H6 = new H6Typography() { FontFamily = new[] { "EB Garamond", "serif" }, FontSize = "1.25rem", FontWeight = "500", LineHeight = "1.6", LetterSpacing = ".0075em" },
+            Subtitle1 = new Subtitle1Typography() { FontFamily = new[] { "EB Garamond", "serif" }, FontSize = "1rem", FontWeight = "400", LineHeight = "1.75", LetterSpacing = ".00938em" },
+            Subtitle2 = new Subtitle2Typography() { FontFamily = new[] { "EB Garamond", "serif" }, FontSize = ".875rem", FontWeight = "500", LineHeight = "1.57", LetterSpacing = ".00714em" },
+            Body1 = new Body1Typography() { FontFamily = new[] { "EB Garamond", "serif" }, FontSize = "1rem", FontWeight = "400", LineHeight = "1.5", LetterSpacing = ".00938em" },
+            Body2 = new Body2Typography() { FontFamily = new[] { "EB Garamond", "serif" }, FontSize = ".875rem", FontWeight = "400", LineHeight = "1.43", LetterSpacing = ".01071em" },
+            Button = new ButtonTypography() { FontFamily = new[] { "EB Garamond", "serif" }, FontSize = ".875rem", FontWeight = "500", LineHeight = "1.75", LetterSpacing = ".02857em", TextTransform = "uppercase" },
+            Caption = new CaptionTypography() { FontFamily = new[] { "EB Garamond", "serif" }, FontSize = ".75rem", FontWeight = "400", LineHeight = "1.66", LetterSpacing = ".03333em" },
+            Overline = new OverlineTypography() { FontFamily = new[] { "EB Garamond", "serif" }, FontSize = ".75rem", FontWeight = "400", LineHeight = "2.66", LetterSpacing = ".08333em" },
+        },
+
+        LayoutProperties = new LayoutProperties
+        {
+            DefaultBorderRadius = "4px",
+            DrawerWidthLeft = "240px",
+            DrawerWidthRight = "240px",
+            DrawerMiniWidthLeft = "56px",
+            DrawerMiniWidthRight = "56px",
+            AppbarHeight = "64px",
+        },
+
+        ZIndex = new ZIndex
+        {
+            Drawer = 1100,
+            AppBar = 1300,
+            Dialog = 1400,
+            Popover = 1200,
+            Snackbar = 1500,
+            Tooltip = 1600,
+        },
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var settings = await Settings.GetSettingsAsync();
+        _isDarkMode = settings.Theme == AppTheme.Light ? false : true;
+    }
+}

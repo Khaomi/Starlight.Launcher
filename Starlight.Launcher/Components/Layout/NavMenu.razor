@@ -1,17 +1,21 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">Starlight.Launcher</a>
+﻿<MudPaper Width="250px" Class="nav-container" Elevation="0" Square="true">
+
+    <div class="nav-header">
+        <MudText Typo="Typo.h6">Starlight.Launcher</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">
+            Secondary Text
+        </MudText>
     </div>
-</div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+    <MudDivider Class="my-2" />
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-    </nav>
-</div>
+    <MudNavMenu Class="mud-width-full pa-2">
+        <MudNavLink Icon="@Icons.Material.Filled.Home"
+                    IconColor="@Color.Secondary"
+                    Href="/"
+                    Match="NavLinkMatch.All">
+            Home
+        </MudNavLink>
+    </MudNavMenu>
+
+</MudPaper>
