@@ -1,0 +1,43 @@
+@using Starlight.Launcher.Services.Settings
+@using Starlight.Launcher.Services.State
+@using Starlight.Launcher.Models.Settings
+
+@page "/settings"
+
+@inject SettingsService _settings;
+@inject AppState _state;
+
+<MudTabs>
+    <MudTabPanel Text="General">
+        <MudSwitch T="bool" Value="DarkTheme" ValueChanged="OnThemeChanged" >Dark Theme</MudSwitch>
+        <MudSwitch T="bool" Value="BottomNavigation" ValueChanged="OnNavigationChanged">Bottom Navigation Menu</MudSwitch>
+    </MudTabPanel>
+</MudTabs>
+
+@code {
+    private bool DarkTheme = true;
+    private bool BottomNavigation = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var settings = await _settings.GetSettingsAsync();
+        DarkTheme = settings.Theme == AppTheme.Light ? false : true;
+        BottomNavigation = settings.BottomNavigation;
+    }
+
+    private async Task OnNavigationChanged(bool value)
+    {
+        BottomNavigation = value;
+        var settings = await _settings.GetSettingsAsync();
+        await _settings.WriteSettingsAsync(settings with { BottomNavigation = value });
+        _state.CallUpdate();
+    }
+
+    private async Task OnThemeChanged(bool value)
+    {
+        DarkTheme = value;
+        var settings = await _settings.GetSettingsAsync();
+        await _settings.WriteSettingsAsync(settings with { Theme = DarkTheme ? AppTheme.Dark : AppTheme.Light });
+        _state.CallUpdate();
+    }
+}

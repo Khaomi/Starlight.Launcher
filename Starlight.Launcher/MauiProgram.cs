@@ -1,6 +1,7 @@
 ﻿using Serilog;
 using Microsoft.Extensions.Logging;
 using Starlight.Launcher.Services.Settings;
+using Starlight.Launcher.Services.State;
 using MudBlazor.Services;
 
 namespace Starlight.Launcher;
@@ -24,6 +25,7 @@ public static class MauiProgram
             });
 
         builder.Services.AddSingleton<SettingsService>();
+        builder.Services.AddSingleton<AppState>();
         builder.Services.AddMauiBlazorWebView();
         builder.Services.AddMudServices();
 
