@@ -15,17 +15,17 @@
 .bottom-nav-item {
     flex: 1;
     height: 100%;
-    text-decoration: none !important;
-    color: var(--mud-palette-text-secondary) !important;
+    text-decoration: none;
+    color: var(--mud-palette-text-secondary);
     transition: color 150ms ease;
 }
 
 .bottom-nav-item:hover {
-    color: var(--mud-palette-text-primary) !important;
+    color: var(--mud-palette-text-primary);
 }
 
 .bottom-nav-item.active span {
-    color: var(--mud-palette-primary) !important;
+    color: var(--mud-palette-primary);
 }
 
 .nav-inner {

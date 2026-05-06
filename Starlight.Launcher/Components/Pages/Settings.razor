@@ -14,6 +14,8 @@
             <SettingsBoolOption Value="DarkTheme" ValueChanged="OnThemeChanged" Title="Dark theme" Description="Use a darker color scheme across the app" Icon="@Icons.Material.Filled.DarkMode"/>
             <MudText Typo="Typo.overline" Class="mud-text-secondary mb-2">Layout</MudText>
             <SettingsBoolOption Value="BottomNavigation" ValueChanged="OnNavigationChanged" Title="Bottom navigation" Description="Show the navigation bar at the bottom of the screen" Icon="@Icons.Material.Filled.MenuOpen" />
+            <MudText Typo="Typo.overline" Class="mud-text-secondary mb-2">Hub</MudText>
+            <SettingsStringListOption Value="Hubs" ValueChanged="OnHubsChanged" Title="Hub list" Description="Manage hubs used in the app" Icon="@Icons.Material.Filled.Hub" />
         </MudContainer>
     </MudTabPanel>
 </MudTabs>
@@ -21,12 +23,25 @@
 @code {
     private bool DarkTheme = true;
     private bool BottomNavigation = true;
+    private List<(string Url, long Priority)> Hubs = new();
 
     protected override async Task OnInitializedAsync()
     {
         var settings = await _settings.GetSettingsAsync();
         DarkTheme = settings.Theme == AppTheme.Light ? false : true;
         BottomNavigation = settings.BottomNavigation;
+        Hubs = settings.Hubs.Select(h => (h.HubUri.ToString(), h.Priority)).ToList();
+    }
+
+    private async Task OnHubsChanged(List<(string Url, long Priority)> value)
+    {
+        List<Hub> hubUris = [];
+        foreach (var hub in value)
+        {
+            if (Uri.TryCreate(hub.Url, UriKind.Absolute, out var uri))
+                hubUris.Add(new Hub { HubUri = uri, Priority = hub.Priority });
+        }
+        await OnListSettingChanged(value, v => Hubs = v, (s, v) => s with { Hubs = hubUris });
     }
 
     private async Task OnNavigationChanged(bool value)
@@ -42,6 +57,13 @@
     {
         setLocal(value);
 
+        return UpdateSetting(s => update(s, value));
+    }
+
+    private Task OnListSettingChanged<T>(List<T> value, Action<List<T>> setLocal,
+        Func<AppSettings, List<T>, AppSettings> update)
+    {
+        setLocal(value);
         return UpdateSetting(s => update(s, value));
     }
 
