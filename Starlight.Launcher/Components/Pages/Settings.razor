@@ -11,37 +11,9 @@
     <MudTabPanel Text="General">
         <MudContainer MaxWidth="MaxWidth.Small" Class="pa-0">
             <MudText Typo="Typo.overline" Class="mud-text-secondary mb-2">Appearance</MudText>
-            <MudPaper Class="pa-4 mb-4" Outlined="true" Elevation="0">
-                <div class="d-flex align-center">
-                    <MudIcon Icon="@Icons.Material.Filled.DarkMode" Class="mr-4" />
-                    <div class="flex-grow-1">
-                        <MudText Typo="Typo.body1">Dark theme</MudText>
-                        <MudText Typo="Typo.caption" Class="mud-text-secondary">
-                            Use a darker color scheme across the app
-                        </MudText>
-                    </div>
-                    <MudSwitch T="bool"
-                               Value="DarkTheme"
-                               ValueChanged="OnThemeChanged"
-                               Color="Color.Primary" />
-                </div>
-            </MudPaper>
+            <SettingsBoolOption Value="DarkTheme" ValueChanged="OnThemeChanged" Title="Dark theme" Description="Use a darker color scheme across the app" Icon="@Icons.Material.Filled.DarkMode"/>
             <MudText Typo="Typo.overline" Class="mud-text-secondary mb-2">Layout</MudText>
-            <MudPaper Class="pa-4" Outlined="true" Elevation="0">
-                <div class="d-flex align-center">
-                    <MudIcon Icon="@Icons.Material.Filled.MenuOpen" Class="mr-4" />
-                    <div class="flex-grow-1">
-                        <MudText Typo="Typo.body1">Bottom navigation</MudText>
-                        <MudText Typo="Typo.caption" Class="mud-text-secondary">
-                            Show the navigation bar at the bottom of the screen
-                        </MudText>
-                    </div>
-                    <MudSwitch T="bool"
-                               Value="BottomNavigation"
-                               ValueChanged="OnNavigationChanged"
-                               Color="Color.Primary" />
-                </div>
-            </MudPaper>
+            <SettingsBoolOption Value="BottomNavigation" ValueChanged="OnNavigationChanged" Title="Bottom navigation" Description="Show the navigation bar at the bottom of the screen" Icon="@Icons.Material.Filled.MenuOpen" />
         </MudContainer>
     </MudTabPanel>
 </MudTabs>
@@ -58,18 +30,26 @@
     }
 
     private async Task OnNavigationChanged(bool value)
-    {
-        BottomNavigation = value;
-        var settings = await _settings.GetSettingsAsync();
-        await _settings.WriteSettingsAsync(settings with { BottomNavigation = value });
-        _state.CallUpdate();
-    }
+        => await OnBoolSettingChanged(value, v => BottomNavigation = v, (s, v) => s with { BottomNavigation = v });
 
     private async Task OnThemeChanged(bool value)
+        => await OnBoolSettingChanged(value, v => DarkTheme = v, (s, v) => s with { Theme = v ? AppTheme.Dark : AppTheme.Light });
+
+    private Task OnBoolSettingChanged(
+        bool value,
+        Action<bool> setLocal,
+        Func<AppSettings, bool, AppSettings> update)
     {
-        DarkTheme = value;
+        setLocal(value);
+
+        return UpdateSetting(s => update(s, value));
+    }
+
+    private async Task UpdateSetting(Func<AppSettings, AppSettings> update)
+    {
         var settings = await _settings.GetSettingsAsync();
-        await _settings.WriteSettingsAsync(settings with { Theme = DarkTheme ? AppTheme.Dark : AppTheme.Light });
+        var newSettings = update(settings);
+        await _settings.WriteSettingsAsync(newSettings);
         _state.CallUpdate();
     }
 }
