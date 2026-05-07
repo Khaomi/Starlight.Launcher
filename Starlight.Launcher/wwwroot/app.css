@@ -169,3 +169,27 @@ h1:focus {
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
 }
+
+.mud-spinner .mud-icon-root {
+    animation: mud-spin 0.8s linear infinite;
+}
+
+@keyframes mud-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.server-item {
+    border-radius: 0;
+    border-bottom: 1px solid var(--mud-palette-divider);
+}
+
+.server-item--clickable {
+    transition: background-color 0.12s ease;
+    cursor: pointer;
+}
+
+.server-item--clickable:hover {
+    background-color: var(--mud-palette-action-default-hover);
+}

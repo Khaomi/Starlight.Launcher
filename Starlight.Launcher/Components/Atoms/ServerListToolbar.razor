@@ -1,0 +1,140 @@
+@using Starlight.Launcher.Models.ServerStatus
+@using Starlight.Launcher.Services.ServerStatus
+
+<MudPaper Elevation="0" Square="true" Class="pa-3"
+          Style="border-bottom: 1px solid var(--mud-palette-divider);">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3" Wrap="Wrap.Wrap">
+
+        <MudTextField T="string"
+                      Value="Filters.SearchQuery"
+                      ValueChanged="OnSearchChanged"
+                      Placeholder="Search servers…"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Clearable="true"
+                      Immediate="true"
+                      Style="min-width: 240px; max-width: 320px;" />
+
+        <MudSelect T="ServerSortMode"
+                   Value="Filters.SortBy"
+                   ValueChanged="OnSortChanged"
+                   Variant="Variant.Outlined"
+                   Margin="Margin.Dense"
+                   Label="Sort"
+                   Style="min-width: 130px;">
+            <MudSelectItem Value="ServerSortMode.Players">Players</MudSelectItem>
+            <MudSelectItem Value="ServerSortMode.Name">Name</MudSelectItem>
+            <MudSelectItem Value="ServerSortMode.Ping">Ping</MudSelectItem>
+        </MudSelect>
+
+        <MudStack Row="true" Spacing="1">
+            <MudCheckBox T="bool"
+                         Value="Filters.HideEmpty"
+                         ValueChanged="OnHideEmptyChanged"
+                         Label="Hide empty"
+                         Size="Size.Small"
+                         Color="Color.Primary" />
+            <MudCheckBox T="bool"
+                         Value="Filters.HideFull"
+                         ValueChanged="OnHideFullChanged"
+                         Label="Hide full"
+                         Size="Size.Small"
+                         Color="Color.Primary" />
+        </MudStack>
+
+        <MudSpacer />
+
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            @{
+                var (statusText, statusColor) = GetStatusDisplay();
+            }
+            <MudTooltip Text="@statusText">
+                <MudIcon Icon="@Icons.Material.Filled.Circle"
+                         Color="statusColor"
+                         Size="Size.Small" />
+            </MudTooltip>
+            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                @FilteredCount / @TotalCount
+            </MudText>
+            <MudTooltip Text="Refresh server list">
+                <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                               Color="Color.Primary"
+                               Variant="Variant.Filled"
+                               Size="Size.Medium"
+                               Disabled="@IsRefreshing"
+                               OnClick="OnRefresh"
+                               Class="@(IsRefreshing ? "mud-spinner" : "")" />
+            </MudTooltip>
+        </MudStack>
+    </MudStack>
+
+    @if (AvailableTags.Count > 0)
+    {
+        <MudStack Row="true" Spacing="1" Class="mt-3" Wrap="Wrap.Wrap">
+            @foreach (var tag in AvailableTags)
+            {
+                var selected = Filters.SelectedTags.Contains(tag);
+                <MudChip T="string"
+                         Text="@tag"
+                         Size="Size.Small"
+                         Color="@(selected ? Color.Primary : Color.Default)"
+                         Variant="@(selected ? Variant.Filled : Variant.Outlined)"
+                         OnClick="@(() => ToggleTag(tag))" />
+            }
+        </MudStack>
+    }
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired] public ServerListFilters Filters { get; set; } = null!;
+    [Parameter] public RefreshListStatus Status { get; set; }
+    [Parameter] public int TotalCount { get; set; }
+    [Parameter] public int FilteredCount { get; set; }
+    [Parameter] public IReadOnlyList<string> AvailableTags { get; set; } = Array.Empty<string>();
+    [Parameter] public EventCallback OnRefresh { get; set; }
+
+    private bool IsRefreshing => Status == RefreshListStatus.UpdatingMaster;
+
+    private void OnSearchChanged(string value)
+    {
+        Filters.SearchQuery = value ?? "";
+        Filters.NotifyChanged();
+    }
+
+    private void OnSortChanged(ServerSortMode mode)
+    {
+        Filters.SortBy = mode;
+        Filters.NotifyChanged();
+    }
+
+    private void OnHideEmptyChanged(bool value)
+    {
+        Filters.HideEmpty = value;
+        Filters.NotifyChanged();
+    }
+
+    private void OnHideFullChanged(bool value)
+    {
+        Filters.HideFull = value;
+        Filters.NotifyChanged();
+    }
+
+    private void ToggleTag(string tag)
+    {
+        if (!Filters.SelectedTags.Add(tag))
+            Filters.SelectedTags.Remove(tag);
+        Filters.NotifyChanged();
+    }
+
+    private (string Text, Color Color) GetStatusDisplay() => Status switch
+    {
+        RefreshListStatus.NotUpdated => ("Idle", Color.Default),
+        RefreshListStatus.UpdatingMaster => ("Updating…", Color.Info),
+        RefreshListStatus.Updated => ("Up to date", Color.Success),
+        RefreshListStatus.PartialError => ("Some hubs failed", Color.Warning),
+        RefreshListStatus.Error => ("Error", Color.Error),
+        _ => ("", Color.Default),
+    };
+}

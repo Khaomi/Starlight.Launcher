@@ -1,0 +1,131 @@
+@using Robust.Launcher.Api.Models.ServerStatus
+@implements IDisposable
+
+<MudPaper Elevation="0"
+          Class="@($"server-item d-flex align-center pa-3 ga-3 {(IsClickable ? "server-item--clickable" : "")}")"
+          @onclick="HandleClick">
+
+    <div style="flex: 1 1 auto; min-width: 0;">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-1">
+            <MudText Typo="Typo.subtitle1"
+                     Style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">
+                @(Data.Name ?? Data.Address)
+            </MudText>
+            @if (Data.StatusInfo == ServerStatusInfoCode.Fetching)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary"
+                                     Style="width: 14px; height: 14px;" />
+            }
+        </MudStack>
+
+        @if (!string.IsNullOrWhiteSpace(Data.Description))
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary"
+                     Style="display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;">
+                @Data.Description
+            </MudText>
+        }
+        else if (Data.StatusInfo == ServerStatusInfoCode.Error)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Error">
+                Could not load details
+            </MudText>
+        }
+        else if (Data.StatusInfo == ServerStatusInfoCode.NotFetched || Data.StatusInfo == ServerStatusInfoCode.Fetching)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Style="opacity: 0.6;">
+                Loading…
+            </MudText>
+        }
+
+        @if (Data.Tags is { Length: > 0 } tags)
+        {
+            <MudStack Row="true" Spacing="1" Class="mt-1" Style="flex-wrap: nowrap; overflow: hidden;">
+                @foreach (var tag in tags.Take(5))
+                {
+                    <MudChip T="string" Text="@tag" Size="Size.Small"
+                             Variant="Variant.Outlined" Color="Color.Primary"
+                             Style="height: 20px; font-size: 10px;" />
+                }
+                @if (tags.Length > 5)
+                {
+                    <MudChip T="string" Text="@($"+{tags.Length - 5}")" Size="Size.Small"
+                             Variant="Variant.Outlined" Color="Color.Default"
+                             Style="height: 20px; font-size: 10px;" />
+                }
+            </MudStack>
+        }
+    </div>
+
+    <MudStack Spacing="0" AlignItems="AlignItems.End" Style="flex: 0 0 auto;">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+            <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Color="Color.Secondary" />
+            <MudText Typo="Typo.body2" Style="font-variant-numeric: tabular-nums;">
+                <strong>@Data.PlayerCount</strong>
+                <span style="color: var(--mud-palette-text-secondary);">
+                    /@Data.SoftMaxPlayerCount
+                </span>
+            </MudText>
+        </MudStack>
+    </MudStack>
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired] public ServerStatusData Data { get; set; } = null!;
+    [Parameter] public EventCallback<ServerStatusData> OnClick { get; set; }
+    [Parameter] public EventCallback<ServerStatusData> OnInfoNeeded { get; set; }
+
+    private CancellationTokenSource? _infoCts;
+
+    private bool IsClickable => OnClick.HasDelegate;
+
+    protected override void OnInitialized()
+    {
+        Data.Changed += OnDataChanged;
+
+        if (Data.StatusInfo == ServerStatusInfoCode.NotFetched)
+        {
+            _infoCts = new CancellationTokenSource();
+            _ = RequestInfoDebouncedAsync(_infoCts.Token);
+        }
+    }
+
+    private async Task RequestInfoDebouncedAsync(CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(250, token);
+            await OnInfoNeeded.InvokeAsync(Data);
+        }
+        catch (OperationCanceledException) { /* card disposed before delay elapsed */ }
+    }
+
+    private async void OnDataChanged()
+    {
+        try { await InvokeAsync(StateHasChanged); }
+        catch (ObjectDisposedException) { }
+    }
+
+    private async Task HandleClick()
+    {
+        if (IsClickable)
+            await OnClick.InvokeAsync(Data);
+    }
+
+    private static string GetInitials(string name)
+    {
+        var trimmed = name.Trim();
+        if (string.IsNullOrEmpty(trimmed)) return "?";
+        var parts = trimmed.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+            return $"{char.ToUpper(parts[0][0])}{char.ToUpper(parts[1][0])}";
+        return char.ToUpper(trimmed[0]).ToString();
+    }
+
+    public void Dispose()
+    {
+        _infoCts?.Cancel();
+        _infoCts?.Dispose();
+        Data.Changed -= OnDataChanged;
+    }
+}
