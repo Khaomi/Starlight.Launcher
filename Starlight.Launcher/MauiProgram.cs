@@ -1,9 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
 using MudBlazor.Services;
 using Robust.Launcher.Api.Api;
+using Robust.Launcher.Api.Models.ServerStatus;
 using Robust.Launcher.Api.Utility;
 using Serilog;
-using Starlight.Launcher.Models.ServerStatus;
+using Starlight.Launcher.Services.ServerStatus;
 using Starlight.Launcher.Services.Settings;
 using Starlight.Launcher.Services.State;
 
@@ -33,6 +34,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<AppState>();
         builder.Services.AddSingleton<HubApi>();
         builder.Services.AddSingleton<HubServerFetcher>();
+        builder.Services.AddSingleton<ServerStatusCache>();
         builder.Services.AddMauiBlazorWebView();
         builder.Services.AddMudServices();
 

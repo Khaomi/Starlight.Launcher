@@ -1,6 +1,6 @@
+using Microsoft.Extensions.Logging;
 using Robust.Launcher.Api.Api;
 using Robust.Launcher.Api.Utility;
-using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -23,10 +23,12 @@ public sealed class ServerStatusCache : IServerSource
     // Oh well!
     private readonly Dictionary<string, CacheReg> _cachedData = new();
     private readonly HttpClient _http;
+    private readonly ILogger<ServerStatusCache> _logger;
 
-    public ServerStatusCache(HttpClient http)
+    public ServerStatusCache(HttpClient http, ILogger<ServerStatusCache> logger)
     {
         _http = http;
+        _logger = logger;
     }
 
     /// <summary>
@@ -74,13 +76,13 @@ public sealed class ServerStatusCache : IServerSource
         }
     }
 
-    public static async Task UpdateStatusFor(ServerStatusData data, HttpClient http, CancellationToken cancel)
+    public async Task UpdateStatusFor(ServerStatusData data, HttpClient http, CancellationToken cancel)
     {
         try
         {
             if (!UriHelper.TryParseSs14Uri(data.Address, out var parsedAddress))
             {
-                Log.Warning("Server {Server} has invalid URI {Uri}", data.Name, data.Address);
+                _logger.LogWarning("Server {Server} has invalid URI {Uri}", data.Name, data.Address);
                 data.Status = ServerStatusCode.Offline;
                 return;
             }
@@ -150,11 +152,11 @@ public sealed class ServerStatusCache : IServerSource
         data.Tags = baseTags.Concat(inferredTags).ToArray();
     }
 
-    public static async Task UpdateInfoForCore(ServerStatusData data, Func<CancellationToken, Task<ServerInfo?>> fetch)
+    public async Task UpdateInfoForCore(ServerStatusData data, Func<CancellationToken, Task<ServerInfo?>> fetch)
     {
         if (data.Status != ServerStatusCode.Online)
         {
-            Log.Error("Refusing to fetch info for server {Server} before we know it's online", data.Address);
+            _logger.LogError("Refusing to fetch info for server {Server} before we know it's online", data.Address);
             return;
         }
 
@@ -233,11 +235,68 @@ public sealed class ServerStatusCache : IServerSource
 
     void IServerSource.UpdateInfoFor(ServerStatusData statusData)
     {
-        UpdateInfoForCore(statusData, async cancel =>
+        _ = UpdateInfoForCore(statusData, async cancel =>
         {
-            var uriBuilder = new UriBuilder(UriHelper.GetServerInfoAddress(statusData.Address));
-            uriBuilder.Query = "?can_skip_build=1";
-            return await _http.GetFromJsonAsync<ServerInfo>(uriBuilder.ToString(), cancel);
+            var uriBuilder = new UriBuilder(
+                UriHelper.GetServerInfoAddress(statusData.Address));
+
+            uriBuilder.Query = "can_skip_build=1";
+
+            var url = uriBuilder.ToString();
+
+            try
+            {
+                _logger.LogDebug(
+                    "Updating server info. Address: {Address}, Url: {Url}",
+                    statusData.Address,
+                    url);
+
+                var result = await _http.GetFromJsonAsync<ServerInfo>(
+                    url,
+                    cancel);
+
+                if (result is null)
+                {
+                    _logger.LogWarning(
+                        "Server info response was null. Address: {Address}",
+                        statusData.Address);
+                }
+                else
+                {
+                    _logger.LogDebug(
+                        "Server info updated successfully. Address: {Address}",
+                        statusData.Address);
+                }
+
+                return result;
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation(
+                    "Server info update cancelled. Address: {Address}",
+                    statusData.Address);
+
+                throw;
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "HTTP error while updating server info. Address: {Address}, Url: {Url}",
+                    statusData.Address,
+                    url);
+
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Unexpected error while updating server info. Address: {Address}",
+                    statusData.Address);
+
+                throw;
+            }
         });
     }
 
