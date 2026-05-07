@@ -46,7 +46,9 @@ public static class HappyEyeballsHttp
             ConnectCallback = OnConnect,
             AutomaticDecompression = DecompressionMethods.All,
             AllowAutoRedirect = autoRedirect,
-            // PooledConnectionLifetime = TimeSpan.FromSeconds(1)
+            PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+            PooledConnectionIdleTimeout = TimeSpan.FromMinutes(2),
+            MaxConnectionsPerServer = 8,
         };
 
         return new HttpClient(handler);

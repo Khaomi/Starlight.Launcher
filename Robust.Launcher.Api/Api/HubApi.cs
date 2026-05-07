@@ -2,7 +2,6 @@ using Robust.Launcher.Api.Models;
 using Robust.Launcher.Api.Utility;
 using Microsoft.Extensions.Logging;
 using System;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -25,14 +24,30 @@ public sealed class HubApi
 
     public async Task<ServerListEntry[]> GetServers(UrlFallbackSet hubUri, CancellationToken cancel)
     {
-        // Sanity check, this should be enforced with code
         if (!hubUri.Urls.All(u => u.EndsWith('/')))
-            throw new Exception("URI doesn't have trailing slash");
+            throw new ArgumentException("URI doesn't have trailing slash", nameof(hubUri));
 
-        var finalUrl = hubUri + "api/servers";
-
-        return await finalUrl.GetFromJsonAsync<ServerListEntry[]>(_http, cancel)
-               ?? throw new JsonException("Server list is null!");
+        HubApiException? lastError = null;
+        foreach (var url in hubUri.Urls)
+        {
+            var finalUrl = url + "api/servers";
+            try
+            {
+                _logger.LogDebug("Fetching server list from {Url}", finalUrl);
+                var result = await RequestJsonAsync<ServerListEntry[]>(finalUrl, cancel)
+                    .ConfigureAwait(false);
+                _logger.LogDebug("Got {Count} servers from {Url}", result.Length, finalUrl);
+                return result;
+            }
+            catch (HubApiException ex) when (!ex.IsRateLimited)
+            {
+                _logger.LogWarning(
+                    "Failed to fetch from {Url}: {Status}. Trying next fallback if any.",
+                    finalUrl, ex.StatusCode);
+                lastError = ex;
+            }
+        }
+        throw lastError ?? new HubApiException("No URLs in fallback set");
     }
 
     public async Task<ServerInfo> GetServerInfo(
@@ -40,64 +55,78 @@ public sealed class HubApi
         string hubAddress,
         CancellationToken cancel)
     {
-        var url =
-            $"{hubAddress}api/servers/info?url={Uri.EscapeDataString(serverAddress)}";
+        var url = $"{hubAddress}api/servers/info?url={Uri.EscapeDataString(serverAddress)}";
 
+#if DEBUG
+        _logger.LogDebug("Requesting info for {ServerAddress} via {Url}", serverAddress, url);
+#endif
+
+        return await RequestJsonAsync<ServerInfo>(url, cancel).ConfigureAwait(false);
+    }
+
+    private async Task<T> RequestJsonAsync<T>(string url, CancellationToken cancel)
+    {
+        HttpResponseMessage response;
         try
         {
-#if DEBUG
-            _logger.LogDebug(
-                "Requesting server info. ServerAddress: {ServerAddress}, Url: {Url}",
-                serverAddress,
-                url);
-#endif
-
-            var result = await _http.GetFromJsonAsync<ServerInfo>(url, cancel);
-
-            if (result is null)
-            {
-                _logger.LogWarning(
-                    "Server info response was null. ServerAddress: {ServerAddress}",
-                    serverAddress);
-
-                throw new InvalidDataException(
-                    $"Server info response was null for '{serverAddress}'.");
-            }
-
-#if DEBUG
-            _logger.LogDebug(
-                "Successfully received server info. ServerAddress: {ServerAddress}",
-                serverAddress);
-#endif
-
-            return result;
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            response = await _http
+                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancel)
+                .ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!cancel.IsCancellationRequested)
+        {
+            throw new HubApiException($"Request to {url} timed out",
+                requestUrl: url, isTimeout: true);
         }
         catch (OperationCanceledException)
         {
-            _logger.LogInformation(
-                "Server info request cancelled. ServerAddress: {ServerAddress}",
-                serverAddress);
-
             throw;
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(
-                ex,
-                "HTTP error while requesting server info. ServerAddress: {ServerAddress}, Url: {Url}",
-                serverAddress,
-                url);
-
-            throw;
+            throw new HubApiException(
+                $"HTTP error requesting {url}: {ex.Message}",
+                statusCode: ex.StatusCode,
+                requestUrl: url,
+                inner: ex);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(
-                ex,
-                "Unexpected error while requesting server info. ServerAddress: {ServerAddress}",
-                serverAddress);
 
-            throw;
+        using (response)
+        {
+            if (!response.IsSuccessStatusCode)
+            {
+                TimeSpan? retryAfter = null;
+                if (response.Headers.RetryAfter is { } ra)
+                {
+                    if (ra.Delta.HasValue)
+                        retryAfter = ra.Delta.Value;
+                    else if (ra.Date.HasValue)
+                        retryAfter = ra.Date.Value - DateTimeOffset.UtcNow;
+                }
+
+                throw new HubApiException(
+                    $"Hub returned {(int)response.StatusCode} {response.ReasonPhrase} for {url}",
+                    statusCode: response.StatusCode,
+                    retryAfter: retryAfter,
+                    requestUrl: url);
+            }
+
+            try
+            {
+                var result = await response.Content
+                    .ReadFromJsonAsync<T>(cancellationToken: cancel)
+                    .ConfigureAwait(false);
+                if (result is null)
+                    throw new HubApiException($"Response body was null for {url}", requestUrl: url);
+                return result;
+            }
+            catch (JsonException ex)
+            {
+                throw new HubApiException(
+                    $"Failed to parse JSON from {url}: {ex.Message}",
+                    requestUrl: url, inner: ex);
+            }
         }
     }
 
