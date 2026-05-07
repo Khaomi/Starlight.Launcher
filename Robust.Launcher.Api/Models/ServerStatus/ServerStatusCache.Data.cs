@@ -18,6 +18,11 @@ public sealed class ServerStatusData : ObservableObject, IServerStatusData
     private ServerInfoLink[]? _links;
     private string[] _tags = Array.Empty<string>();
 
+    public readonly object InfoLock = new();
+
+    public event Action? Changed;
+    public void NotifyChanged() => Changed?.Invoke();
+
     public ServerStatusData(string address)
     {
         Address = address;

@@ -1,8 +1,11 @@
-﻿using Serilog;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using MudBlazor.Services;
+using Robust.Launcher.Api.Api;
+using Robust.Launcher.Api.Utility;
+using Serilog;
+using Starlight.Launcher.Models.ServerStatus;
 using Starlight.Launcher.Services.Settings;
 using Starlight.Launcher.Services.State;
-using MudBlazor.Services;
 
 namespace Starlight.Launcher;
 
@@ -24,8 +27,12 @@ public static class MauiProgram
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
             });
 
+        var httpClient = HappyEyeballsHttp.CreateHttpClient();
+        builder.Services.AddSingleton(httpClient);
         builder.Services.AddSingleton<SettingsService>();
         builder.Services.AddSingleton<AppState>();
+        builder.Services.AddSingleton<HubApi>();
+        builder.Services.AddSingleton<HubServerFetcher>();
         builder.Services.AddMauiBlazorWebView();
         builder.Services.AddMudServices();
 

@@ -1,7 +1,6 @@
 using Robust.Launcher.Api.Api;
 using Robust.Launcher.Api.Utility;
 using Serilog;
-using Splat;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -25,9 +24,9 @@ public sealed class ServerStatusCache : IServerSource
     private readonly Dictionary<string, CacheReg> _cachedData = new();
     private readonly HttpClient _http;
 
-    public ServerStatusCache()
+    public ServerStatusCache(HttpClient http)
     {
-        _http = Locator.Current.GetService<HttpClient>() ?? new HttpClient();
+        _http = http;
     }
 
     /// <summary>
@@ -151,22 +150,26 @@ public sealed class ServerStatusCache : IServerSource
         data.Tags = baseTags.Concat(inferredTags).ToArray();
     }
 
-    public static async void UpdateInfoForCore(ServerStatusData data, Func<CancellationToken, Task<ServerInfo?>> fetch)
+    public static async Task UpdateInfoForCore(ServerStatusData data, Func<CancellationToken, Task<ServerInfo?>> fetch)
     {
-        if (data.StatusInfo == ServerStatusInfoCode.Fetching)
-            return;
-
         if (data.Status != ServerStatusCode.Online)
         {
             Log.Error("Refusing to fetch info for server {Server} before we know it's online", data.Address);
             return;
         }
 
-        data.InfoCancel?.Cancel();
-        data.InfoCancel = new CancellationTokenSource();
-        var cancel = data.InfoCancel.Token;
+        CancellationToken cancel;
+        lock (data.InfoLock)
+        {
+            if (data.StatusInfo == ServerStatusInfoCode.Fetching)
+                return;
 
-        data.StatusInfo = ServerStatusInfoCode.Fetching;
+            data.InfoCancel?.Cancel();
+            data.InfoCancel?.Dispose();
+            data.InfoCancel = new CancellationTokenSource();
+            cancel = data.InfoCancel.Token;
+            data.StatusInfo = ServerStatusInfoCode.Fetching;
+        }
 
         ServerInfo info;
         try
@@ -174,8 +177,7 @@ public sealed class ServerStatusCache : IServerSource
             using (var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(cancel))
             {
                 linkedToken.CancelAfter(TimeSpan.FromSeconds(5));
-
-                info = await fetch(linkedToken.Token) ?? throw new InvalidDataException();
+                info = await fetch(linkedToken.Token).ConfigureAwait(false) ?? throw new InvalidDataException("Hub returned null server info");
             }
 
             cancel.ThrowIfCancellationRequested();
@@ -191,9 +193,9 @@ public sealed class ServerStatusCache : IServerSource
             return;
         }
 
-        data.StatusInfo = ServerStatusInfoCode.Fetched;
         data.Description = info.Desc;
         data.Links = info.Links;
+        data.StatusInfo = ServerStatusInfoCode.Fetched;
     }
 
     public void Refresh()

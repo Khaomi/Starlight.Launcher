@@ -59,4 +59,8 @@
         <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
     </ItemGroup>
 
+	<ItemGroup>
+		<ProjectReference Include="..\Robust.Launcher.Api\Robust.Launcher.Api.csproj"/>
+	</ItemGroup>
+
 </Project>
