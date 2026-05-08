@@ -1,74 +1,170 @@
 @using Robust.Launcher.Api.Models.ServerStatus
 @implements IDisposable
 
-<MudPaper Elevation="0"
-          Class="@($"server-item d-flex align-center pa-3 ga-3 {(IsClickable ? "server-item--clickable" : "")}")"
-          @onclick="HandleClick">
-
-    <div style="flex: 1 1 auto; min-width: 0;">
-        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-1">
-            <MudText Typo="Typo.subtitle1"
-                     Style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">
-                @(Data.Name ?? Data.Address)
-            </MudText>
+<div class="@RowClass" @onclick="HandleClick">
+    <div class="server-row__main">
+        <div class="server-row__title-line">
+            <span class="server-row__name">@(Data.Name ?? Data.Address)</span>
             @if (Data.StatusInfo == ServerStatusInfoCode.Fetching)
             {
                 <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary"
-                                     Style="width: 14px; height: 14px;" />
+                                     Class="server-row__spinner" />
             }
-        </MudStack>
-
-        @if (!string.IsNullOrWhiteSpace(Data.Description))
-        {
-            <MudText Typo="Typo.body2" Color="Color.Secondary"
-                     Style="display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;">
+        </div>
+        <div class="server-row__description">
+            @if (!string.IsNullOrWhiteSpace(Data.Description))
+            {
                 @Data.Description
-            </MudText>
-        }
-        else if (Data.StatusInfo == ServerStatusInfoCode.Error)
-        {
-            <MudText Typo="Typo.body2" Color="Color.Error">
-                Could not load details
-            </MudText>
-        }
-        else if (Data.StatusInfo == ServerStatusInfoCode.NotFetched || Data.StatusInfo == ServerStatusInfoCode.Fetching)
-        {
-            <MudText Typo="Typo.body2" Color="Color.Secondary" Style="opacity: 0.6;">
-                Loading…
-            </MudText>
-        }
-
-        @if (Data.Tags is { Length: > 0 } tags)
-        {
-            <MudStack Row="true" Spacing="1" Class="mt-1" Style="flex-wrap: nowrap; overflow: hidden;">
-                @foreach (var tag in tags.Take(5))
-                {
-                    <MudChip T="string" Text="@tag" Size="Size.Small"
-                             Variant="Variant.Outlined" Color="Color.Primary"
-                             Style="height: 20px; font-size: 10px;" />
-                }
-                @if (tags.Length > 5)
-                {
-                    <MudChip T="string" Text="@($"+{tags.Length - 5}")" Size="Size.Small"
-                             Variant="Variant.Outlined" Color="Color.Default"
-                             Style="height: 20px; font-size: 10px;" />
-                }
-            </MudStack>
-        }
+            }
+            else if (Data.StatusInfo == ServerStatusInfoCode.Error)
+            {
+                <span class="server-row__description--error">Could not load details</span>
+            }
+            else if (Data.StatusInfo == ServerStatusInfoCode.NotFetched || Data.StatusInfo == ServerStatusInfoCode.Fetching)
+            {
+                <span class="server-row__description--muted">Loading…</span>
+            }
+        </div>
     </div>
 
-    <MudStack Spacing="0" AlignItems="AlignItems.End" Style="flex: 0 0 auto;">
-        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-            <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Color="Color.Secondary" />
-            <MudText Typo="Typo.body2" Style="font-variant-numeric: tabular-nums;">
-                <strong>@Data.PlayerCount</strong>
-                <span style="color: var(--mud-palette-text-secondary);">
-                    /@Data.SoftMaxPlayerCount
-                </span>
-            </MudText>
-        </MudStack>
-    </MudStack>
-</MudPaper>
+    <div class="server-row__meta">
+        @if (DisplayTags is { Count: > 0 })
+        {
+            <div class="server-row__tags">
+                @foreach (var tag in DisplayTags)
+                {
+                    <span class="server-row__tag">@tag</span>
+                }
+            </div>
+        }
+        <div class="server-row__players">
+            <MudIcon Icon="@Icons.Material.Filled.Person" Class="server-row__players-icon" />
+            <span class="server-row__players-text">
+                <strong>@Data.PlayerCount</strong><span class="server-row__players-slash">/</span>@Data.SoftMaxPlayerCount
+            </span>
+        </div>
+    </div>
+</div>
+
+<style>
+    .server-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        height: 56px;
+        padding: 0 16px;
+        border-bottom: 1px solid var(--mud-palette-divider);
+        background: transparent;
+        transition: background-color 100ms ease;
+        box-sizing: border-box;
+        user-select: none;
+    }
+
+    .server-row--clickable {
+        cursor: pointer;
+    }
+
+        .server-row--clickable:hover {
+            background: var(--mud-palette-action-default-hover);
+        }
+
+        .server-row--clickable:active {
+            background: var(--mud-palette-action-selected);
+        }
+
+    .server-row__main {
+        flex: 1 1 auto;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+    }
+
+    .server-row__title-line {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+    }
+
+    .server-row__name {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--mud-palette-text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.3;
+    }
+
+    .server-row__spinner {
+        width: 12px !important;
+        height: 12px !important;
+        flex-shrink: 0;
+    }
+
+    .server-row__description {
+        font-size: 0.78rem;
+        color: var(--mud-palette-text-secondary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.3;
+    }
+
+    .server-row__description--error {
+        color: var(--mud-palette-error);
+    }
+
+    .server-row__description--muted {
+        opacity: 0.55;
+    }
+
+    .server-row__meta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-shrink: 0;
+    }
+
+    .server-row__tags {
+        display: flex;
+        gap: 4px;
+    }
+
+    .server-row__tag {
+        font-size: 10px;
+        line-height: 1;
+        padding: 3px 6px;
+        border-radius: 3px;
+        background: var(--mud-palette-action-default-hover);
+        color: var(--mud-palette-text-secondary);
+        white-space: nowrap;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+    }
+
+    .server-row__players {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.825rem;
+        color: var(--mud-palette-text-primary);
+        font-variant-numeric: tabular-nums;
+        min-width: 52px;
+        justify-content: flex-end;
+    }
+
+    .server-row__players-icon {
+        font-size: 14px !important;
+        opacity: 0.55;
+    }
+
+    .server-row__players-slash {
+        opacity: 0.45;
+        margin: 0 1px;
+    }
+</style>
 
 @code {
     [Parameter, EditorRequired] public ServerStatusData Data { get; set; } = null!;
@@ -78,6 +174,13 @@
     private CancellationTokenSource? _infoCts;
 
     private bool IsClickable => OnClick.HasDelegate;
+    private string RowClass => IsClickable ? "server-row server-row--clickable" : "server-row";
+
+    private List<string>? DisplayTags => Data.Tags?
+        .Where(t => !t.StartsWith("region:", StringComparison.OrdinalIgnoreCase)
+                 && !t.StartsWith("lang:", StringComparison.OrdinalIgnoreCase))
+        .Take(3)
+        .ToList();
 
     protected override void OnInitialized()
     {
@@ -97,7 +200,7 @@
             await Task.Delay(250, token);
             await OnInfoNeeded.InvokeAsync(Data);
         }
-        catch (OperationCanceledException) { /* card disposed before delay elapsed */ }
+        catch (OperationCanceledException) { }
     }
 
     private async void OnDataChanged()
@@ -110,16 +213,6 @@
     {
         if (IsClickable)
             await OnClick.InvokeAsync(Data);
-    }
-
-    private static string GetInitials(string name)
-    {
-        var trimmed = name.Trim();
-        if (string.IsNullOrEmpty(trimmed)) return "?";
-        var parts = trimmed.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length >= 2)
-            return $"{char.ToUpper(parts[0][0])}{char.ToUpper(parts[1][0])}";
-        return char.ToUpper(trimmed[0]).ToString();
     }
 
     public void Dispose()

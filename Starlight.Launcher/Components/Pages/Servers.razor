@@ -4,72 +4,59 @@
 @implements IDisposable
 @inject HubServerFetcher Fetcher
 
-<MudStack Spacing="0" Style="height: 100%;">
-    <ServerListToolbar Filters="@_filters"
-                       Status="@Fetcher.Status"
-                       TotalCount="@_totalCount"
-                       FilteredCount="@_filteredServers.Count"
-                       AvailableTags="@_availableTags"
-                       OnRefresh="HandleRefresh" />
-
-    <div style="flex: 1; overflow-y: auto; min-height: 0;">
-        @if (Fetcher.Status == RefreshListStatus.NotUpdated || Fetcher.Status == RefreshListStatus.UpdatingMaster)
-        {
-            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center"
-                      Spacing="3" Style="height: 100%; padding: 48px;">
-                <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
-                <MudText Typo="Typo.body1" Color="Color.Secondary">Loading servers…</MudText>
-            </MudStack>
-        }
-        else if (Fetcher.Status == RefreshListStatus.Error && _totalCount == 0)
-        {
-            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center"
-                      Spacing="3" Style="height: 100%; padding: 48px;">
-                <MudIcon Icon="@Icons.Material.Filled.CloudOff" Size="Size.Large" Color="Color.Error" />
-                <MudText Typo="Typo.h6">Failed to fetch server list</MudText>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Refresh"
-                           OnClick="HandleRefresh">
-                    Try again
-                </MudButton>
-            </MudStack>
-        }
-        else if (_filteredServers.Count == 0)
-        {
-            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center"
-                      Spacing="3" Style="height: 100%; padding: 48px;">
-                <MudIcon Icon="@Icons.Material.Filled.SearchOff" Size="Size.Large" Color="Color.Default" />
-                @if (_totalCount == 0)
-                {
-                    <MudText Typo="Typo.body1" Color="Color.Secondary">
-                        No servers online right now.
-                    </MudText>
-                }
-                else
-                {
-                    <MudText Typo="Typo.body1" Color="Color.Secondary">
-                        No servers match your filters.
-                    </MudText>
-                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="ClearFilters">
-                        Clear filters
-                    </MudButton>
-                }
-            </MudStack>
-        }
-        else
-        {
-            @if (Fetcher.Status == RefreshListStatus.PartialError)
+<div class="server-page">
+    @if (Fetcher.Status == RefreshListStatus.NotUpdated || Fetcher.Status == RefreshListStatus.UpdatingMaster)
+    {
+        <div class="server-page__state">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Medium" />
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Loading servers…</MudText>
+        </div>
+    }
+    else if (Fetcher.Status == RefreshListStatus.Error && _totalCount == 0)
+    {
+        <div class="server-page__state">
+            <MudIcon Icon="@Icons.Material.Filled.CloudOff" Size="Size.Large" Color="Color.Error" />
+            <MudText Typo="Typo.subtitle1">Failed to fetch server list</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Refresh"
+                       OnClick="HandleRefresh">
+                Try again
+            </MudButton>
+        </div>
+    }
+    else if (_filteredServers.Count == 0)
+    {
+        <div class="server-page__state">
+            <MudIcon Icon="@Icons.Material.Filled.SearchOff" Size="Size.Large" Color="Color.Default" />
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                @(_totalCount == 0 ? "No servers online right now." : "No servers match your filters.")
+            </MudText>
+            @if (_totalCount > 0)
             {
-                <MudAlert Severity="Severity.Warning" Square="true" Dense="true"
-                          ShowCloseIcon="false" Class="mb-0">
-                    Some hubs could not be reached. The list may be incomplete.
-                </MudAlert>
+                <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="ClearFilters">
+                    Clear filters
+                </MudButton>
             }
-            <Virtualize Items="_filteredServers" Context="server" ItemSize="92" TItem="ServerStatusData">
+        </div>
+    }
+    else
+    {
+        @if (Fetcher.Status == RefreshListStatus.PartialError)
+        {
+            <MudAlert Severity="Severity.Warning" Square="true" Dense="true"
+                      ShowCloseIcon="false" Class="server-page__alert">
+                Some hubs could not be reached. The list may be incomplete.
+            </MudAlert>
+        }
+        <div class="server-page__list">
+            <MudVirtualize Items="_filteredServers"
+                        Context="server"
+                        ItemSize="56"
+                        OverscanCount="3">
                 <ServerListItem Data="server"
                                 OnClick="HandleServerClick"
                                 OnInfoNeeded="HandleInfoNeeded" />
-            </Virtualize>
-        }
-    </div>
-</MudStack>
+            </MudVirtualize>
+        </div>
+    }
+</div>

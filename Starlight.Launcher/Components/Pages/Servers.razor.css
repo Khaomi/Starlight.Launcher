@@ -1,0 +1,71 @@
+/* App shell fills the viewport; pages manage their own scrolling. */
+html, body, #app {
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+}
+
+.mud-layout {
+    height: 100vh;
+    overflow: hidden;
+}
+
+.mud-main-content {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+    .mud-main-content > div {
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+.server-page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.server-page__state {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 48px 24px;
+}
+
+.server-page__alert {
+    flex-shrink: 0;
+}
+
+.server-page__list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 0;
+}
+
+    .server-page__list::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .server-page__list::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .server-page__list::-webkit-scrollbar-thumb {
+        background: var(--mud-palette-action-disabled-background);
+        border-radius: 4px;
+    }
+
+        .server-page__list::-webkit-scrollbar-thumb:hover {
+            background: var(--mud-palette-action-disabled);
+        }
