@@ -10,8 +10,9 @@ public partial class ServerListToolbar : ComponentBase
     [Parameter] public RefreshListStatus Status { get; set; }
     [Parameter] public int TotalCount { get; set; }
     [Parameter] public int FilteredCount { get; set; }
-    [Parameter] public IReadOnlyList<string> AvailableTags { get; set; } = Array.Empty<string>();
     [Parameter] public IReadOnlyList<string> AvailableRPTags { get; set; } = Array.Empty<string>();
+    [Parameter] public IReadOnlyList<string> AvailableLangTags { get; set; } = Array.Empty<string>();
+    [Parameter] public IReadOnlyList<string> AvailableRegionTags { get; set; } = Array.Empty<string>();
     [Parameter] public EventCallback OnRefresh { get; set; }
 
     private bool IsRefreshing => Status == RefreshListStatus.UpdatingMaster;
@@ -40,17 +41,24 @@ public partial class ServerListToolbar : ComponentBase
         Filters.NotifyChanged();
     }
 
-    private void ToggleTag(string tag)
-    {
-        if (!Filters.SelectedTags.Add(tag))
-            Filters.SelectedTags.Remove(tag);
-        Filters.NotifyChanged();
-    }
-
     private void ToggleRP(string rpTag)
     {
         if (!Filters.SelectedRP.Add(rpTag))
             Filters.SelectedRP.Remove(rpTag);
+        Filters.NotifyChanged();
+    }
+
+    private void ToggleLang(string langTag)
+    {
+        if (!Filters.SelectedLang.Add(langTag))
+            Filters.SelectedLang.Remove(langTag);
+        Filters.NotifyChanged();
+    }
+
+    private void ToggleRegion(string regionTag)
+    {
+        if (!Filters.SelectedRegion.Add(regionTag))
+            Filters.SelectedRegion.Remove(regionTag);
         Filters.NotifyChanged();
     }
 

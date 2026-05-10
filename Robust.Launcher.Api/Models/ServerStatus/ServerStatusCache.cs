@@ -194,6 +194,14 @@ public sealed class ServerStatusCache : IServerSource
             data.StatusInfo = ServerStatusInfoCode.Error;
             return;
         }
+        catch (Exception e) when (e is HubApiException apiException)
+        {
+#if DEBUG
+            if (apiException.IsRateLimited)
+                _logger.LogDebug("Hub: {Url} returned 429 exception(Too Many Requests)!", apiException.RequestUrl);
+#endif
+            return;
+        }
 
         data.Description = info.Desc;
         data.Links = info.Links;

@@ -2,6 +2,7 @@
 using Robust.Launcher.Api.Models.ServerStatus;
 using Starlight.Launcher.Models.ServerStatus;
 using Starlight.Launcher.Services.ServerStatus;
+using System.Globalization;
 
 namespace Starlight.Launcher.Components.Pages;
 
@@ -12,14 +13,10 @@ public partial class Servers : ComponentBase, IDisposable
 
     private IReadOnlyList<ServerStatusData> _allServers = Array.Empty<ServerStatusData>();
     private List<ServerStatusData> _filteredServers = new();
-    private IReadOnlyList<string> _availableTags = Array.Empty<string>();
     private IReadOnlyList<string> _availableRPTags = Array.Empty<string>();
-    private IReadOnlyList<string> _availableLanguages = Array.Empty<string>();
+    private IReadOnlyList<string> _availableLangTags = Array.Empty<string>();
+    private IReadOnlyList<string> _availableRegionTags = Array.Empty<string>();
     private int _totalCount;
-
-    private static IReadOnlyList<string> TagsWhitelist = [];
-
-    private static IReadOnlyList<string> TagsBlacklist = [];
 
     private CancellationTokenSource? _searchDebounceCts;
 
@@ -43,7 +40,7 @@ public partial class Servers : ComponentBase, IDisposable
             {
                 _allServers = Fetcher.AllServers;
                 _totalCount = _allServers.Count;
-                ExtractTags(_allServers, out _availableTags, out _availableRPTags);
+                ExtractTags(_allServers, out _availableRPTags, out _availableLangTags, out _availableRegionTags);
                 ApplyFilters();
                 StateHasChanged();
             });
@@ -95,11 +92,6 @@ public partial class Servers : ComponentBase, IDisposable
                 s.Address.Contains(q, StringComparison.OrdinalIgnoreCase));
         }
 
-        if (_filters.SelectedTags.Count > 0)
-        {
-            query = query.Where(s => GetTags(s).Any(t => _filters.SelectedTags.Contains(t)));
-        }
-
         if (_filters.SelectedRP.Count > 0)
         {
             query = query.Where(s =>
@@ -109,9 +101,14 @@ public partial class Servers : ComponentBase, IDisposable
             });
         }
 
-        if (!string.IsNullOrEmpty(_filters.Region))
+        if (_filters.SelectedRegion.Count > 0)
         {
-            query = query.Where(s => GetRegion(s) == _filters.Region);
+            query = query.Where(s => GetRegion(s) != null && _filters.SelectedRegion.Contains(ParseRegionTag(GetRegion(s)!)));
+        }
+
+        if (_filters.SelectedLang.Count > 0)
+        {
+            query = query.Where(s => GetLanguage(s) != null && _filters.SelectedLang.Contains(ParseLangTag(GetLanguage(s)!)));
         }
 
         if (_filters.HideEmpty)
@@ -135,8 +132,9 @@ public partial class Servers : ComponentBase, IDisposable
     private void ClearFilters()
     {
         _filters.SearchQuery = "";
-        _filters.SelectedTags.Clear();
-        _filters.Region = null;
+        _filters.SelectedRP.Clear();
+        _filters.SelectedLang.Clear();
+        _filters.SelectedRegion.Clear();
         _filters.HideEmpty = false;
         _filters.HideFull = false;
         ApplyFilters();
@@ -153,16 +151,16 @@ public partial class Servers : ComponentBase, IDisposable
         ((IServerSource)Fetcher).UpdateInfoFor(server);
     }
 
-    private static void ExtractTags(IEnumerable<ServerStatusData> servers, out IReadOnlyList<string> tags, out IReadOnlyList<string> rpTags)
+    private static void ExtractTags(IEnumerable<ServerStatusData> servers, out IReadOnlyList<string> rpTags, out IReadOnlyList<string> langTags, out IReadOnlyList<string> regionTags)
     {
         var allTags = servers
             .SelectMany(GetTags)
             .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Where(t => !string.IsNullOrWhiteSpace(t))
             .OrderBy(t => t, StringComparer.OrdinalIgnoreCase)
             .ToList();
-        tags = allTags.Where(t => !t.StartsWith("rp")).ToList();
-        rpTags = [.. allTags.Where(t => t.StartsWith("rp")).Select(x => ParseRPTag(x)).Distinct()];
+        rpTags = [.. allTags.Where(t => t.StartsWith("rp")).Select(ParseRPTag).Distinct()];
+        langTags = [.. allTags.Where(t => t.StartsWith("lang:")).Select(ParseLangTag).Distinct()];
+        regionTags = [.. allTags.Where(t => t.StartsWith("region:")).Select(ParseRegionTag).Distinct()];
     }
 
     public static string ParseRPTag(string tag)
@@ -176,6 +174,42 @@ public partial class Servers : ComponentBase, IDisposable
         return tag;
     }
 
+    public static string ParseLangTag(string tag)
+    {
+        if (tag.StartsWith("lang:", StringComparison.OrdinalIgnoreCase))
+        {
+            var cultureId = tag.Substring(5);
+            var culture = CultureInfo.GetCultureInfo(cultureId);
+            return culture.TwoLetterISOLanguageName == culture.Name
+                ? culture.EnglishName
+                : CultureInfo.GetCultureInfo(culture.TwoLetterISOLanguageName).EnglishName;
+        }
+        return tag;
+    }
+
+    public static string ParseRegionTag(string tag)
+    {
+        if (tag.StartsWith("region:", StringComparison.OrdinalIgnoreCase))
+        {
+            var regionId = tag.Substring(7);
+            if (RegionTransformations.TryGetValue(regionId, out var regionName))
+                return regionName;
+
+            try
+            {
+                var region = new RegionInfo(regionId);
+                return region.TwoLetterISORegionName == region.Name
+                    ? region.EnglishName
+                    : new RegionInfo(region.TwoLetterISORegionName).EnglishName;
+            }
+            catch
+            {
+                return tag;
+            }
+        }
+        return tag;
+    }
+
     private static Dictionary<string, List<string>> RPTagTypes = new()
     {
         ["NRP"] = new List<string> { "rp:none", "rp:nrp", "rp" },
@@ -185,10 +219,37 @@ public partial class Servers : ComponentBase, IDisposable
 
     };
 
+    private static Dictionary<string, string> RegionTransformations = new()
+    {
+        ["af_c"] = "Africa Central",
+        ["af_n"] = "Africa North",
+        ["af_s"] = "Africa South",
+        ["ata"] = "Antarctica",
+        ["as_e"] = "Asia East",
+        ["as_n"] = "Asia North",
+        ["as_se"] = "Asia South East",
+        ["am_c"] = "America Central",
+        ["eu_e"] = "Europe East",
+        ["eu_w"] = "Europe West",
+        ["grl"] = "Greenland",
+        ["ind"] = "India",
+        ["me"] = "Middle East", // Wizdens, whyyy???
+        ["luna"] = "Moon", // Wizdens, whyyy???
+        ["am_n_c"] = "North America Central",
+        ["am_n_e"] = "North America East",
+        ["am_n_w"] = "North America West",
+        ["oce"] = "Oceania",
+        ["am_s_e"] = "South America East",
+        ["am_s_s"] = "South America South",
+        ["am_s_w"] = "South America West",
+        ["eu"] = "Europe"
+    };
+
     private static int GetPlayers(ServerStatusData s) => s.PlayerCount;
     private static int GetMaxPlayers(ServerStatusData s) => s.SoftMaxPlayerCount;
     private static int GetPing(ServerStatusData s) => (int?)(s.Ping?.TotalMilliseconds) ?? 0;
-    private static IEnumerable<string> GetTags(ServerStatusData s) => s.Tags.Select(t => t.StartsWith("region:") || t.StartsWith("lang:") ? null : t).Where(t => t != null)!;
+    private static IEnumerable<string> GetTags(ServerStatusData s) => s.Tags.Where(t => !string.IsNullOrWhiteSpace(t))!;
+    private static string? GetLanguage(ServerStatusData s) => s.Tags.FirstOrDefault(x => x.StartsWith("lang:"));
     private static string? GetRegion(ServerStatusData s) => s.Tags.FirstOrDefault(x => x.StartsWith("region:"));
 
     public void Dispose()

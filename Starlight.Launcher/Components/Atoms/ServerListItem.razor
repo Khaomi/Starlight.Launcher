@@ -1,5 +1,4 @@
 @using Robust.Launcher.Api.Models.ServerStatus
-@using Starlight.Launcher.Components.Pages
 @implements IDisposable
 
 <div class="@RowClass" @onclick="HandleClick">
@@ -12,20 +11,32 @@
                                      Class="server-row__spinner" />
             }
         </div>
-        <div class="server-row__description">
-            @if (!string.IsNullOrWhiteSpace(Data.Description))
+        <MudCollapse Expanded="Expanded">
+            <div class="server-row__description">
+                @if (!string.IsNullOrWhiteSpace(Data.Description))
+                {
+                    @Data.Description
+                }
+                else if (Data.StatusInfo == ServerStatusInfoCode.Error)
+                {
+                    <span class="server-row__description--error">Could not load details</span>
+                }
+                else if (Data.StatusInfo == ServerStatusInfoCode.NotFetched || Data.StatusInfo == ServerStatusInfoCode.Fetching)
+                {
+                    <span class="server-row__description--muted">Loading…</span>
+                }
+            </div>
+
+            @if (Data.Links != null && Data.Links.Length > 0)
             {
-                @Data.Description
+                <div>
+                    @foreach (var link in Data.Links)
+                    {
+                        <MudChip T="string" Icon="@ParseIcon(link.Icon)" OnClick="() => OnInfoClick(link.Url)">@link.Name</MudChip>
+                    }
+                </div>
             }
-            else if (Data.StatusInfo == ServerStatusInfoCode.Error)
-            {
-                <span class="server-row__description--error">Could not load details</span>
-            }
-            else if (Data.StatusInfo == ServerStatusInfoCode.NotFetched || Data.StatusInfo == ServerStatusInfoCode.Fetching)
-            {
-                <span class="server-row__description--muted">Loading…</span>
-            }
-        </div>
+        </MudCollapse>
     </div>
 
     <div class="server-row__meta">

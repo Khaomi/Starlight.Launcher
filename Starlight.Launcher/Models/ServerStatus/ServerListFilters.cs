@@ -3,9 +3,9 @@ namespace Starlight.Launcher.Models.ServerStatus;
 public sealed class ServerListFilters
 {
     public string SearchQuery { get; set; } = "";
-    public HashSet<string> SelectedTags { get; } = new(StringComparer.OrdinalIgnoreCase);
     public HashSet<string> SelectedRP { get; } = new(StringComparer.OrdinalIgnoreCase);
-    public string? Region { get; set; }
+    public HashSet<string> SelectedLang { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public HashSet<string> SelectedRegion { get; } = new(StringComparer.OrdinalIgnoreCase);
     public bool HideEmpty { get; set; }
     public bool HideFull { get; set; }
     public ServerSortMode SortBy { get; set; } = ServerSortMode.Players;

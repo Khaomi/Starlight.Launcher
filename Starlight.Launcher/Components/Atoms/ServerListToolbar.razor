@@ -1,5 +1,4 @@
 @using Starlight.Launcher.Models.ServerStatus
-@using Starlight.Launcher.Services.ServerStatus
 
 <MudPaper Elevation="0" Square="true" Class="server-toolbar">
 
@@ -108,26 +107,46 @@
         </MudStack>
     }
 
-    @if (AvailableTags.Count > 0)
+    @if (AvailableLangTags.Count > 0)
     {
         <MudText Typo="Typo.subtitle2" Class="mt-4">
-            Tags
+            Language
         </MudText>
         <MudStack Row="true"
                   Wrap="Wrap.Wrap"
                   Spacing="1"
                   Class="mt-2">
-
-            @foreach (var tag in AvailableTags)
+            @foreach (var lang in AvailableLangTags)
             {
-                var selected = Filters.SelectedTags.Contains(tag);
-
+                var selected = Filters.SelectedLang.Contains(lang);
                 <MudChip T="string"
-                         Text="@tag"
+                         Text="@lang"
                          Size="Size.Small"
                          Color="@(selected ? Color.Primary : Color.Default)"
                          Variant="@(selected ? Variant.Filled : Variant.Text)"
-                         OnClick="@(() => ToggleTag(tag))" />
+                         OnClick="@(() => ToggleLang(lang))" />
+            }
+        </MudStack>
+    }
+
+    @if (AvailableRegionTags.Count > 0)
+    {
+        <MudText Typo="Typo.subtitle2" Class="mt-4">
+            Region
+        </MudText>
+        <MudStack Row="true"
+                  Wrap="Wrap.Wrap"
+                  Spacing="1"
+                  Class="mt-2">
+            @foreach (var region in AvailableRegionTags)
+            {
+                var selected = Filters.SelectedRegion.Contains(region);
+                <MudChip T="string"
+                         Text="@region"
+                         Size="Size.Small"
+                         Color="@(selected ? Color.Primary : Color.Default)"
+                         Variant="@(selected ? Variant.Filled : Variant.Text)"
+                         OnClick="@(() => ToggleRegion(region))" />
             }
         </MudStack>
     }
