@@ -2,12 +2,14 @@
 using Robust.Launcher.Api.Models.ServerStatus;
 using Starlight.Launcher.Models.ServerStatus;
 using Starlight.Launcher.Services.ServerStatus;
+using Starlight.Launcher.Services.Settings;
 using System.Globalization;
 
 namespace Starlight.Launcher.Components.Pages;
 
 public partial class Servers : ComponentBase, IDisposable
 {
+    [Inject] SettingsService Settings { get; set; } = null!;
     private readonly ServerListFilters _filters = new();
     private readonly CancellationTokenSource _disposeCts = new();
 
@@ -20,8 +22,17 @@ public partial class Servers : ComponentBase, IDisposable
 
     private CancellationTokenSource? _searchDebounceCts;
 
-    protected override void OnInitialized()
+    private bool BottomSearch { get; set; }
+    private bool BottomSearchBar { get; set; }
+
+    private bool BottomTagsBar { get; set; }
+
+    protected override async Task OnInitializedAsync()
     {
+        var settings = await Settings.GetSettingsAsync();
+        BottomSearch = settings.ServerListToolbarBottomSearch;
+        BottomSearchBar = settings.ServerListToolBarBottomSearchBar;
+        BottomTagsBar = settings.ServerListToolBarBottomTagsBar;
         Fetcher.ServersChanged += OnServersChanged;
         Fetcher.StatusChanged += OnStatusChanged;
         _filters.Changed += OnFiltersChanged;

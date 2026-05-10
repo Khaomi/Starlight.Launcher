@@ -40,10 +40,23 @@
     }
     else
     {
-        <MudPaper Elevation="0" Square="true" Class="server-toolbar">
-            <ServerListSearchBar Filters="_filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
-            <ServerListTagsBar Filters="_filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
-        </MudPaper>
+        @if (!BottomSearchBar || !BottomTagsBar)
+        {
+            <MudPaper Elevation="0" Square="true" Class="server-toolbar">
+                @if (!BottomSearch && !BottomSearchBar)
+                {
+                    <ServerListSearchBar Filters="_filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
+                }
+                @if (!BottomTagsBar)
+                {
+                    <ServerListTagsBar Filters="_filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
+                }
+                @if (BottomSearch && !BottomSearchBar)
+                {
+                    <ServerListSearchBar Filters="_filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
+                }
+            </MudPaper>
+        }
         @if (Fetcher.Status == RefreshListStatus.PartialError)
         {
             <MudAlert Severity="Severity.Warning" Square="true" Dense="true"
@@ -61,5 +74,22 @@
                                 OnInfoNeeded="HandleInfoNeeded" />
             </MudVirtualize>
         </div>
+        @if (BottomSearchBar || BottomTagsBar)
+        {
+            <MudPaper Elevation="0" Square="true" Class="server-toolbar">
+                @if (!BottomSearch && BottomSearchBar)
+                {
+                    <ServerListSearchBar Filters="_filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
+                }
+                @if (BottomTagsBar)
+                {
+                    <ServerListTagsBar Filters="_filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
+                }
+                @if (BottomSearch && BottomSearchBar)
+                {
+                    <ServerListSearchBar Filters="_filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
+                }
+            </MudPaper>
+        }
     }
 </div>

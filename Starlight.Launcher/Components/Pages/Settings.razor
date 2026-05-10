@@ -1,6 +1,7 @@
 @using Starlight.Launcher.Services.Settings
 @using Starlight.Launcher.Services.State
-@using Starlight.Launcher.Models.Settings
+
+@using AppTheme = Starlight.Launcher.Models.Settings.AppTheme;
 
 @page "/settings"
 
@@ -11,67 +12,14 @@
     <MudTabPanel Text="General">
         <MudContainer MaxWidth="MaxWidth.Small" Class="pa-0">
             <MudText Typo="Typo.overline" Class="mud-text-secondary mb-2">Appearance</MudText>
-            <SettingsBoolOption Value="DarkTheme" ValueChanged="OnThemeChanged" Title="Dark theme" Description="Use a darker color scheme across the app" Icon="@Icons.Material.Filled.DarkMode"/>
+            <SettingsBoolOption Title="Dark theme" Description="Use a darker color scheme across the app" Icon="@Icons.Material.Filled.DarkMode" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings(s => s.Theme == AppTheme.Dark)" SelfValueControlAction="x => OnBoolSettingChanged(x, null, (s, v) => s with { Theme = v ? AppTheme.Dark : AppTheme.Light })" />
+            <SettingsBoolOption Title="Bottom Search" Description="Place search bar at the bottom of the toolbar(when tags bar and search bar together)" Icon="@Icons.Material.Filled.VerticalAlignBottom" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings(s => s.ServerListToolbarBottomSearch)" SelfValueControlAction="x => OnBoolSettingChanged(x, null, (s, v) => s with { ServerListToolbarBottomSearch = v})" />
+            <SettingsBoolOption Title="Bottom Search Bar" Description="Place search bar at the bottom of the server list" Icon="@Icons.Material.Filled.VerticalAlignBottom" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings(s => s.ServerListToolBarBottomSearchBar)" SelfValueControlAction="x => OnBoolSettingChanged(x, null, (s, v) => s with { ServerListToolBarBottomSearchBar = v })" />
+            <SettingsBoolOption Title="Bottom Tags Bar" Description="Place tags bar at the bottom of the server list" Icon="@Icons.Material.Filled.VerticalAlignBottom" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings(s => s.ServerListToolBarBottomTagsBar)" SelfValueControlAction="x => OnBoolSettingChanged(x, null, (s, v) => s with { ServerListToolBarBottomTagsBar = v })" />
             <MudText Typo="Typo.overline" Class="mud-text-secondary mb-2">Layout</MudText>
-            <SettingsBoolOption Value="BottomNavigation" ValueChanged="OnNavigationChanged" Title="Bottom navigation" Description="Show the navigation bar at the bottom of the screen" Icon="@Icons.Material.Filled.MenuOpen" />
+            <SettingsBoolOption Title="Bottom navigation" Description="Show the navigation bar at the bottom of the screen" Icon="@Icons.Material.Filled.MenuOpen" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings(s => s.BottomNavigation)" SelfValueControlAction="x => OnBoolSettingChanged(x, null, (s, v) => s with { BottomNavigation = v})" />
             <MudText Typo="Typo.overline" Class="mud-text-secondary mb-2">Hub</MudText>
             <SettingsStringListOption Value="Hubs" ValueChanged="OnHubsChanged" Title="Hub list" Description="Manage hubs used in the app" Icon="@Icons.Material.Filled.Hub" />
         </MudContainer>
     </MudTabPanel>
 </MudTabs>
-
-@code {
-    private bool DarkTheme = true;
-    private bool BottomNavigation = true;
-    private List<(string Url, long Priority)> Hubs = new();
-
-    protected override async Task OnInitializedAsync()
-    {
-        var settings = await _settings.GetSettingsAsync();
-        DarkTheme = settings.Theme == AppTheme.Light ? false : true;
-        BottomNavigation = settings.BottomNavigation;
-        Hubs = settings.Hubs.Select(h => (h.HubUri.ToString(), h.Priority)).ToList();
-    }
-
-    private async Task OnHubsChanged(List<(string Url, long Priority)> value)
-    {
-        List<Hub> hubUris = [];
-        foreach (var hub in value)
-        {
-            if (Uri.TryCreate(hub.Url, UriKind.Absolute, out var uri))
-                hubUris.Add(new Hub { HubUri = uri, Priority = hub.Priority });
-        }
-        await OnListSettingChanged(value, v => Hubs = v, (s, v) => s with { Hubs = hubUris });
-    }
-
-    private async Task OnNavigationChanged(bool value)
-        => await OnBoolSettingChanged(value, v => BottomNavigation = v, (s, v) => s with { BottomNavigation = v });
-
-    private async Task OnThemeChanged(bool value)
-        => await OnBoolSettingChanged(value, v => DarkTheme = v, (s, v) => s with { Theme = v ? AppTheme.Dark : AppTheme.Light });
-
-    private Task OnBoolSettingChanged(
-        bool value,
-        Action<bool> setLocal,
-        Func<AppSettings, bool, AppSettings> update)
-    {
-        setLocal(value);
-
-        return UpdateSetting(s => update(s, value));
-    }
-
-    private Task OnListSettingChanged<T>(List<T> value, Action<List<T>> setLocal,
-        Func<AppSettings, List<T>, AppSettings> update)
-    {
-        setLocal(value);
-        return UpdateSetting(s => update(s, value));
-    }
-
-    private async Task UpdateSetting(Func<AppSettings, AppSettings> update)
-    {
-        var settings = await _settings.GetSettingsAsync();
-        var newSettings = update(settings);
-        await _settings.WriteSettingsAsync(newSettings);
-        _state.CallUpdate();
-    }
-}
