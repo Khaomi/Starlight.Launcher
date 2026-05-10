@@ -26,6 +26,7 @@ public static class MauiProgram
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+                fonts.AddFont("CormorantGaramond-Regular.ttf", "Cormorant Garamond");
             });
 
         var httpClient = HappyEyeballsHttp.CreateHttpClient();
