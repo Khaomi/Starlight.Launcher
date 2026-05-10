@@ -9,6 +9,9 @@ public partial class ServerListTagsBar : ComponentBase
     [Parameter] public IReadOnlyList<string> AvailableRPTags { get; set; } = Array.Empty<string>();
     [Parameter] public IReadOnlyList<string> AvailableLangTags { get; set; } = Array.Empty<string>();
     [Parameter] public IReadOnlyList<string> AvailableRegionTags { get; set; } = Array.Empty<string>();
+    [Parameter] public bool IsBottom { get; set; }
+    [Parameter] public bool HasSearchAbove { get; set; }
+    [Parameter] public bool HasSearchBelow { get; set; }
 
     private bool HasActiveTagFilters =>
         Filters.SelectedRP.Count > 0 ||

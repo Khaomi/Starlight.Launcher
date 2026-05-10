@@ -37,8 +37,7 @@ public partial class Servers : ComponentBase, IDisposable
         Fetcher.StatusChanged += OnStatusChanged;
         _filters.Changed += OnFiltersChanged;
 
-        _allServers = Fetcher.AllServers;
-        ApplyFilters();
+        RebuildFromFetcher();
 
         Fetcher.RequestInitialUpdate();
     }
@@ -49,14 +48,19 @@ public partial class Servers : ComponentBase, IDisposable
         {
             await InvokeAsync(() =>
             {
-                _allServers = Fetcher.AllServers;
-                _totalCount = _allServers.Count;
-                ExtractTags(_allServers, out _availableRPTags, out _availableLangTags, out _availableRegionTags);
-                ApplyFilters();
+                RebuildFromFetcher();
                 StateHasChanged();
             });
         }
         catch (ObjectDisposedException) { /* page disposed */ }
+    }
+
+    private void RebuildFromFetcher()
+    {
+        _allServers = Fetcher.AllServers;
+        _totalCount = _allServers.Count;
+        ExtractTags(_allServers, out _availableRPTags, out _availableLangTags, out _availableRegionTags);
+        ApplyFilters();
     }
 
     private async void OnStatusChanged(RefreshListStatus _)

@@ -26,7 +26,7 @@ public record AppSettings
     /// <summary>
     /// Determines should we place TAGS bar at the bottom of APP or at the top
     /// </summary>
-    public bool ServerListToolBarBottomTagsBar { get; init; } = false;
+    public bool ServerListToolBarBottomTagsBar { get; init; } = true;
     #endregion
     /// <summary>
     /// AutoSave settings?

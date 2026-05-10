@@ -49,7 +49,7 @@
                 }
                 @if (!BottomTagsBar)
                 {
-                    <ServerListTagsBar Filters="_filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
+                    <ServerListTagsBar HasSearchAbove="!BottomSearch && !BottomSearchBar" HasSearchBelow="BottomSearch && !BottomSearchBar" Filters="_filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
                 }
                 @if (BottomSearch && !BottomSearchBar)
                 {
@@ -83,7 +83,7 @@
                 }
                 @if (BottomTagsBar)
                 {
-                    <ServerListTagsBar Filters="_filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
+                    <ServerListTagsBar HasSearchAbove="!BottomSearch && BottomSearchBar" HasSearchBelow="BottomSearch && BottomSearchBar" IsBottom="true" Filters="_filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
                 }
                 @if (BottomSearch && BottomSearchBar)
                 {

@@ -1,6 +1,6 @@
 <MudPaper Elevation="0" Square="true" Class="server-toolbar">
     <MudCollapse Expanded="Filters.TagsExpanded">
-        <div class="server-toolbar__tags-panel">
+        <div class="server-toolbar__tags-panel @(HasSearchAbove ? "has-top-divider" : "") @(HasSearchBelow ? "has-bottom-divider" : "") @(IsBottom ? "is-bottom" : "")">
 
             @if (AvailableRPTags.Count > 0)
             {
@@ -59,17 +59,18 @@
                 </div>
             }
 
-            @if (HasActiveTagFilters)
-            {
-                <div class="server-toolbar__tag-actions">
-                    <MudButton Size="Size.Small"
-                               Variant="Variant.Text"
-                               StartIcon="@Icons.Material.Filled.Clear"
-                               OnClick="ClearTagFilters">
-                        Clear filters
-                    </MudButton>
-                </div>
-            }
+            <div class="server-toolbar__tag-actions-wrapper">
+                <MudCollapse Expanded="HasActiveTagFilters">
+                    <div class="server-toolbar__tag-actions">
+                        <MudButton Size="Size.Small"
+                                   Variant="Variant.Text"
+                                   StartIcon="@Icons.Material.Filled.Clear"
+                                   OnClick="ClearTagFilters">
+                            Clear filters
+                        </MudButton>
+                    </div>
+                </MudCollapse>
+            </div>
 
         </div>
     </MudCollapse>
