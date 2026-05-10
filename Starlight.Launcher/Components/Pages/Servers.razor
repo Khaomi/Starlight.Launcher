@@ -48,6 +48,7 @@
                 Some hubs could not be reached. The list may be incomplete.
             </MudAlert>
         }
+        <ServerListToolbar Filters="_filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" AvailableTags="_availableTags" AvailableRPTags="_availableRPTags" OnRefresh="HandleRefresh" />
         <div class="server-page__list">
             <MudVirtualize Items="_filteredServers"
                         Context="server"

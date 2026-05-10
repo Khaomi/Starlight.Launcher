@@ -4,6 +4,7 @@ public sealed class ServerListFilters
 {
     public string SearchQuery { get; set; } = "";
     public HashSet<string> SelectedTags { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public HashSet<string> SelectedRP { get; } = new(StringComparer.OrdinalIgnoreCase);
     public string? Region { get; set; }
     public bool HideEmpty { get; set; }
     public bool HideFull { get; set; }

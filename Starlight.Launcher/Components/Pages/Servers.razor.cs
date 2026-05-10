@@ -13,7 +13,13 @@ public partial class Servers : ComponentBase, IDisposable
     private IReadOnlyList<ServerStatusData> _allServers = Array.Empty<ServerStatusData>();
     private List<ServerStatusData> _filteredServers = new();
     private IReadOnlyList<string> _availableTags = Array.Empty<string>();
+    private IReadOnlyList<string> _availableRPTags = Array.Empty<string>();
+    private IReadOnlyList<string> _availableLanguages = Array.Empty<string>();
     private int _totalCount;
+
+    private static IReadOnlyList<string> TagsWhitelist = [];
+
+    private static IReadOnlyList<string> TagsBlacklist = [];
 
     private CancellationTokenSource? _searchDebounceCts;
 
@@ -37,7 +43,7 @@ public partial class Servers : ComponentBase, IDisposable
             {
                 _allServers = Fetcher.AllServers;
                 _totalCount = _allServers.Count;
-                _availableTags = ExtractTags(_allServers);
+                ExtractTags(_allServers, out _availableTags, out _availableRPTags);
                 ApplyFilters();
                 StateHasChanged();
             });
@@ -94,6 +100,15 @@ public partial class Servers : ComponentBase, IDisposable
             query = query.Where(s => GetTags(s).Any(t => _filters.SelectedTags.Contains(t)));
         }
 
+        if (_filters.SelectedRP.Count > 0)
+        {
+            query = query.Where(s =>
+            {
+                var rpTag = ParseRPTag(GetTags(s).FirstOrDefault(t => t.StartsWith("rp")) ?? "");
+                return _filters.SelectedRP.Contains(rpTag);
+            });
+        }
+
         if (!string.IsNullOrEmpty(_filters.Region))
         {
             query = query.Where(s => GetRegion(s) == _filters.Region);
@@ -138,14 +153,38 @@ public partial class Servers : ComponentBase, IDisposable
         ((IServerSource)Fetcher).UpdateInfoFor(server);
     }
 
-    private static IReadOnlyList<string> ExtractTags(IEnumerable<ServerStatusData> servers)
+    private static void ExtractTags(IEnumerable<ServerStatusData> servers, out IReadOnlyList<string> tags, out IReadOnlyList<string> rpTags)
     {
-        return servers
+        var allTags = servers
             .SelectMany(GetTags)
             .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Where(t => !string.IsNullOrWhiteSpace(t))
             .OrderBy(t => t, StringComparer.OrdinalIgnoreCase)
             .ToList();
+        tags = allTags.Where(t => !t.StartsWith("rp")).ToList();
+        rpTags = [.. allTags.Where(t => t.StartsWith("rp")).Select(x => ParseRPTag(x)).Distinct()];
     }
+
+    public static string ParseRPTag(string tag)
+    {
+        foreach (var kvp in RPTagTypes)
+        {
+            if (kvp.Value.Contains(tag, StringComparer.OrdinalIgnoreCase))
+                return kvp.Key;
+        }
+
+        return tag;
+    }
+
+    private static Dictionary<string, List<string>> RPTagTypes = new()
+    {
+        ["NRP"] = new List<string> { "rp:none", "rp:nrp", "rp" },
+        ["LRP"] = new List<string> { "rp:low", "rp:lrp" },
+        ["MRP"] = new List<string> { "rp:medium", "rp:mrp", "rp:med" },
+        ["HRP"] = new List<string> { "rp:high", "rp:hrp" }
+
+    };
+
     private static int GetPlayers(ServerStatusData s) => s.PlayerCount;
     private static int GetMaxPlayers(ServerStatusData s) => s.SoftMaxPlayerCount;
     private static int GetPing(ServerStatusData s) => (int?)(s.Ping?.TotalMilliseconds) ?? 0;
