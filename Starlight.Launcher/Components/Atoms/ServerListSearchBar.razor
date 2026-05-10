@@ -1,0 +1,104 @@
+@using Starlight.Launcher.Models.ServerStatus
+
+<MudStack Row="true"
+          AlignItems="AlignItems.Center"
+          Justify="Justify.SpaceBetween"
+          Wrap="Wrap.Wrap"
+          Spacing="2">
+
+    <MudStack Row="true"
+              AlignItems="AlignItems.Center"
+              Spacing="2"
+              Wrap="Wrap.Wrap">
+
+        <MudTextField T="string"
+                      Value="Filters.SearchQuery"
+                      ValueChanged="OnSearchChanged"
+                      Placeholder="Search servers..."
+                      Variant="Variant.Text"
+                      Margin="Margin.Dense"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Clearable="true"
+                      Immediate="true"
+                      Class="server-toolbar__search" />
+
+        <MudSelect T="ServerSortMode"
+                   Value="Filters.SortBy"
+                   ValueChanged="OnSortChanged"
+                   Variant="Variant.Text"
+                   Margin="Margin.Dense"
+                   Dense="true"
+                   Class="server-toolbar__sort">
+            <MudSelectItem Value="ServerSortMode.Players">Players</MudSelectItem>
+            <MudSelectItem Value="ServerSortMode.Name">Name</MudSelectItem>
+            <MudSelectItem Value="ServerSortMode.Ping">Ping</MudSelectItem>
+        </MudSelect>
+
+        <MudChipSet T="string" Class="server-toolbar__filters">
+            <MudChip OnClick="ToggleHideEmpty"
+                     Color="@(Filters.HideEmpty ? Color.Primary : Color.Default)"
+                     Variant="@(Filters.HideEmpty ? Variant.Filled : Variant.Text)"
+                     Size="Size.Small">
+                Hide empty
+            </MudChip>
+
+            <MudChip OnClick="ToggleHideFull"
+                     Color="@(Filters.HideFull ? Color.Primary : Color.Default)"
+                     Variant="@(Filters.HideFull ? Variant.Filled : Variant.Text)"
+                     Size="Size.Small">
+                Hide full
+            </MudChip>
+
+            <MudChip OnClick="ToggleHideAdult"
+                     Color="@(Filters.HideAdult ? Color.Primary : Color.Default)"
+                     Variant="@(Filters.HideAdult ? Variant.Filled : Variant.Text)"
+                     Size="Size.Small">
+                Hide 18+
+            </MudChip>
+
+            <MudChip OnClick="ToggleOnlyAdult"
+                     Color="@(Filters.OnlyAdult ? Color.Error : Color.Default)"
+                     Variant="@(Filters.OnlyAdult ? Variant.Filled : Variant.Text)"
+                     Size="Size.Small">
+                Only 18+
+            </MudChip>
+        </MudChipSet>
+
+    </MudStack>
+
+    <MudStack Row="true"
+              AlignItems="AlignItems.Center"
+              Spacing="1">
+
+        @{
+            var (statusText, statusColor) = GetStatusDisplay();
+        }
+
+        <MudTooltip Text="@statusText">
+            <MudIcon Icon="@Icons.Material.Filled.Circle"
+                     Color="statusColor"
+                     Size="Size.Small" />
+        </MudTooltip>
+
+        <MudText Typo="Typo.caption"
+                 Color="Color.Secondary">
+            @FilteredCount / @TotalCount
+        </MudText>
+
+        <MudIconButton Icon="@(Filters.TagsExpanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.Tune)"
+                       Color="@(HasActiveTagFilters ? Color.Primary : Color.Default)"
+                       Variant="Variant.Text"
+                       Size="Size.Small"
+                       OnClick="ToggleTagsExpanded" />
+
+        <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                       Color="Color.Default"
+                       Variant="Variant.Text"
+                       Size="Size.Small"
+                       Disabled="@IsRefreshing"
+                       OnClick="OnRefresh"
+                       Class="@(IsRefreshing ? "mud-spinner" : "")" />
+    </MudStack>
+
+</MudStack>

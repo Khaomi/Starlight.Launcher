@@ -6,6 +6,9 @@ public sealed class ServerListFilters
     public HashSet<string> SelectedRP { get; } = new(StringComparer.OrdinalIgnoreCase);
     public HashSet<string> SelectedLang { get; } = new(StringComparer.OrdinalIgnoreCase);
     public HashSet<string> SelectedRegion { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public bool TagsExpanded { get; set; } = false;
+    public bool HideAdult { get; set; }
+    public bool OnlyAdult { get; set; }
     public bool HideEmpty { get; set; }
     public bool HideFull { get; set; }
     public ServerSortMode SortBy { get; set; } = ServerSortMode.Players;

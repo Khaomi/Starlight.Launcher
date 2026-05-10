@@ -1,0 +1,8 @@
+.server-toolbar__search {
+    min-width: 220px;
+    max-width: 320px;
+}
+
+.server-toolbar__sort {
+    min-width: 120px;
+}

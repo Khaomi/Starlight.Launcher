@@ -1,0 +1,76 @@
+<MudPaper Elevation="0" Square="true" Class="server-toolbar">
+    <MudCollapse Expanded="Filters.TagsExpanded">
+        <div class="server-toolbar__tags-panel">
+
+            @if (AvailableRPTags.Count > 0)
+            {
+                <div class="server-toolbar__tag-section">
+                    <MudText Typo="Typo.caption" Class="server-toolbar__tag-label">RP</MudText>
+                    <div class="server-toolbar__tag-chips">
+                        @foreach (var rpTag in AvailableRPTags)
+                        {
+                            var selected = Filters.SelectedRP.Contains(rpTag);
+                            <MudChip T="string"
+                                     Text="@rpTag"
+                                     Size="Size.Small"
+                                     Color="@(selected ? Color.Primary : Color.Default)"
+                                     Variant="@(selected ? Variant.Filled : Variant.Text)"
+                                     OnClick="@(() => ToggleRP(rpTag))" />
+                        }
+                    </div>
+                </div>
+            }
+
+            @if (AvailableLangTags.Count > 0)
+            {
+                <div class="server-toolbar__tag-section">
+                    <MudText Typo="Typo.caption" Class="server-toolbar__tag-label">Language</MudText>
+                    <div class="server-toolbar__tag-chips">
+                        @foreach (var lang in AvailableLangTags)
+                        {
+                            var selected = Filters.SelectedLang.Contains(lang);
+                            <MudChip T="string"
+                                     Text="@lang"
+                                     Size="Size.Small"
+                                     Color="@(selected ? Color.Primary : Color.Default)"
+                                     Variant="@(selected ? Variant.Filled : Variant.Text)"
+                                     OnClick="@(() => ToggleLang(lang))" />
+                        }
+                    </div>
+                </div>
+            }
+
+            @if (AvailableRegionTags.Count > 0)
+            {
+                <div class="server-toolbar__tag-section">
+                    <MudText Typo="Typo.caption" Class="server-toolbar__tag-label">Region</MudText>
+                    <div class="server-toolbar__tag-chips">
+                        @foreach (var region in AvailableRegionTags)
+                        {
+                            var selected = Filters.SelectedRegion.Contains(region);
+                            <MudChip T="string"
+                                     Text="@region"
+                                     Size="Size.Small"
+                                     Color="@(selected ? Color.Primary : Color.Default)"
+                                     Variant="@(selected ? Variant.Filled : Variant.Text)"
+                                     OnClick="@(() => ToggleRegion(region))" />
+                        }
+                    </div>
+                </div>
+            }
+
+            @if (HasActiveTagFilters)
+            {
+                <div class="server-toolbar__tag-actions">
+                    <MudButton Size="Size.Small"
+                               Variant="Variant.Text"
+                               StartIcon="@Icons.Material.Filled.Clear"
+                               OnClick="ClearTagFilters">
+                        Clear filters
+                    </MudButton>
+                </div>
+            }
+
+        </div>
+    </MudCollapse>
+</MudPaper>

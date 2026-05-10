@@ -1,5 +1,4 @@
 @page "/servers"
-@using Robust.Launcher.Api.Models.ServerStatus
 @using Starlight.Launcher.Services.ServerStatus
 @implements IDisposable
 @inject HubServerFetcher Fetcher
@@ -41,6 +40,10 @@
     }
     else
     {
+        <MudPaper Elevation="0" Square="true" Class="server-toolbar">
+            <ServerListSearchBar Filters="_filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
+            <ServerListTagsBar Filters="_filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
+        </MudPaper>
         @if (Fetcher.Status == RefreshListStatus.PartialError)
         {
             <MudAlert Severity="Severity.Warning" Square="true" Dense="true"
@@ -48,7 +51,6 @@
                 Some hubs could not be reached. The list may be incomplete.
             </MudAlert>
         }
-        <ServerListToolbar Filters="_filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" OnRefresh="HandleRefresh" />
         <div class="server-page__list">
             <MudVirtualize Items="_filteredServers"
                         Context="server"

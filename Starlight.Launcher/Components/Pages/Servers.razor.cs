@@ -111,6 +111,11 @@ public partial class Servers : ComponentBase, IDisposable
             query = query.Where(s => GetLanguage(s) != null && _filters.SelectedLang.Contains(ParseLangTag(GetLanguage(s)!)));
         }
 
+        if (_filters.HideAdult)
+            query = query.Where(s => GetTags(s) is { } tags && !(tags.Contains("18+") || tags.Contains("+18")));
+        else if (_filters.OnlyAdult)
+            query = query.Where(s => GetTags(s) is { } tags && (tags.Contains("18+") || tags.Contains("+18")));
+
         if (_filters.HideEmpty)
             query = query.Where(s => GetPlayers(s) > 0);
         if (_filters.HideFull)

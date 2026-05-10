@@ -4,16 +4,24 @@ using Starlight.Launcher.Services.ServerStatus;
 
 namespace Starlight.Launcher.Components.Atoms;
 
-public partial class ServerListToolbar : ComponentBase
+public partial class ServerListSearchBar : ComponentBase
 {
     [Parameter, EditorRequired] public ServerListFilters Filters { get; set; } = null!;
-    [Parameter] public RefreshListStatus Status { get; set; }
     [Parameter] public int TotalCount { get; set; }
     [Parameter] public int FilteredCount { get; set; }
-    [Parameter] public IReadOnlyList<string> AvailableRPTags { get; set; } = Array.Empty<string>();
-    [Parameter] public IReadOnlyList<string> AvailableLangTags { get; set; } = Array.Empty<string>();
-    [Parameter] public IReadOnlyList<string> AvailableRegionTags { get; set; } = Array.Empty<string>();
+    [Parameter] public RefreshListStatus Status { get; set; }
     [Parameter] public EventCallback OnRefresh { get; set; }
+
+    private bool HasActiveTagFilters =>
+        Filters.SelectedRP.Count > 0 ||
+        Filters.SelectedLang.Count > 0 ||
+        Filters.SelectedRegion.Count > 0;
+
+    private void ToggleTagsExpanded()
+    {
+        Filters.TagsExpanded = !Filters.TagsExpanded;
+        Filters.NotifyChanged();
+    }
 
     private bool IsRefreshing => Status == RefreshListStatus.UpdatingMaster;
 
@@ -41,24 +49,19 @@ public partial class ServerListToolbar : ComponentBase
         Filters.NotifyChanged();
     }
 
-    private void ToggleRP(string rpTag)
+    private void ToggleHideAdult()
     {
-        if (!Filters.SelectedRP.Add(rpTag))
-            Filters.SelectedRP.Remove(rpTag);
+        Filters.HideAdult = !Filters.HideAdult;
+        if (Filters.HideAdult)
+            Filters.OnlyAdult = false;
         Filters.NotifyChanged();
     }
 
-    private void ToggleLang(string langTag)
+    private void ToggleOnlyAdult()
     {
-        if (!Filters.SelectedLang.Add(langTag))
-            Filters.SelectedLang.Remove(langTag);
-        Filters.NotifyChanged();
-    }
-
-    private void ToggleRegion(string regionTag)
-    {
-        if (!Filters.SelectedRegion.Add(regionTag))
-            Filters.SelectedRegion.Remove(regionTag);
+        Filters.OnlyAdult = !Filters.OnlyAdult;
+        if (Filters.OnlyAdult)
+            Filters.HideAdult = false;
         Filters.NotifyChanged();
     }
 

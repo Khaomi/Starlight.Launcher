@@ -21,11 +21,21 @@ public partial class ServerListItem : ComponentBase
     private string RowClass => IsClickable ? "server-row server-row--clickable" : "server-row";
 
     private List<string>? DisplayTags => Data.Tags?
-        .Where(t => !t.StartsWith("region:", StringComparison.OrdinalIgnoreCase)
-                 && !t.StartsWith("lang:", StringComparison.OrdinalIgnoreCase))
-        .Select(t => Servers.ParseRPTag(t))
+        .Select(t => ParseTag(t))
+        .Where(t => !string.IsNullOrEmpty(t))
         .Take(3)
         .ToList();
+
+    private static string ParseTag(string tag)
+    {
+        if (tag.StartsWith("region:", StringComparison.OrdinalIgnoreCase))
+            return Servers.ParseRegionTag(tag);
+        if (tag.StartsWith("lang:", StringComparison.OrdinalIgnoreCase))
+            return Servers.ParseLangTag(tag);
+        if (tag.StartsWith("rp:", StringComparison.OrdinalIgnoreCase))
+            return Servers.ParseRPTag(tag);
+        return "";
+    }
 
     protected override void OnInitialized()
     {
