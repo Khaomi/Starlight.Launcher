@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Serilog;
+using Starlight.Launcher.Models.ServerStatus;
 using Starlight.Launcher.Models.Settings;
 using System.Text.Json;
 
@@ -140,5 +141,20 @@ public class SettingsService : IAsyncDisposable
         _lock.Dispose();
 
         GC.SuppressFinalize(this);
+    }
+
+    public async Task CacheFilters(ServerListFilters filters)
+    {
+        await _lock.WaitAsync();
+        try
+        {
+            _settings.CachedFilters = filters;
+        }
+        finally
+        {
+            _lock.Release();
+        }
+
+        ScheduleSave();
     }
 }

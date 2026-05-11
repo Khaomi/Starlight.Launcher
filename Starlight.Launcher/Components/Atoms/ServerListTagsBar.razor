@@ -4,59 +4,32 @@
 
             @if (AvailableRPTags.Count > 0)
             {
-                <div class="server-toolbar__tag-section">
-                    <MudText Typo="Typo.caption" Class="server-toolbar__tag-label">RP</MudText>
-                    <div class="server-toolbar__tag-chips">
-                        @foreach (var rpTag in AvailableRPTags)
-                        {
-                            var selected = Filters.SelectedRP.Contains(rpTag);
-                            <MudChip T="string"
-                                     Text="@rpTag"
-                                     Size="Size.Small"
-                                     Color="@(selected ? Color.Primary : Color.Default)"
-                                     Variant="@(selected ? Variant.Filled : Variant.Text)"
-                                     OnClick="@(() => ToggleRP(rpTag))" />
-                        }
-                    </div>
-                </div>
+                <MudSelect Variant="Variant.Outlined" Margin="Margin.Dense" T="string" Label="RP Tags" MultiSelection="true" SelectedValues="Filters.SelectedRP" SelectedValuesChanged="OnRPTagsChanged">
+                    @foreach (var rpTag in AvailableRPTags)
+                    {
+                        <MudSelectItem T="string" Value="@rpTag">@rpTag</MudSelectItem>
+                    }
+                </MudSelect>
             }
 
             @if (AvailableLangTags.Count > 0)
             {
-                <div class="server-toolbar__tag-section">
-                    <MudText Typo="Typo.caption" Class="server-toolbar__tag-label">Language</MudText>
-                    <div class="server-toolbar__tag-chips">
-                        @foreach (var lang in AvailableLangTags)
-                        {
-                            var selected = Filters.SelectedLang.Contains(lang);
-                            <MudChip T="string"
-                                     Text="@lang"
-                                     Size="Size.Small"
-                                     Color="@(selected ? Color.Primary : Color.Default)"
-                                     Variant="@(selected ? Variant.Filled : Variant.Text)"
-                                     OnClick="@(() => ToggleLang(lang))" />
-                        }
-                    </div>
-                </div>
+                <MudSelect Variant="Variant.Outlined" Margin="Margin.Dense" T="string" Label="Language Tags" MultiSelection="true" SelectedValues="Filters.SelectedLang" SelectedValuesChanged="OnLangTagsChanged">
+                    @foreach (var langTag in AvailableLangTags)
+                    {
+                        <MudSelectItem T="string" Value="@langTag">@langTag</MudSelectItem>
+                    }
+                </MudSelect>
             }
 
             @if (AvailableRegionTags.Count > 0)
             {
-                <div class="server-toolbar__tag-section">
-                    <MudText Typo="Typo.caption" Class="server-toolbar__tag-label">Region</MudText>
-                    <div class="server-toolbar__tag-chips">
-                        @foreach (var region in AvailableRegionTags)
-                        {
-                            var selected = Filters.SelectedRegion.Contains(region);
-                            <MudChip T="string"
-                                     Text="@region"
-                                     Size="Size.Small"
-                                     Color="@(selected ? Color.Primary : Color.Default)"
-                                     Variant="@(selected ? Variant.Filled : Variant.Text)"
-                                     OnClick="@(() => ToggleRegion(region))" />
-                        }
-                    </div>
-                </div>
+                <MudSelect Variant="Variant.Outlined" Margin="Margin.Dense" T="string" Label="Region Tags" MultiSelection="true" SelectedValues="Filters.SelectedRegion" SelectedValuesChanged="OnRegionTagsChanged">
+                    @foreach (var regionTag in AvailableRegionTags)
+                    {
+                        <MudSelectItem T="string" Value="@regionTag">@regionTag</MudSelectItem>
+                    }
+                </MudSelect>
             }
 
             <div class="server-toolbar__tag-actions-wrapper">

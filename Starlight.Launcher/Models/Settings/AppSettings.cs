@@ -1,3 +1,5 @@
+using Starlight.Launcher.Models.ServerStatus;
+
 namespace Starlight.Launcher.Models.Settings;
 
 public record AppSettings
@@ -27,6 +29,10 @@ public record AppSettings
     /// Determines should we place TAGS bar at the bottom of APP or at the top
     /// </summary>
     public bool ServerListToolBarBottomTagsBar { get; init; } = true;
+    /// <summary>
+    /// Determines should we open TAGS bar by default or it should be closed by default
+    /// </summary>
+    public bool ServerListToolBarTagsBarOpen { get; init; } = true;
     #endregion
     /// <summary>
     /// AutoSave settings?
@@ -40,4 +46,8 @@ public record AppSettings
     /// A list of hub urls to use for server lists
     /// </summary>
     public List<Hub> Hubs { get; init; } = [ new Hub() { HubUri = new Uri("https://hub.spacestation14.com/"), Priority = 0} ];
+
+    #region Cache
+    public ServerListFilters CachedFilters { get; set; } = new ServerListFilters();
+    #endregion
 }

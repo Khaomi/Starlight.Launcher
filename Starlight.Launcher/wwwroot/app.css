@@ -120,6 +120,10 @@
     }
 }
 
+:root {
+    --bottom-nav-height: 64px;
+}
+
 /* =============================================
    STYLES
    ============================================= */
@@ -256,4 +260,9 @@ h1:focus {
 
 .mud-main-content {
     height: 100vh;
+}
+
+.mud-layout.has-bottom-nav .mud-main-content {
+    height: calc(100vh - var(--bottom-nav-height));
+    max-height: calc(100vh - var(--bottom-nav-height));
 }

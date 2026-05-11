@@ -1,26 +1,17 @@
-﻿@using Starlight.Launcher.Services.Settings
-@using Starlight.Launcher.Models.Settings
-@using Starlight.Launcher.Services.State
-
-@inherits LayoutComponentBase
-
-@inject SettingsService Settings
-@inject AppState State
-@inject NavigationManager Navigation
-@implements IDisposable
+﻿@inherits LayoutComponentBase
 
 <MudThemeProvider Theme="_theme" IsDarkMode="_isDarkMode"/>
 <MudPopoverProvider />
 
-<MudLayout>
+<MudLayout Class="@(_bottomNavigation || _isSmallScreen ? "has-bottom-nav" : "")">
     <MudAppBar Elevation="1">
-        @if (_bottomNavigation)
+        @if (_bottomNavigation || _isSmallScreen)
         {
             <MudText Typo="Typo.h5" Class="ml-3">STARLIGHT</MudText>
         }
     </MudAppBar>
 
-    @if (!_bottomNavigation)
+    @if (!_bottomNavigation && !_isSmallScreen)
     {
         <MudDrawer Elevation="1" ClipMode="DrawerClipMode.Never" Open="true" Variant="@DrawerVariant.Responsive">
             <MudDrawerHeader>
@@ -40,7 +31,7 @@
         </MudDrawer>
     }
 
-    <MudMainContent Class="@(_bottomNavigation ? "pb-16" : "")">
+    <MudMainContent Class="@(_bottomNavigation || _isSmallScreen ? "has-bottom-nav" : "")">
         <ErrorBoundary @ref="_errorBoundary">
             <ChildContent>
                 @Body
@@ -53,7 +44,7 @@
         </ErrorBoundary>
     </MudMainContent>
 
-    @if (_bottomNavigation)
+    @if (_bottomNavigation || _isSmallScreen)
     {
         <MudAppBar Bottom="true" Fixed="true" Elevation="3">
             <div class="bottom-nav">
@@ -86,270 +77,3 @@
     <a href="" class="reload">Reload</a>
     <a class="dismiss">🗙</a>
 </div>
-
-@code {
-    private ErrorBoundary? _errorBoundary;
-    private string ThemeAttr => _isDarkMode ? "dark" : "light";
-    private bool _isDarkMode;
-    private bool _bottomNavigation;
-    private MudTheme _theme = new()
-    {
-        PaletteLight = new PaletteLight()
-        {
-            Primary = "#10B981",
-            PrimaryDarken = "#059669",
-            PrimaryLighten = "#34D399",
-            PrimaryContrastText = "rgba(255,255,255,1)",
-
-            Secondary = "#F43F5E",
-            SecondaryDarken = "#E11D48",
-            SecondaryLighten = "#FB7185",
-            SecondaryContrastText = "rgba(255,255,255,1)",
-
-            Tertiary = "#0891B2",
-            TertiaryDarken = "#0E7490",
-            TertiaryLighten = "#22D3EE",
-            TertiaryContrastText = "rgba(255,255,255,1)",
-
-            Info = "#0EA5E9",
-            InfoDarken = "#0284C7",
-            InfoLighten = "#38BDF8",
-            InfoContrastText = "rgba(255,255,255,1)",
-
-            Success = "#10B981",
-            SuccessDarken = "#059669",
-            SuccessLighten = "#34D399",
-            SuccessContrastText = "rgba(255,255,255,1)",
-
-            Warning = "#F59E0B",
-            WarningDarken = "#D97706",
-            WarningLighten = "#FBBF24",
-            WarningContrastText = "rgba(255,255,255,1)",
-
-            Error = "#EF4444",
-            ErrorDarken = "#DC2626",
-            ErrorLighten = "#F87171",
-            ErrorContrastText = "rgba(255,255,255,1)",
-
-            Dark = "#1E293B",
-            DarkDarken = "#0F172A",
-            DarkLighten = "#334155",
-            DarkContrastText = "rgba(255,255,255,1)",
-
-            Background = "rgba(241,245,249,0.85)",      // slate-100
-            Surface = "rgba(248,250,252,0.9)",           // slate-50
-            DrawerBackground = "rgba(241,245,249,0.85)",
-            AppbarBackground = "rgba(241,245,249,0.75)",
-
-            TextPrimary = "rgba(15,23,42,0.92)",         // slate-900
-            TextSecondary = "rgba(71,85,105,0.85)",      // slate-600
-            TextDisabled = "rgba(15,23,42,0.38)",
-
-            DrawerText = "rgba(30,41,59,0.92)",          // slate-800
-            DrawerIcon = "rgba(71,85,105,0.75)",
-            AppbarText = "rgba(30,41,59,0.87)",
-
-            Divider = "rgba(148,163,184,0.25)",          // slate-400
-            DividerLight = "rgba(148,163,184,0.12)",
-            LinesDefault = "rgba(203,213,225,1)",        // slate-300
-            LinesInputs = "rgba(148,163,184,0.4)",
-
-            ActionDefault = "rgba(71,85,105,0.85)",
-            ActionDisabled = "rgba(15,23,42,0.26)",
-            ActionDisabledBackground = "rgba(15,23,42,0.08)",
-
-            TableLines = "rgba(148,163,184,0.2)",
-            TableStriped = "rgba(148,163,184,0.08)",
-            TableHover = "rgba(16,185,129,0.06)",
-
-            OverlayDark = "rgba(15,23,42,0.5)",
-            OverlayLight = "rgba(248,250,252,0.5)",
-
-            GrayDefault = "#64748B",
-            GrayLight = "#94A3B8",
-            GrayLighter = "#CBD5E1",
-            GrayDark = "#475569",
-            GrayDarker = "#334155",
-
-            Black = "#0F172A",
-            White = "rgba(255,255,255,1)",
-        },
-        PaletteDark = new PaletteDark()
-        {
-            Primary = "#34D399",
-            PrimaryDarken = "#10B981",
-            PrimaryLighten = "#6EE7B7",
-            PrimaryContrastText = "rgba(4,18,12,1)",
-
-            Secondary = "#FB7185",
-            SecondaryDarken = "#F43F5E",
-            SecondaryLighten = "#FDA4AF",
-            SecondaryContrastText = "rgba(255,255,255,1)",
-
-            Tertiary = "#22D3EE",
-            TertiaryDarken = "#06B6D4",
-            TertiaryLighten = "#67E8F9",
-            TertiaryContrastText = "rgba(4,18,20,1)",
-
-            Info = "#38BDF8",
-            InfoDarken = "#0EA5E9",
-            InfoLighten = "#7DD3FC",
-            InfoContrastText = "rgba(255,255,255,1)",
-
-            Success = "#34D399",
-            SuccessDarken = "#10B981",
-            SuccessLighten = "#6EE7B7",
-            SuccessContrastText = "rgba(4,18,12,1)",
-
-            Warning = "#FBBF24",
-            WarningDarken = "#F59E0B",
-            WarningLighten = "#FCD34D",
-            WarningContrastText = "rgba(20,14,4,1)",
-
-            Error = "#F87171",
-            ErrorDarken = "#EF4444",
-            ErrorLighten = "#FCA5A5",
-            ErrorContrastText = "rgba(255,255,255,1)",
-
-            Dark = "rgba(15,23,42,1)",
-            DarkDarken = "rgba(8,12,24,1)",
-            DarkLighten = "rgba(30,41,59,1)",
-            DarkContrastText = "rgba(255,255,255,1)",
-
-            Background = "rgba(10,15,20,0.88)",
-            Surface = "rgba(15,23,32,0.85)",
-            DrawerBackground = "rgba(10,15,20,0.85)",
-            AppbarBackground = "rgba(10,15,20,0.75)",
-
-            TextPrimary = "rgba(226,232,240,0.95)",      // slate-200
-            TextSecondary = "rgba(148,163,184,0.9)",     // slate-400
-            TextDisabled = "rgba(255,255,255,0.3)",
-
-            DrawerText = "rgba(226,232,240,0.92)",
-            DrawerIcon = "rgba(148,163,184,0.75)",
-            AppbarText = "rgba(226,232,240,0.85)",
-
-            Divider = "rgba(148,163,184,0.18)",
-            DividerLight = "rgba(148,163,184,0.08)",
-            LinesDefault = "rgba(30,41,59,1)",
-            LinesInputs = "rgba(148,163,184,0.25)",
-
-            ActionDefault = "rgba(203,213,225,0.85)",
-            ActionDisabled = "rgba(255,255,255,0.26)",
-            ActionDisabledBackground = "rgba(255,255,255,0.1)",
-
-            TableLines = "rgba(148,163,184,0.12)",
-            TableStriped = "rgba(148,163,184,0.05)",
-            TableHover = "rgba(52,211,153,0.08)",
-
-            OverlayDark = "rgba(8,12,24,0.6)",
-            OverlayLight = "rgba(255,255,255,0.4)",
-
-            GrayDefault = "#94A3B8",
-            GrayLight = "#CBD5E1",
-            GrayLighter = "#E2E8F0",
-            GrayDark = "#64748B",
-            GrayDarker = "#334155",
-
-            Black = "rgba(15,23,42,1)",
-            White = "rgba(255,255,255,1)",
-        },
-
-        Typography = new Typography
-        {
-            // Garamond for Headings, Inter for everything else. Both are free, high-quality, and have good language support.
-            Default = new DefaultTypography()
-            {
-                FontFamily = new[] { "Inter" },
-                FontSize = ".875rem",
-                FontWeight = "400",
-                LineHeight = "1.43",
-                LetterSpacing = ".01071em",
-            },
-            H1 = new H1Typography() { FontFamily = new[] { "Cormorant Garamond" }, FontSize = "5.5rem", FontWeight = "500", LineHeight = "1.1", LetterSpacing = "-0.02em" },
-            H2 = new H2Typography() { FontFamily = new[] { "Cormorant Garamond" }, FontSize = "3.5rem", FontWeight = "500", LineHeight = "1.15", LetterSpacing = "-0.015em" },
-            H3 = new H3Typography() { FontFamily = new[] { "Cormorant Garamond" }, FontSize = "2.75rem", FontWeight = "500", LineHeight = "1.2", LetterSpacing = "-0.01em" },
-            H4 = new H4Typography() { FontFamily = new[] { "Cormorant Garamond" }, FontSize = "2rem", FontWeight = "500", LineHeight = "1.25", LetterSpacing = "-0.005em" },
-            H5 = new H5Typography() { FontFamily = new[] { "Cormorant Garamond" }, FontSize = "1.5rem", FontWeight = "600", LineHeight = "1.3", LetterSpacing = "0" },
-            H6 = new H6Typography() { FontFamily = new[] { "Cormorant Garamond" }, FontSize = "1.25rem", FontWeight = "600", LineHeight = "1.4", LetterSpacing = "0" },
-
-            Subtitle1 = new Subtitle1Typography() { FontFamily = new[] { "Inter" }, FontSize = "1rem", FontWeight = "500", LineHeight = "1.6", LetterSpacing = "0" },
-            Subtitle2 = new Subtitle2Typography() { FontFamily = new[] { "Inter" }, FontSize = "0.875rem", FontWeight = "500", LineHeight = "1.55", LetterSpacing = "0" },
-
-            Body1 = new Body1Typography() { FontFamily = new[] { "Inter" }, FontSize = "1rem", FontWeight = "400", LineHeight = "1.6", LetterSpacing = "0" },
-            Body2 = new Body2Typography() { FontFamily = new[] { "Inter" }, FontSize = "0.875rem", FontWeight = "400", LineHeight = "1.55", LetterSpacing = "0" },
-
-            Button = new ButtonTypography() { FontFamily = new[] { "Inter" }, FontSize = "0.875rem", FontWeight = "500", LineHeight = "1", LetterSpacing = "0.02em", TextTransform = "none" },
-            Caption = new CaptionTypography() { FontFamily = new[] { "Inter" }, FontSize = "0.75rem", FontWeight = "400", LineHeight = "1.5", LetterSpacing = "0.01em" },
-            Overline = new OverlineTypography() { FontFamily = new[] { "Inter" }, FontSize = "0.7rem", FontWeight = "600", LineHeight = "1.5", LetterSpacing = "0.12em", TextTransform = "uppercase" },
-        },
-
-        LayoutProperties = new LayoutProperties
-        {
-            DefaultBorderRadius = "8px",
-            DrawerWidthLeft = "240px",
-            DrawerWidthRight = "240px",
-            DrawerMiniWidthLeft = "56px",
-            DrawerMiniWidthRight = "56px",
-            AppbarHeight = "64px",
-        },
-
-        ZIndex = new ZIndex
-        {
-            Drawer = 1100,
-            AppBar = 1300,
-            Dialog = 1400,
-            Popover = 1200,
-            Snackbar = 1500,
-            Tooltip = 1600,
-        },
-    };
-
-    protected override void OnParametersSet()
-    {
-        _errorBoundary?.Recover();
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-        var settings = await Settings.GetSettingsAsync();
-        _isDarkMode = settings.Theme == AppTheme.Light ? false : true;
-        _bottomNavigation = settings.BottomNavigation;
-        State.OnChange += AppCalledRepaint;
-    }
-
-    private bool IsActive(string href, NavLinkMatch match = NavLinkMatch.Prefix)
-    {
-        var current = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0];
-        current = "/" + current.TrimEnd('/');
-        var target = href.TrimEnd('/');
-        if (string.IsNullOrEmpty(target)) target = "/";
-
-        return match == NavLinkMatch.All
-            ? string.Equals(current, target, StringComparison.OrdinalIgnoreCase)
-            : current.StartsWith(target, StringComparison.OrdinalIgnoreCase);
-    }
-
-    private void AppCalledRepaint()
-    {
-        _ = InvokeAsync(async () =>
-        {
-            var settings = await Settings.GetSettingsAsync();
-            _isDarkMode = settings.Theme != AppTheme.Light;
-            _bottomNavigation = settings.BottomNavigation;
-            StateHasChanged();
-        });
-    }
-
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
-        => InvokeAsync(StateHasChanged);
-
-    protected override void OnInitialized()
-        => Navigation.LocationChanged += OnLocationChanged;
-
-    public void Dispose()
-    {
-        Navigation.LocationChanged -= OnLocationChanged;
-        State.OnChange -= AppCalledRepaint;
-    }
-}

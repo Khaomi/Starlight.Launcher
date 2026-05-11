@@ -13,37 +13,38 @@ public partial class ServerListTagsBar : ComponentBase
     [Parameter] public bool HasSearchAbove { get; set; }
     [Parameter] public bool HasSearchBelow { get; set; }
 
+    private void OnRPTagsChanged(IReadOnlyCollection<string?>? strings)
+    {
+        Filters.SelectedRP = new (
+            (strings ?? Enumerable.Empty<string?>()).Where(s => s is not null)!);
+        Filters.NotifyChanged();
+    }
+
+    private void OnLangTagsChanged(IReadOnlyCollection<string?>? strings)
+    {
+        Filters.SelectedLang = new (
+            (strings ?? Enumerable.Empty<string?>()).Where(s => s is not null)!);
+        Filters.NotifyChanged();
+    }
+
+    private void OnRegionTagsChanged(IReadOnlyCollection<string?>? strings)
+    {
+        Filters.SelectedRegion = new (
+            (strings ?? Enumerable.Empty<string?>()).Where(s => s is not null)!);
+        Filters.NotifyChanged();
+    }
+
     private bool HasActiveTagFilters =>
         Filters.SelectedRP.Count > 0 ||
         Filters.SelectedLang.Count > 0 ||
         Filters.SelectedRegion.Count > 0;
 
-    private void ToggleRP(string rpTag)
-    {
-        if (!Filters.SelectedRP.Add(rpTag))
-            Filters.SelectedRP.Remove(rpTag);
-        Filters.NotifyChanged();
-    }
-
-    private void ToggleLang(string langTag)
-    {
-        if (!Filters.SelectedLang.Add(langTag))
-            Filters.SelectedLang.Remove(langTag);
-        Filters.NotifyChanged();
-    }
-
-    private void ToggleRegion(string regionTag)
-    {
-        if (!Filters.SelectedRegion.Add(regionTag))
-            Filters.SelectedRegion.Remove(regionTag);
-        Filters.NotifyChanged();
-    }
-
     private void ClearTagFilters()
     {
-        Filters.SelectedRP.Clear();
-        Filters.SelectedLang.Clear();
-        Filters.SelectedRegion.Clear();
+        Filters.SelectedRP = new HashSet<string>();
+        Filters.SelectedLang = new HashSet<string>();
+        Filters.SelectedRegion = new HashSet<string>();
         Filters.NotifyChanged();
+        StateHasChanged();
     }
 }

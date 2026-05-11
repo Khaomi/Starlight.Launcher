@@ -3,10 +3,10 @@ namespace Starlight.Launcher.Models.ServerStatus;
 public sealed class ServerListFilters
 {
     public string SearchQuery { get; set; } = "";
-    public HashSet<string> SelectedRP { get; } = new(StringComparer.OrdinalIgnoreCase);
-    public HashSet<string> SelectedLang { get; } = new(StringComparer.OrdinalIgnoreCase);
-    public HashSet<string> SelectedRegion { get; } = new(StringComparer.OrdinalIgnoreCase);
-    public bool TagsExpanded { get; set; } = false;
+    public HashSet<string> SelectedRP { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public HashSet<string> SelectedLang { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public HashSet<string> SelectedRegion { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public bool TagsExpanded { get; set; } = true;
     public bool HideAdult { get; set; }
     public bool OnlyAdult { get; set; }
     public bool HideEmpty { get; set; }

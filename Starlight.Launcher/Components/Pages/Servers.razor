@@ -23,21 +23,6 @@
             </MudButton>
         </div>
     }
-    else if (_filteredServers.Count == 0)
-    {
-        <div class="server-page__state">
-            <MudIcon Icon="@Icons.Material.Filled.SearchOff" Size="Size.Large" Color="Color.Default" />
-            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                @(_totalCount == 0 ? "No servers online right now." : "No servers match your filters.")
-            </MudText>
-            @if (_totalCount > 0)
-            {
-                <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="ClearFilters">
-                    Clear filters
-                </MudButton>
-            }
-        </div>
-    }
     else
     {
         @if (!BottomSearchBar || !BottomTagsBar)
@@ -45,15 +30,15 @@
             <MudPaper Elevation="0" Square="true" Class="server-toolbar">
                 @if (!BottomSearch && !BottomSearchBar)
                 {
-                    <ServerListSearchBar Filters="_filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
+                    <ServerListSearchBar Filters="Filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
                 }
                 @if (!BottomTagsBar)
                 {
-                    <ServerListTagsBar HasSearchAbove="!BottomSearch && !BottomSearchBar" HasSearchBelow="BottomSearch && !BottomSearchBar" Filters="_filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
+                    <ServerListTagsBar HasSearchAbove="!BottomSearch && !BottomSearchBar" HasSearchBelow="BottomSearch && !BottomSearchBar" Filters="Filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
                 }
                 @if (BottomSearch && !BottomSearchBar)
                 {
-                    <ServerListSearchBar Filters="_filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
+                    <ServerListSearchBar Filters="Filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
                 }
             </MudPaper>
         }
@@ -64,30 +49,48 @@
                 Some hubs could not be reached. The list may be incomplete.
             </MudAlert>
         }
-        <div class="server-page__list">
-            <MudVirtualize Items="_filteredServers"
-                        Context="server"
-                        ItemSize="56"
-                        OverscanCount="3">
-                <ServerListItem @key="server.Address" Data="server"
-                                OnClick="HandleServerClick"
-                                OnInfoNeeded="HandleInfoNeeded" />
-            </MudVirtualize>
-        </div>
+        if (_filteredServers.Count == 0)
+        {
+            <div class="server-page__state">
+                <MudIcon Icon="@Icons.Material.Filled.SearchOff" Size="Size.Large" Color="Color.Default" />
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    @(_totalCount == 0 ? "No servers online right now." : "No servers match your filters.")
+                </MudText>
+                @if (_totalCount > 0)
+                {
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="ClearFilters">
+                        Clear filters
+                    </MudButton>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="server-page__list">
+                <MudVirtualize Items="_filteredServers"
+                Context="server"
+                ItemSize="56"
+                OverscanCount="3">
+                    <ServerListItem @key="server.Address" Data="server"
+                    OnClick="HandleServerClick"
+                    OnInfoNeeded="HandleInfoNeeded" />
+                </MudVirtualize>
+            </div>
+        }
         @if (BottomSearchBar || BottomTagsBar)
         {
             <MudPaper Elevation="0" Square="true" Class="server-toolbar">
                 @if (!BottomSearch && BottomSearchBar)
                 {
-                    <ServerListSearchBar Filters="_filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
+                    <ServerListSearchBar Filters="Filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
                 }
                 @if (BottomTagsBar)
                 {
-                    <ServerListTagsBar HasSearchAbove="!BottomSearch && BottomSearchBar" HasSearchBelow="BottomSearch && BottomSearchBar" IsBottom="true" Filters="_filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
+                    <ServerListTagsBar HasSearchAbove="!BottomSearch && BottomSearchBar" HasSearchBelow="BottomSearch && BottomSearchBar" IsBottom="true" Filters="Filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
                 }
                 @if (BottomSearch && BottomSearchBar)
                 {
-                    <ServerListSearchBar Filters="_filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
+                    <ServerListSearchBar Filters="Filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
                 }
             </MudPaper>
         }

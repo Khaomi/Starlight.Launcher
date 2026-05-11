@@ -10,7 +10,7 @@ namespace Starlight.Launcher.Components.Pages;
 public partial class Servers : ComponentBase, IDisposable
 {
     [Inject] SettingsService Settings { get; set; } = null!;
-    private readonly ServerListFilters _filters = new();
+    private ServerListFilters Filters = new();
     private readonly CancellationTokenSource _disposeCts = new();
 
     private IReadOnlyList<ServerStatusData> _allServers = Array.Empty<ServerStatusData>();
@@ -35,7 +35,9 @@ public partial class Servers : ComponentBase, IDisposable
         BottomTagsBar = settings.ServerListToolBarBottomTagsBar;
         Fetcher.ServersChanged += OnServersChanged;
         Fetcher.StatusChanged += OnStatusChanged;
-        _filters.Changed += OnFiltersChanged;
+        Filters = settings.CachedFilters;
+        Filters.TagsExpanded = settings.ServerListToolBarTagsBarOpen;
+        Filters.Changed += OnFiltersChanged;
 
         RebuildFromFetcher();
 
@@ -99,44 +101,44 @@ public partial class Servers : ComponentBase, IDisposable
     {
         IEnumerable<ServerStatusData> query = _allServers;
 
-        if (!string.IsNullOrWhiteSpace(_filters.SearchQuery))
+        if (!string.IsNullOrWhiteSpace(Filters.SearchQuery))
         {
-            var q = _filters.SearchQuery.Trim();
+            var q = Filters.SearchQuery.Trim();
             query = query.Where(s =>
                 (s.Name?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
                 s.Address.Contains(q, StringComparison.OrdinalIgnoreCase));
         }
 
-        if (_filters.SelectedRP.Count > 0)
+        if (Filters.SelectedRP.Count > 0)
         {
             query = query.Where(s =>
             {
                 var rpTag = ParseRPTag(GetTags(s).FirstOrDefault(t => t.StartsWith("rp")) ?? "");
-                return _filters.SelectedRP.Contains(rpTag);
+                return Filters.SelectedRP.Contains(rpTag);
             });
         }
 
-        if (_filters.SelectedRegion.Count > 0)
+        if (Filters.SelectedRegion.Count > 0)
         {
-            query = query.Where(s => GetRegion(s) != null && _filters.SelectedRegion.Contains(ParseRegionTag(GetRegion(s)!)));
+            query = query.Where(s => GetRegion(s) != null && Filters.SelectedRegion.Contains(ParseRegionTag(GetRegion(s)!)));
         }
 
-        if (_filters.SelectedLang.Count > 0)
+        if (Filters.SelectedLang.Count > 0)
         {
-            query = query.Where(s => GetLanguage(s) != null && _filters.SelectedLang.Contains(ParseLangTag(GetLanguage(s)!)));
+            query = query.Where(s => GetLanguage(s) != null && Filters.SelectedLang.Contains(ParseLangTag(GetLanguage(s)!)));
         }
 
-        if (_filters.HideAdult)
+        if (Filters.HideAdult)
             query = query.Where(s => GetTags(s) is { } tags && !(tags.Contains("18+") || tags.Contains("+18")));
-        else if (_filters.OnlyAdult)
+        else if (Filters.OnlyAdult)
             query = query.Where(s => GetTags(s) is { } tags && (tags.Contains("18+") || tags.Contains("+18")));
 
-        if (_filters.HideEmpty)
+        if (Filters.HideEmpty)
             query = query.Where(s => GetPlayers(s) > 0);
-        if (_filters.HideFull)
+        if (Filters.HideFull)
             query = query.Where(s => GetPlayers(s) < GetMaxPlayers(s));
 
-        query = _filters.SortBy switch
+        query = Filters.SortBy switch
         {
             ServerSortMode.Players => query.OrderByDescending(GetPlayers),
             ServerSortMode.Name => query.OrderBy(s => s.Name ?? s.Address, StringComparer.OrdinalIgnoreCase),
@@ -144,19 +146,21 @@ public partial class Servers : ComponentBase, IDisposable
             _ => query,
         };
 
-        _filteredServers = query.ToList();
+        _filteredServers = [.. query];
+
+        Settings.CacheFilters(Filters).GetAwaiter().GetResult();
     }
 
     private void HandleRefresh() => Fetcher.RequestRefresh();
 
     private void ClearFilters()
     {
-        _filters.SearchQuery = "";
-        _filters.SelectedRP.Clear();
-        _filters.SelectedLang.Clear();
-        _filters.SelectedRegion.Clear();
-        _filters.HideEmpty = false;
-        _filters.HideFull = false;
+        Filters.SearchQuery = "";
+        Filters.SelectedRP.Clear();
+        Filters.SelectedLang.Clear();
+        Filters.SelectedRegion.Clear();
+        Filters.HideEmpty = false;
+        Filters.HideFull = false;
         ApplyFilters();
     }
 
@@ -276,7 +280,7 @@ public partial class Servers : ComponentBase, IDisposable
     {
         Fetcher.ServersChanged -= OnServersChanged;
         Fetcher.StatusChanged -= OnStatusChanged;
-        _filters.Changed -= OnFiltersChanged;
+        Filters.Changed -= OnFiltersChanged;
         _disposeCts.Cancel();
         _disposeCts.Dispose();
         _searchDebounceCts?.Dispose();

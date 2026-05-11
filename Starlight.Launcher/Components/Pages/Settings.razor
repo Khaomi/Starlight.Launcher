@@ -11,15 +11,21 @@
 <MudTabs Elevation="0" ApplyEffectsToContainer="true" Class="settings-tabs" PanelClass="pa-6">
     <MudTabPanel Text="General">
         <MudContainer MaxWidth="MaxWidth.Small" Class="pa-0">
-            <MudText Typo="Typo.overline" Class="mud-text-secondary mb-2">Appearance</MudText>
-            <SettingsBoolOption Title="Dark theme" Description="Use a darker color scheme across the app" Icon="@Icons.Material.Filled.DarkMode" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings(s => s.Theme == AppTheme.Dark)" SelfValueControlAction="x => OnBoolSettingChanged(x, null, (s, v) => s with { Theme = v ? AppTheme.Dark : AppTheme.Light })" />
-            <SettingsBoolOption Title="Bottom Search" Description="Place search bar at the bottom of the toolbar(when tags bar and search bar together)" Icon="@Icons.Material.Filled.VerticalAlignBottom" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings(s => s.ServerListToolbarBottomSearch)" SelfValueControlAction="x => OnBoolSettingChanged(x, null, (s, v) => s with { ServerListToolbarBottomSearch = v})" />
-            <SettingsBoolOption Title="Bottom Search Bar" Description="Place search bar at the bottom of the server list" Icon="@Icons.Material.Filled.VerticalAlignBottom" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings(s => s.ServerListToolBarBottomSearchBar)" SelfValueControlAction="x => OnBoolSettingChanged(x, null, (s, v) => s with { ServerListToolBarBottomSearchBar = v })" />
-            <SettingsBoolOption Title="Bottom Tags Bar" Description="Place tags bar at the bottom of the server list" Icon="@Icons.Material.Filled.VerticalAlignBottom" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings(s => s.ServerListToolBarBottomTagsBar)" SelfValueControlAction="x => OnBoolSettingChanged(x, null, (s, v) => s with { ServerListToolBarBottomTagsBar = v })" />
             <MudText Typo="Typo.overline" Class="mud-text-secondary mb-2">Layout</MudText>
             <SettingsBoolOption Title="Bottom navigation" Description="Show the navigation bar at the bottom of the screen" Icon="@Icons.Material.Filled.MenuOpen" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings(s => s.BottomNavigation)" SelfValueControlAction="x => OnBoolSettingChanged(x, null, (s, v) => s with { BottomNavigation = v})" />
             <MudText Typo="Typo.overline" Class="mud-text-secondary mb-2">Hub</MudText>
             <SettingsStringListOption Value="Hubs" ValueChanged="OnHubsChanged" Title="Hub list" Description="Manage hubs used in the app" Icon="@Icons.Material.Filled.Hub" />
+        </MudContainer>
+    </MudTabPanel>
+    <MudTabPanel Text="Appearance">
+        <MudContainer MaxWidth="MaxWidth.Small" Class="pa-0">
+            <MudText Typo="Typo.overline" Class="mud-text-secondary mb-2">General</MudText>
+            <SettingsBoolOption Title="Dark theme" Description="Use a darker color scheme across the app" Icon="@Icons.Material.Filled.DarkMode" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings(s => s.Theme == AppTheme.Dark)" SelfValueControlAction="x => OnBoolSettingChanged(x, null, (s, v) => s with { Theme = v ? AppTheme.Dark : AppTheme.Light })" />
+            <MudText Typo="Typo.overline" Class="mud-text-secondary mb-2">Server List</MudText>
+            <SettingsBoolOption Title="Bottom Search" Description="Place search bar at the bottom of the toolbar(when tags bar and search bar together)" Icon="@Icons.Material.Filled.Search" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings(s => s.ServerListToolbarBottomSearch)" SelfValueControlAction="x => OnBoolSettingChanged(x, null, (s, v) => s with { ServerListToolbarBottomSearch = v })" />
+            <SettingsBoolOption Title="Bottom Search Bar" Description="Place search bar at the bottom of the server list" Icon="@Icons.Material.Filled.YoutubeSearchedFor" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings(s => s.ServerListToolBarBottomSearchBar)" SelfValueControlAction="x => OnBoolSettingChanged(x, null, (s, v) => s with { ServerListToolBarBottomSearchBar = v })" />
+            <SettingsBoolOption Title="Bottom Tags Bar" Description="Place tags bar at the bottom of the server list" Icon="@Icons.Material.Filled.VerticalAlignBottom" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings(s => s.ServerListToolBarBottomTagsBar)" SelfValueControlAction="x => OnBoolSettingChanged(x, null, (s, v) => s with { ServerListToolBarBottomTagsBar = v })" />
+            <SettingsBoolOption Title="Tags Bar Open" Description="Should we keep tags bar open by default?" Icon="@Icons.Material.Filled.OpenInBrowser" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings(s => s.ServerListToolBarTagsBarOpen)" SelfValueControlAction="x => OnBoolSettingChanged(x, null, (s, v) => s with { ServerListToolBarTagsBarOpen = v })" />
         </MudContainer>
     </MudTabPanel>
 </MudTabs>
