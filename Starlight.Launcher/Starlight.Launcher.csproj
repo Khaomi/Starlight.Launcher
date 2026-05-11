@@ -23,6 +23,7 @@
         <ApplicationTitle>Starlight.Launcher</ApplicationTitle>
 
         <ApplicationId>com.starlight.launcher</ApplicationId>
+		<PublisherDisplayName>Starlight</PublisherDisplayName>
 
         <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
         <ApplicationVersion>1</ApplicationVersion>
@@ -32,6 +33,7 @@
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">17.0</SupportedOSPlatformVersion>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
         <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+        <DefaultLanguage>en-US</DefaultLanguage>
     </PropertyGroup>
 
     <ItemGroup>
@@ -60,7 +62,7 @@
     </ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Robust.Launcher.Api\Robust.Launcher.Api.csproj"/>
+		<ProjectReference Include="..\Robust.Launcher.Api\Robust.Launcher.Api.csproj" />
 	</ItemGroup>
 
 </Project>
