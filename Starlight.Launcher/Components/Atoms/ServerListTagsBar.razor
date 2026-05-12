@@ -4,7 +4,7 @@
 
             @if (AvailableRPTags.Count > 0)
             {
-                <MudSelect Variant="Variant.Outlined" Margin="Margin.Dense" T="string" Label="RP Tags" MultiSelection="true" SelectedValues="Filters.SelectedRP" SelectedValuesChanged="OnRPTagsChanged">
+                <MudSelect Variant="Variant.Outlined" Margin="Margin.Dense" T="string" Label="@Localization["servers-list-tags-bar-rp-tags-label"]" MultiSelection="true" SelectedValues="Filters.SelectedRP" SelectedValuesChanged="OnRPTagsChanged">
                     @foreach (var rpTag in AvailableRPTags)
                     {
                         <MudSelectItem T="string" Value="@rpTag">@rpTag</MudSelectItem>
@@ -14,7 +14,7 @@
 
             @if (AvailableLangTags.Count > 0)
             {
-                <MudSelect Variant="Variant.Outlined" Margin="Margin.Dense" T="string" Label="Language Tags" MultiSelection="true" SelectedValues="Filters.SelectedLang" SelectedValuesChanged="OnLangTagsChanged">
+                <MudSelect Variant="Variant.Outlined" Margin="Margin.Dense" T="string" Label="@Localization["servers-list-tags-bar-lang-tags-label"]" MultiSelection="true" SelectedValues="Filters.SelectedLang" SelectedValuesChanged="OnLangTagsChanged">
                     @foreach (var langTag in AvailableLangTags)
                     {
                         <MudSelectItem T="string" Value="@langTag">@langTag</MudSelectItem>
@@ -24,7 +24,7 @@
 
             @if (AvailableRegionTags.Count > 0)
             {
-                <MudSelect Variant="Variant.Outlined" Margin="Margin.Dense" T="string" Label="Region Tags" MultiSelection="true" SelectedValues="Filters.SelectedRegion" SelectedValuesChanged="OnRegionTagsChanged">
+                <MudSelect Variant="Variant.Outlined" Margin="Margin.Dense" T="string" Label="@Localization["servers-list-tags-bar-region-tags-label"]" MultiSelection="true" SelectedValues="Filters.SelectedRegion" SelectedValuesChanged="OnRegionTagsChanged">
                     @foreach (var regionTag in AvailableRegionTags)
                     {
                         <MudSelectItem T="string" Value="@regionTag">@regionTag</MudSelectItem>
@@ -39,7 +39,7 @@
                                    Variant="Variant.Text"
                                    StartIcon="@Icons.Material.Filled.Clear"
                                    OnClick="ClearTagFilters">
-                            Clear filters
+                            @Localization["servers-list-tags-bar-clear-filters"]
                         </MudButton>
                     </div>
                 </MudCollapse>

@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Starlight.Launcher.Models.ServerStatus;
+using Starlight.Launcher.Services.Localization;
 
 namespace Starlight.Launcher.Components.Atoms;
 
 public partial class ServerListTagsBar : ComponentBase
 {
+    [Inject] LocalizationManager Localization { get; set; } = null!;
     [Parameter, EditorRequired] public ServerListFilters Filters { get; set; } = null!;
     [Parameter] public IReadOnlyList<string> AvailableRPTags { get; set; } = Array.Empty<string>();
     [Parameter] public IReadOnlyList<string> AvailableLangTags { get; set; } = Array.Empty<string>();
