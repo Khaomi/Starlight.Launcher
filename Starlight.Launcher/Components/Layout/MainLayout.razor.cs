@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.AspNetCore.Components.Web;
 using MudBlazor;
 using MudBlazor.Services;
+using Starlight.Launcher.Models.Settings;
 using Starlight.Launcher.Services.Settings;
 using Starlight.Launcher.Services.State;
 
@@ -23,7 +24,7 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowse
 
     private ErrorBoundary? _errorBoundary;
     private bool _isDarkMode;
-    private bool _bottomNavigation;
+    private AppNavigationPosition _navigation;
     private MudTheme _theme = new()
     {
         PaletteLight = new PaletteLight()
@@ -246,7 +247,7 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowse
     {
         var settings = await Settings.GetSettingsAsync();
         _isDarkMode = settings.Theme == AppTheme.Light ? false : true;
-        _bottomNavigation = settings.BottomNavigation;
+        _navigation = settings.Navigation;
         State.OnChange += AppCalledRepaint;
     }
 
@@ -268,7 +269,7 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowse
         {
             var settings = await Settings.GetSettingsAsync();
             _isDarkMode = settings.Theme != AppTheme.Light;
-            _bottomNavigation = settings.BottomNavigation;
+            _navigation = settings.Navigation;
             StateHasChanged();
         });
     }

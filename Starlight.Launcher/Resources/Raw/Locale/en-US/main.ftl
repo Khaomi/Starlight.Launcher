@@ -1,1 +1,1 @@
-test-localization = This is a test localization string.
+settings-menu-language-option = Language

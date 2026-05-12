@@ -33,9 +33,9 @@ public static class MauiProgram
         var httpClient = HappyEyeballsHttp.CreateHttpClient();
         builder.Services.AddSingleton(httpClient);
         builder.Services.AddSingleton<SettingsService>();
+        builder.Services.AddSingleton<AppState>();
         builder.Services.AddSingleton<LocalizationManager>();
         builder.Services.AddTransient<IMauiInitializeService, LocalizationInitializer>();
-        builder.Services.AddSingleton<AppState>();
         builder.Services.AddSingleton<HubApi>();
         builder.Services.AddSingleton<HubServerFetcher>();
         builder.Services.AddSingleton<ServerStatusCache>();

@@ -1,4 +1,4 @@
-<MudPaper Class="pa-4" Outlined="true" Elevation="0">
+<MudPaper Class="pa-4 mb-2" Outlined="true" Elevation="0">
     <div class="d-flex align-center">
         <MudIcon Icon="@Icon" Class="mr-4" />
         <div class="flex-grow-1">
@@ -7,11 +7,12 @@
                 @Description
             </MudText>
         </div>
-        <MudSelect Variant="Variant.Outlined" T="int?" Value="@SelectedValue" ValueChanged="OnValueChanged">
+        <MudSelect Variant="Variant.Outlined" T="int" Value="@SelectedValue" ValueChanged="OnValueChanged">
             @foreach (var index in Enum.GetValues(Values.GetType()))
             {
+                var intValue = (int)index;
                 var name = Enum.GetName(Values.GetType(), index);
-                <MudSelectItem Value="@index">@name</MudSelectItem>
+                <MudSelectItem Value="intValue">@name</MudSelectItem>
             }
         </MudSelect>
     </div>

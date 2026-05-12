@@ -5,6 +5,7 @@ using Linguini.Syntax.Parser;
 using Microsoft.Extensions.Logging;
 using Starlight.Launcher.Models.Data;
 using Starlight.Launcher.Services.Settings;
+using Starlight.Launcher.Services.State;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
@@ -20,11 +21,14 @@ public sealed class LocalizationManager
     private LocalizationsManifest _localizationsManifest = new();
     private FluentBundle? _currentBundle;
 
+    private AppState? _state;
+
     public CultureInfo SystemCulture { get; private set; } = CultureInfo.InvariantCulture;
 
-    public async Task Initialize(ILogger<LocalizationManager> logger, SettingsService settings)
+    public async Task Initialize(ILogger<LocalizationManager> logger, SettingsService settings, AppState state)
     {
         _logger = logger;
+        _state = state;
         var currentLocale = CultureInfo.CurrentUICulture;
         try
         {
@@ -124,7 +128,8 @@ public sealed class LocalizationManager
 
         var path = $"Locale/{culture.Name}"; // Path to folder with FTL FILES.
 
-        var count = 0;
+        var countFiles = 0;
+        var countLocalizations = 0;
         try
         {
             foreach (var file in _localizationsManifest[culture.Name])
@@ -137,7 +142,8 @@ public sealed class LocalizationManager
                     _logger?.LogError("Failed to parse localization file {File} for culture {Culture}: {Error}", file, culture.Name, error.Message);
                 }
                 bundle.AddResourceOverriding(resources);
-                count++;
+                countLocalizations += bundle.Locales.Count;
+                countFiles++;
             }
         }
         catch (Exception ex)
@@ -146,7 +152,7 @@ public sealed class LocalizationManager
             return;
         }
 
-        _logger?.LogInformation("Loaded {Count} localization files for culture {Culture}", count, culture.Name);
+        _logger?.LogInformation("Loaded {Count} localization files and {CountLocalizations} localizations for culture {Culture}", countFiles, countLocalizations, culture.Name);
     }
 
     public void SwitchLanguage(string cultureName)
@@ -157,6 +163,7 @@ public sealed class LocalizationManager
                 throw new ArgumentException($"Culture {cultureName} is not available");
             var culture = new CultureInfo(cultureName);
             SwitchLanguage(culture);
+            _state?.CallUpdate();
         }
         catch (Exception ex)
         {

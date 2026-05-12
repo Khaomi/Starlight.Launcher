@@ -13,7 +13,7 @@ public record AppSettings
     /// <summary>
     /// Determines should we place navigation menu at the bottom of app or at the left side
     /// </summary>
-    public bool BottomNavigation { get; init; } = true;
+    public AppNavigationPosition Navigation { get; init; } = AppNavigationPosition.Bottom;
 
     /// <summary>
     /// Determines should we place search bar at the bottom of TOOLBAR or at the top

@@ -7,7 +7,7 @@ using System.Globalization;
 
 namespace Starlight.Launcher.Components.Pages;
 
-public partial class Settings : ComponentBase
+public partial class Settings : ComponentBase, IDisposable
 {
     [Inject] private SettingsService Service { get; set; } = null!;
     [Inject] private LocalizationManager Localization { get; set; } = null!;
@@ -18,6 +18,23 @@ public partial class Settings : ComponentBase
     {
         var settings = await Service.GetSettingsAsync();
         AvailableLanguages = Localization.EnumarateAllLoadedLanguages().Select(x => new CultureInfo(x).Name).ToList();
+        State.OnChange += OnStateChanged;
+        await base.OnInitializedAsync();
+    }
+
+    private void OnStateChanged()
+    {
+        StateHasChanged();
+    }
+
+    private Task OnLanguageChanged(string? value, Action<string?>? setLocal,
+        Func<AppSettings, string?, AppSettings> update)
+    {
+        if (value is not null && AvailableLanguages.Contains(value))
+            Localization.SwitchLanguage(value?.ToString() ?? string.Empty);
+
+        setLocal?.Invoke(value);
+        return UpdateSetting(s => update(s, value));
     }
 
     private Task OnBoolSettingChanged(
@@ -46,6 +63,13 @@ public partial class Settings : ComponentBase
         return UpdateSetting(s => update(s, value));
     }
 
+    private Task OnEnumSettingChanged(int value, Action<int>? setLocal,
+        Func<AppSettings, int, AppSettings> update)
+    {
+        setLocal?.Invoke(value);
+        return UpdateSetting(s => update(s, value));
+    }
+
     private async Task UpdateSetting(Func<AppSettings, AppSettings> update)
     {
         var settings = await Service.GetSettingsAsync();
@@ -71,5 +95,11 @@ public partial class Settings : ComponentBase
         }
 
         return hubUris;
+    }
+
+    public void Dispose()
+    {
+        State.OnChange -= OnStateChanged;
+        GC.SuppressFinalize(this);
     }
 }

@@ -1,0 +1,1 @@
+settings-menu-language-option = Язык
