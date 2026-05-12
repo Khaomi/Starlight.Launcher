@@ -25,6 +25,9 @@ public sealed class LocalizationManager
 
     public CultureInfo SystemCulture { get; private set; } = CultureInfo.InvariantCulture;
 
+    public string this[string key]
+        => GetString(key);
+
     public async Task Initialize(ILogger<LocalizationManager> logger, SettingsService settings, AppState state)
     {
         _logger = logger;
@@ -129,7 +132,6 @@ public sealed class LocalizationManager
         var path = $"Locale/{culture.Name}"; // Path to folder with FTL FILES.
 
         var countFiles = 0;
-        var countLocalizations = 0;
         try
         {
             foreach (var file in _localizationsManifest[culture.Name])
@@ -142,7 +144,6 @@ public sealed class LocalizationManager
                     _logger?.LogError("Failed to parse localization file {File} for culture {Culture}: {Error}", file, culture.Name, error.Message);
                 }
                 bundle.AddResourceOverriding(resources);
-                countLocalizations += bundle.Locales.Count;
                 countFiles++;
             }
         }
@@ -152,7 +153,7 @@ public sealed class LocalizationManager
             return;
         }
 
-        _logger?.LogInformation("Loaded {Count} localization files and {CountLocalizations} localizations for culture {Culture}", countFiles, countLocalizations, culture.Name);
+        _logger?.LogInformation("Loaded {Count} localization files for culture {Culture}", countFiles, culture.Name);
     }
 
     public void SwitchLanguage(string cultureName)

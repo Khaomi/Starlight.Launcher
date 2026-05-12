@@ -87,9 +87,12 @@
 					foreach (var dir in Directory.GetDirectories(LocaleRoot))
 					{
 						var localeId = Path.GetFileName(dir);
+						var dirFullPath = Path.GetFullPath(dir);
+						var prefixLength = dirFullPath.Length + 1; // +1 чтобы убрать ведущий разделитель
+
 						var files = Directory.GetFiles(dir, "*.ftl", SearchOption.AllDirectories)
-											 .Select(Path.GetFileName)
-											 .OrderBy(n => n)
+											 .Select(f => Path.GetFullPath(f).Substring(prefixLength).Replace('\\', '/'))
+											 .OrderBy(n => n, StringComparer.Ordinal)
 											 .ToArray();
 
 						if (files.Length > 0)
