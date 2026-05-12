@@ -7,7 +7,7 @@
                 @Description
             </MudText>
         </div>
-        <MudSelect T="string" Value="SelectedValue" ValueChanged="OnValueChanged">
+        <MudSelect Variant="Variant.Outlined" T="string" Value="SelectedValue" ValueChanged="OnValueChanged">
             @foreach (var item in Values)
             {
                 <MudSelectItem T="string">@item</MudSelectItem>

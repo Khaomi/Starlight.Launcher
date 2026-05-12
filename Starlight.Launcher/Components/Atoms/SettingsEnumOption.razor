@@ -7,7 +7,7 @@
                 @Description
             </MudText>
         </div>
-        <MudSelect T="int?" Value="@SelectedValue" ValueChanged="OnValueChanged">
+        <MudSelect Variant="Variant.Outlined" T="int?" Value="@SelectedValue" ValueChanged="OnValueChanged">
             @foreach (var index in Enum.GetValues(Values.GetType()))
             {
                 var name = Enum.GetName(Values.GetType(), index);

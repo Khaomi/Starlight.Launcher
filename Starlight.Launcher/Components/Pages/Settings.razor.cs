@@ -9,17 +9,15 @@ namespace Starlight.Launcher.Components.Pages;
 
 public partial class Settings : ComponentBase
 {
-    [Inject] private SettingsService _settings { get; set; } = null!;
-    [Inject] private LocalizationManager _localization { get; set; } = null!;
-    [Inject] private AppState _state { get; set; } = null!;
-    private List<(string Url, long Priority)> Hubs = new();
+    [Inject] private SettingsService Service { get; set; } = null!;
+    [Inject] private LocalizationManager Localization { get; set; } = null!;
+    [Inject] private AppState State { get; set; } = null!;
     private List<string> AvailableLanguages = new();
 
     protected override async Task OnInitializedAsync()
     {
-        var settings = await _settings.GetSettingsAsync();
-        AvailableLanguages = _localization.EnumarateAllLoadedLanguages().Select(x => new CultureInfo(x).Name).ToList();
-        Hubs = [.. settings.Hubs.Select(h => (h.HubUri.ToString(), h.Priority))];
+        var settings = await Service.GetSettingsAsync();
+        AvailableLanguages = Localization.EnumarateAllLoadedLanguages().Select(x => new CultureInfo(x).Name).ToList();
     }
 
     private Task OnBoolSettingChanged(
@@ -50,15 +48,15 @@ public partial class Settings : ComponentBase
 
     private async Task UpdateSetting(Func<AppSettings, AppSettings> update)
     {
-        var settings = await _settings.GetSettingsAsync();
+        var settings = await Service.GetSettingsAsync();
         var newSettings = update(settings);
-        await _settings.WriteSettingsAsync(newSettings);
-        _state.CallUpdate();
+        await Service.WriteSettingsAsync(newSettings);
+        State.CallUpdate();
     }
 
     private async Task<T> FetchSettings<T>(Func<AppSettings, T> func)
     {
-        var settings = await _settings.GetSettingsAsync();
+        var settings = await Service.GetSettingsAsync();
         var result = func(settings);
         return result;
     }
