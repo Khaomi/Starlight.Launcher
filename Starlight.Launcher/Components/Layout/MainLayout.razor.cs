@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Components.Web;
 using MudBlazor;
 using MudBlazor.Services;
 using Starlight.Launcher.Models.Settings;
+using Starlight.Launcher.Services.Localization;
 using Starlight.Launcher.Services.Settings;
 using Starlight.Launcher.Services.State;
 
@@ -14,6 +15,7 @@ namespace Starlight.Launcher.Components.Layout;
 public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowserViewportObserver
 {
     [Inject] private SettingsService Settings { get; set; } = null!;
+    [Inject] private LocalizationManager Localization { get; set; } = null!;
     [Inject] private AppState State { get; set; } = null!;
     [Inject] private NavigationManager Navigation { get; set; } = null!;
     [Inject] private IBrowserViewportService BrowserViewportService { get; set; } = null!;
