@@ -8,18 +8,18 @@
     {
         <div class="server-page__state">
             <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Medium" />
-            <MudText Typo="Typo.body2" Color="Color.Secondary">Loading servers…</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization["servers-menu-loading"]</MudText>
         </div>
     }
     else if (Fetcher.Status == RefreshListStatus.Error && _totalCount == 0)
     {
         <div class="server-page__state">
             <MudIcon Icon="@Icons.Material.Filled.CloudOff" Size="Size.Large" Color="Color.Error" />
-            <MudText Typo="Typo.subtitle1">Failed to fetch server list</MudText>
+            <MudText Typo="Typo.subtitle1">@Localization["servers-menu-fetch-failed"]</MudText>
             <MudButton Variant="Variant.Filled" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Refresh"
                        OnClick="HandleRefresh">
-                Try again
+                @Localization["servers-menu-try-again"]
             </MudButton>
         </div>
     }
@@ -46,7 +46,7 @@
         {
             <MudAlert Severity="Severity.Warning" Square="true" Dense="true"
                       ShowCloseIcon="false" Class="server-page__alert">
-                Some hubs could not be reached. The list may be incomplete.
+                @Localization["servers-menu-cant-reach-hubs"]
             </MudAlert>
         }
         if (_filteredServers.Count == 0)
@@ -54,12 +54,12 @@
             <div class="server-page__state">
                 <MudIcon Icon="@Icons.Material.Filled.SearchOff" Size="Size.Large" Color="Color.Default" />
                 <MudText Typo="Typo.body2" Color="Color.Secondary">
-                    @(_totalCount == 0 ? "No servers online right now." : "No servers match your filters.")
+                    @(_totalCount == 0 ? @Localization["servers-menu-no-online-servers"] : @Localization["servers-menu-no-matched-servers"])
                 </MudText>
                 @if (_totalCount > 0)
                 {
                     <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="ClearFilters">
-                        Clear filters
+                        @Localization["servers-menu-clear-filters"]
                     </MudButton>
                 }
             </div>

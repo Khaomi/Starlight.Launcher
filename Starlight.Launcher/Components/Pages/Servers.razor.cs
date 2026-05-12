@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Robust.Launcher.Api.Models.ServerStatus;
 using Starlight.Launcher.Models.ServerStatus;
+using Starlight.Launcher.Services.Localization;
 using Starlight.Launcher.Services.ServerStatus;
 using Starlight.Launcher.Services.Settings;
 using System.Globalization;
@@ -10,6 +11,7 @@ namespace Starlight.Launcher.Components.Pages;
 public partial class Servers : ComponentBase, IDisposable
 {
     [Inject] SettingsService Settings { get; set; } = null!;
+    [Inject] LocalizationManager Localization { get; set; } = null!;
     private ServerListFilters Filters = new();
     private readonly CancellationTokenSource _disposeCts = new();
 
