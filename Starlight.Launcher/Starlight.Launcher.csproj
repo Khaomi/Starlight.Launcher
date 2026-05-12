@@ -66,4 +66,52 @@
 		<ProjectReference Include="..\Robust.Launcher.Api\Robust.Launcher.Api.csproj" />
 	</ItemGroup>
 
+	<UsingTask TaskName="GenerateIndex"
+			   TaskFactory="RoslynCodeTaskFactory"
+			   AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+		<ParameterGroup>
+			<LocaleRoot ParameterType="System.String" Required="true" />
+			<OutputFile ParameterType="System.String" Required="true" />
+		</ParameterGroup>
+		<Task>
+			<Reference Include="System.Text.Json" />
+			<Using Namespace="System.IO" />
+			<Using Namespace="System.Linq" />
+			<Using Namespace="System.Text.Json" />
+			<Code Type="Fragment" Language="cs">
+				<![CDATA[
+				var result = new System.Collections.Generic.Dictionary<string, string[]>();
+
+				if (Directory.Exists(LocaleRoot))
+				{
+					foreach (var dir in Directory.GetDirectories(LocaleRoot))
+					{
+						var localeId = Path.GetFileName(dir);
+						var files = Directory.GetFiles(dir, "*.ftl", SearchOption.AllDirectories)
+											 .Select(Path.GetFileName)
+											 .OrderBy(n => n)
+											 .ToArray();
+
+						if (files.Length > 0)
+						{
+							result[localeId] = files;
+						}
+					}
+				}
+
+				var json = JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
+				File.WriteAllText(OutputFile, json);
+			]]>
+			</Code>
+		</Task>
+	</UsingTask>
+
+	<Target Name="GenerateLocalizationIndex" BeforeTargets="BeforeBuild">
+		<ItemGroup>
+			<LocalizationFiles Include="Resources\Raw\Locale\**\*.ftl" />
+		</ItemGroup>
+
+		<GenerateIndex LocaleRoot="$(MSBuildProjectDirectory)\Resources\Raw\Locale"
+					   OutputFile="$(MSBuildProjectDirectory)\Resources\Raw\Locale\manifest.json" />
+	</Target>
 </Project>

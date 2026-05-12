@@ -4,6 +4,7 @@ using Robust.Launcher.Api.Api;
 using Robust.Launcher.Api.Models.ServerStatus;
 using Robust.Launcher.Api.Utility;
 using Serilog;
+using Starlight.Launcher.Services.Localization;
 using Starlight.Launcher.Services.ServerStatus;
 using Starlight.Launcher.Services.Settings;
 using Starlight.Launcher.Services.State;
@@ -32,6 +33,8 @@ public static class MauiProgram
         var httpClient = HappyEyeballsHttp.CreateHttpClient();
         builder.Services.AddSingleton(httpClient);
         builder.Services.AddSingleton<SettingsService>();
+        builder.Services.AddSingleton<LocalizationManager>();
+        builder.Services.AddTransient<IMauiInitializeService, LocalizationInitializer>();
         builder.Services.AddSingleton<AppState>();
         builder.Services.AddSingleton<HubApi>();
         builder.Services.AddSingleton<HubServerFetcher>();
