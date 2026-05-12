@@ -1,20 +1,15 @@
-@using Starlight.Launcher.Services.Settings
-@using Starlight.Launcher.Services.State
-
 @using AppTheme = Starlight.Launcher.Models.Settings.AppTheme;
 
 @page "/settings"
 
-@inject SettingsService _settings;
-@inject AppState _state;
-
 <MudTabs Elevation="0" ApplyEffectsToContainer="true" Class="settings-tabs" PanelClass="pa-6">
     <MudTabPanel Text="General">
         <MudContainer MaxWidth="MaxWidth.Small" Class="pa-0">
-            <MudText Typo="Typo.overline" Class="mud-text-secondary mb-2">Layout</MudText>
+            <MudText Typo="Typo.overline" Class="mud-text-secondary mb-2">General</MudText>
+            <SettingsSelectorListOption Title="Language" Description="Select the language for the app" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings<string?>(s => s.SelectedLanguage)" SelfValueControlAction="x => OnListSettingChanged<string?>(x, null, (s, v) => s with { SelectedLanguage = v })" Values="AvailableLanguages" />
             <SettingsBoolOption Title="Bottom navigation" Description="Show the navigation bar at the bottom of the screen" Icon="@Icons.Material.Filled.MenuOpen" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings(s => s.BottomNavigation)" SelfValueControlAction="x => OnBoolSettingChanged(x, null, (s, v) => s with { BottomNavigation = v})" />
             <MudText Typo="Typo.overline" Class="mud-text-secondary mb-2">Hub</MudText>
-            <SettingsStringListOption Value="Hubs" ValueChanged="OnHubsChanged" Title="Hub list" Description="Manage hubs used in the app" Icon="@Icons.Material.Filled.Hub" />
+            <SettingsAlternativeListOption Title="Hub list" Description="Manage hubs used in the app" Icon="@Icons.Material.Filled.Hub" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings<List<(string Url, long Priority)>>(s => [.. s.Hubs.Select(h => (h.HubUri.ToString(), h.Priority))])" SelfValueControlAction="x => OnListSettingChanged(x, null, (s, v) => s with { Hubs = ConvertToHubList(v) })" />
         </MudContainer>
     </MudTabPanel>
     <MudTabPanel Text="Appearance">

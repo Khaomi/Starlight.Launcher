@@ -46,6 +46,10 @@ public record AppSettings
     /// A list of hub urls to use for server lists
     /// </summary>
     public List<Hub> Hubs { get; init; } = [ new Hub() { HubUri = new Uri("https://hub.spacestation14.com/"), Priority = 0} ];
+    /// <summary>
+    /// Currently selected language. Should be a key from LocalizationsIndex. Default is "en-US"
+    /// </summary>
+    public string? SelectedLanguage { get; init; } = null;
 
     #region Cache
     public ServerListFilters CachedFilters { get; set; } = new ServerListFilters();

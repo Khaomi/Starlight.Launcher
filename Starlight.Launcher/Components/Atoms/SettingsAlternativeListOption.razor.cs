@@ -2,13 +2,27 @@ using Microsoft.AspNetCore.Components;
 
 namespace Starlight.Launcher.Components.Atoms;
 
-public partial class SettingsStringListOption : ComponentBase
+public partial class SettingsAlternativeListOption : ComponentBase
 {
-    [Parameter] public List<(string Url, long Priority)> Value { get; set; } = [];
-    [Parameter] public EventCallback<List<(string Url, long Priority)>> ValueChanged { get; set; }
+    [Parameter]public List<(string Value, long Priority)> Value { get; set; } = [];
+    [Parameter] public EventCallback<List<(string Value, long Priority)>> ValueChanged { get; set; }
     [Parameter] public string Title { get; set; } = default!;
     [Parameter] public string Description { get; set; } = default!;
     [Parameter] public string Icon { get; set; } = default!;
+    /// <summary>
+    /// Means that this component will control value change by itself.
+    /// </summary>
+    [Parameter] public bool SelfValueControl { get; set; } = true;
+    [Parameter] public Action<List<(string Value, long Priority)>>? SelfValueControlAction { get; set; }
+    [Parameter] public Func<Task<List<(string Value, long Priority)>>>? SelfValueControlInitialization { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        if (SelfValueControlInitialization is null)
+            return;
+        Value = await SelfValueControlInitialization.Invoke();
+    }
 
     private async Task OnAddButtonPressed()
     {
@@ -59,12 +73,20 @@ public partial class SettingsStringListOption : ComponentBase
     private void ReassignPriorities()
     {
         for (var i = 0; i < Value.Count; i++)
-            Value[i] = (Value[i].Url, i);
+            Value[i] = (Value[i].Value, i);
     }
 
-    private Task NotifyChanged() => ValueChanged.InvokeAsync(Value);
+    private async Task NotifyChanged()
+    {
+        if (!SelfValueControl)
+            await ValueChanged.InvokeAsync(Value);
+        else
+        {
+            SelfValueControlAction?.Invoke(Value);
+        }
+    }
 
-    private string? ValidateUrl(string value)
+    private static string? ValidateUrl(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
             return "URL is required";
