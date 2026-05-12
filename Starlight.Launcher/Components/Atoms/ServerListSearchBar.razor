@@ -14,7 +14,7 @@
         <MudTextField T="string"
                       Value="Filters.SearchQuery"
                       ValueChanged="OnSearchChanged"
-                      Placeholder="Search servers..."
+                      Placeholder="@Localization["servers-list-search-bar-placeholder"]"
                       Variant="Variant.Text"
                       Margin="Margin.Dense"
                       Adornment="Adornment.Start"
@@ -30,9 +30,9 @@
                    Margin="Margin.Dense"
                    Dense="true"
                    Class="server-toolbar__sort">
-            <MudSelectItem Value="ServerSortMode.Players">Players</MudSelectItem>
-            <MudSelectItem Value="ServerSortMode.Name">Name</MudSelectItem>
-            <MudSelectItem Value="ServerSortMode.Ping">Ping</MudSelectItem>
+            <MudSelectItem Value="ServerSortMode.Players">@Localization["servers-list-search-bar-players"]</MudSelectItem>
+            <MudSelectItem Value="ServerSortMode.Name">@Localization["servers-list-search-bar-name"]</MudSelectItem>
+            <MudSelectItem Value="ServerSortMode.Ping">@Localization["servers-list-search-bar-ping"]</MudSelectItem>
         </MudSelect>
 
         <MudChipSet T="string" Class="server-toolbar__filters">
@@ -40,28 +40,28 @@
                      Color="@(Filters.HideEmpty ? Color.Primary : Color.Default)"
                      Variant="@(Filters.HideEmpty ? Variant.Filled : Variant.Text)"
                      Size="Size.Small">
-                Hide empty
+                @Localization["server-list-hide-empty"]
             </MudChip>
 
             <MudChip OnClick="ToggleHideFull"
                      Color="@(Filters.HideFull ? Color.Primary : Color.Default)"
                      Variant="@(Filters.HideFull ? Variant.Filled : Variant.Text)"
                      Size="Size.Small">
-                Hide full
+                @Localization["server-list-hide-full"]
             </MudChip>
 
             <MudChip OnClick="ToggleHideAdult"
                      Color="@(Filters.HideAdult ? Color.Primary : Color.Default)"
                      Variant="@(Filters.HideAdult ? Variant.Filled : Variant.Text)"
                      Size="Size.Small">
-                Hide 18+
+                @Localization["server-list-hide-adult"]
             </MudChip>
 
             <MudChip OnClick="ToggleOnlyAdult"
                      Color="@(Filters.OnlyAdult ? Color.Error : Color.Default)"
                      Variant="@(Filters.OnlyAdult ? Variant.Filled : Variant.Text)"
                      Size="Size.Small">
-                Only 18+
+                @Localization["server-list-only-adult"]
             </MudChip>
         </MudChipSet>
 

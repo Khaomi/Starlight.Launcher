@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Starlight.Launcher.Models.ServerStatus;
+using Starlight.Launcher.Services.Localization;
 using Starlight.Launcher.Services.ServerStatus;
 
 namespace Starlight.Launcher.Components.Atoms;
 
 public partial class ServerListSearchBar : ComponentBase
 {
+    [Inject] LocalizationManager Localization { get; set; } = null!;
     [Parameter, EditorRequired] public ServerListFilters Filters { get; set; } = null!;
     [Parameter] public int TotalCount { get; set; }
     [Parameter] public int FilteredCount { get; set; }
