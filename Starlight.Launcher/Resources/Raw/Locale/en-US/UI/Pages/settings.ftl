@@ -11,6 +11,9 @@ settings-menu-language-option-description = Select the language for the app.
 
 settings-menu-hub-list-option = Hub List
 settings-menu-hub-list-option-description = Manage the list of hubs.
+settings-menu-hub-list-option-add-tooltip = Add hub
+settings-menu-hub-list-option-empty-values = No hubs configured. Click + to add one.
+settings-menu-hub-list-option-text-label = Hub URL
 
 # Appearance
 

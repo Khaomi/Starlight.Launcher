@@ -1,14 +1,20 @@
 using Microsoft.AspNetCore.Components;
+using Starlight.Launcher.Services.Localization;
 
 namespace Starlight.Launcher.Components.Atoms;
 
 public partial class SettingsAlternativeListOption : ComponentBase
 {
+    [Inject] private LocalizationManager Localization { get; set; } = null!;
+
     [Parameter]public List<(string Value, long Priority)> Value { get; set; } = [];
     [Parameter] public EventCallback<List<(string Value, long Priority)>> ValueChanged { get; set; }
     [Parameter] public string Title { get; set; } = default!;
     [Parameter] public string Description { get; set; } = default!;
     [Parameter] public string Icon { get; set; } = default!;
+    [Parameter] public string EmptyValuesString { get; set; } = "There's no values added up. Click + to add one.";
+    [Parameter] public string AddButtonTooltip { get; set; } = "Add Value";
+    [Parameter] public string TextFieldLabel { get; set; } = "Value";
     /// <summary>
     /// Means that this component will control value change by itself.
     /// </summary>

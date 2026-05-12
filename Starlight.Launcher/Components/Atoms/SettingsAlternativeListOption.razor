@@ -7,7 +7,7 @@
                 @Description
             </MudText>
         </div>
-        <MudTooltip Text="Add hub">
+        <MudTooltip Text="@AddButtonTooltip">
             <MudIconButton Icon="@Icons.Material.Filled.Add"
                            Color="Color.Primary"
                            OnClick="OnAddButtonPressed" />
@@ -20,7 +20,7 @@
                   Elevation="0"
                   Style="border-style: dashed;">
             <MudText Typo="Typo.body2" Class="mud-text-secondary">
-                No hubs configured. Click + to add one.
+                @EmptyValuesString
             </MudText>
         </MudPaper>
     }
@@ -46,26 +46,26 @@
                                   Immediate="true"
                                   Variant="Variant.Outlined"
                                   Margin="Margin.Dense"
-                                  Label="Hub URL"
+                                  Label="@TextFieldLabel"
                                   Placeholder="https://example.com"
                                   Validation="@(new Func<string, string?>(ValidateUrl))"
                                   Class="flex-grow-1" />
 
-                    <MudTooltip Text="Move up">
+                    <MudTooltip Text="@Localization["settings-alternative-list-option-move-up"]">
                         <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward"
                                        Size="Size.Small"
                                        Disabled="@(index == 0)"
                                        OnClick="@(() => MoveUp(index))" />
                     </MudTooltip>
 
-                    <MudTooltip Text="Move down">
+                    <MudTooltip Text="@Localization["settings-alternative-list-option-move-down"]">
                         <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward"
                                        Size="Size.Small"
                                        Disabled="@(index == Value.Count - 1)"
                                        OnClick="@(() => MoveDown(index))" />
                     </MudTooltip>
 
-                    <MudTooltip Text="Remove">
+                    <MudTooltip Text="@Localization["settings-alternative-list-option-remove"]">
                         <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                        Size="Size.Small"
                                        Color="Color.Error"
