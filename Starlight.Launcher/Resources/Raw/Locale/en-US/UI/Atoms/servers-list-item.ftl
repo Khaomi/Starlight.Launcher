@@ -1,0 +1,1 @@
+servers-list-item-favorites = Add to favorites

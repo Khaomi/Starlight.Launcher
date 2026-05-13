@@ -21,8 +21,13 @@ public class SettingsService : IAsyncDisposable
 
     private List<FavoriteServer> _favorites;
     private readonly SemaphoreSlim _favoritesLock = new(1, 1);
+    private volatile HashSet<string> _favoriteAddresses = new(StringComparer.OrdinalIgnoreCase);
+
+    public IReadOnlySet<string> GetFavoriteAddressesSnapshot() => _favoriteAddresses;
 
     private readonly ILogger<SettingsService> _logger;
+
+    public event Action? FavoritesChanged;
 
     #endregion
 
@@ -248,17 +253,20 @@ public class SettingsService : IAsyncDisposable
         }
     }
 
-    public void WriteSettings(List<FavoriteServer> favorites)
+    public void WriteFavorites(List<FavoriteServer> favorites)
     {
         _favoritesLock.Wait();
         try
         {
             _favorites = favorites;
+            RebuildFavoritesIndex();
         }
         finally
         {
             _favoritesLock.Release();
         }
+
+        FavoritesChanged?.Invoke();
 
         ScheduleSave(true);
     }
@@ -280,22 +288,32 @@ public class SettingsService : IAsyncDisposable
         }
     }
 
-    public async Task WriteSettingsAsync(List<FavoriteServer> favorites)
+    public async Task WriteFavoritesAsync(List<FavoriteServer> favorites)
     {
         await _favoritesLock.WaitAsync();
         try
         {
             _favorites = favorites;
+            RebuildFavoritesIndex();
         }
         finally
         {
             _favoritesLock.Release();
         }
 
+        FavoritesChanged?.Invoke();
+
         ScheduleSave(true);
     }
 
     #endregion
+
+    private void RebuildFavoritesIndex()
+    {
+        _favoriteAddresses = new HashSet<string>(
+            _favorites.Select(f => f.Address),
+            StringComparer.OrdinalIgnoreCase);
+    }
 
     public async ValueTask DisposeAsync()
     {

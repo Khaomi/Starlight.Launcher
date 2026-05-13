@@ -72,8 +72,7 @@
                 ItemSize="56"
                 OverscanCount="3">
                     <ServerListItem @key="server.Address" Data="server"
-                    OnClick="HandleServerClick"
-                    OnInfoNeeded="HandleInfoNeeded" />
+                                    IsInFavorites="@(_favoriteAddresses.Contains(server.Address))" OnInfoNeeded="HandleInfoNeeded" OnFavorites="async x => await HandleFavorite(x)" />
                 </MudVirtualize>
             </div>
         }

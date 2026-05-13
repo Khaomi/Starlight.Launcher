@@ -92,7 +92,15 @@ public sealed class LocalizationManager
 
     public string GetString(string key)
     {
-        return _currentBundle?.GetMessage(key) ?? key;
+        try
+        {
+            return _currentBundle?.GetMessage(key) ?? key;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Can't find localization!");
+            return key;
+        }
     }
 
     public string GetString(string key, params (string, object?)[] args)

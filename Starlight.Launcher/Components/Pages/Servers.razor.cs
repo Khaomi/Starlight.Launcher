@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Robust.Launcher.Api.Models.ServerStatus;
+using Starlight.Launcher.Models.Data;
 using Starlight.Launcher.Models.ServerStatus;
 using Starlight.Launcher.Services.Localization;
 using Starlight.Launcher.Services.ServerStatus;
@@ -24,6 +25,9 @@ public partial class Servers : ComponentBase, IDisposable
 
     private CancellationTokenSource? _searchDebounceCts;
 
+    private IReadOnlySet<string> _favoriteAddresses =
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
     private bool BottomSearch { get; set; }
     private bool BottomSearchBar { get; set; }
 
@@ -41,9 +45,25 @@ public partial class Servers : ComponentBase, IDisposable
         Filters.TagsExpanded = settings.ServerListToolBarTagsBarOpen;
         Filters.Changed += OnFiltersChanged;
 
+        _favoriteAddresses = Settings.GetFavoriteAddressesSnapshot();
+        Settings.FavoritesChanged += OnFavoritesChanged;
+
         RebuildFromFetcher();
 
         Fetcher.RequestInitialUpdate();
+    }
+
+    private async void OnFavoritesChanged()
+    {
+        try
+        {
+            await InvokeAsync(() =>
+            {
+                _favoriteAddresses = Settings.GetFavoriteAddressesSnapshot();
+                StateHasChanged();
+            });
+        }
+        catch (ObjectDisposedException) { }
     }
 
     private async void OnServersChanged()
@@ -166,9 +186,21 @@ public partial class Servers : ComponentBase, IDisposable
         ApplyFilters();
     }
 
-    private void HandleServerClick(ServerStatusData server)
+    private async Task HandleFavorite(ServerStatusData server)
     {
-        // TODO: navigate to server detail or trigger join
+        var favorites = Settings.GetFavorites();
+        var alreadyExist = favorites.FirstOrDefault(x => x.Address == server.Address);
+
+        if (alreadyExist == null || alreadyExist == default)
+        {
+            favorites.Add(new FavoriteServer(server.Name, server.Address));
+            await Settings.WriteFavoritesAsync(favorites);
+        }
+        else
+        {
+            favorites.Remove(alreadyExist);
+            await Settings.WriteFavoritesAsync(favorites);
+        }
     }
 
     private void HandleInfoNeeded(ServerStatusData server)
@@ -283,6 +315,7 @@ public partial class Servers : ComponentBase, IDisposable
         Fetcher.ServersChanged -= OnServersChanged;
         Fetcher.StatusChanged -= OnStatusChanged;
         Filters.Changed -= OnFiltersChanged;
+        Settings.FavoritesChanged -= OnFavoritesChanged;
         _disposeCts.Cancel();
         _disposeCts.Dispose();
         _searchDebounceCts?.Dispose();

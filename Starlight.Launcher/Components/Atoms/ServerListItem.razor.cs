@@ -3,22 +3,23 @@ using Microsoft.Extensions.Logging;
 using MudBlazor;
 using Robust.Launcher.Api.Models.ServerStatus;
 using Starlight.Launcher.Components.Pages;
+using Starlight.Launcher.Services.Localization;
 
 namespace Starlight.Launcher.Components.Atoms;
 
 public partial class ServerListItem : ComponentBase
 {
+    [Inject] private LocalizationManager Localization { get; set; } = null!;
     [Parameter, EditorRequired] public ServerStatusData Data { get; set; } = null!;
-    [Parameter] public EventCallback<ServerStatusData> OnClick { get; set; }
     [Parameter] public EventCallback<ServerStatusData> OnInfoNeeded { get; set; }
+    [Parameter] public EventCallback<ServerStatusData> OnFavorites { get; set; }
+    [Parameter] public bool IsInFavorites { get; set; } = false;
     [Inject] private ILogger<ServerListItem> _logger { get; set; } = null!;
 
     private CancellationTokenSource? _infoCts;
 
     private bool Expanded = false;
-
-    private bool IsClickable => OnClick.HasDelegate;
-    private string RowClass => IsClickable ? "server-row server-row--clickable" : "server-row";
+    private string RowClass => "server-row server-row--clickable";
 
     private List<string>? DisplayTags => Data.Tags?
         .Select(t => ParseTag(t))
@@ -66,11 +67,12 @@ public partial class ServerListItem : ComponentBase
 
     private async Task HandleClick()
     {
-        if (IsClickable)
-        {
-            await OnClick.InvokeAsync(Data);
-            Expanded = !Expanded;
-        }
+        Expanded = !Expanded;
+    }
+
+    private async Task HandleFavorites()
+    {
+        await OnFavorites.InvokeAsync(Data);
     }
 
     private async Task OnInfoClick(string Url)
