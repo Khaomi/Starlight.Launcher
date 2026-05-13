@@ -67,6 +67,8 @@ public partial class ServerListItem : ComponentBase
 
     private async Task HandleClick()
     {
+        if (string.IsNullOrEmpty(Data.Description) && Data.StatusInfo is ServerStatusInfoCode.Fetched and not ServerStatusInfoCode.Error)
+            _ = RequestInfoDebouncedAsync((_infoCts ?? new CancellationTokenSource()).Token);
         Expanded = !Expanded;
     }
 

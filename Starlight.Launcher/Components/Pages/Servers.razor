@@ -1,7 +1,6 @@
 @page "/servers"
 @using Starlight.Launcher.Services.ServerStatus
 @implements IDisposable
-@inject HubServerFetcher Fetcher
 
 <div class="server-page">
     @if (Fetcher.Status == RefreshListStatus.NotUpdated || Fetcher.Status == RefreshListStatus.UpdatingMaster)

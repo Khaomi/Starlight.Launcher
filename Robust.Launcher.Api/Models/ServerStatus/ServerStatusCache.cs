@@ -36,12 +36,16 @@ public sealed class ServerStatusCache : IServerSource
     ///     This does NOT start fetching the data.
     /// </summary>
     /// <param name="serverAddress">The address of the server to fetch data for.</param>
-    public ServerStatusData GetStatusFor(string serverAddress)
+    public ServerStatusData GetStatusFor(string serverAddress, string? hubAddress = null)
     {
         if (_cachedData.TryGetValue(serverAddress, out var reg))
             return reg.Data;
 
-        var data = new ServerStatusData(serverAddress);
+        ServerStatusData data;
+        if (hubAddress != null)
+            data = new(serverAddress, hubAddress);
+        else
+            data = new(serverAddress);
         reg = new CacheReg(data);
         _cachedData.Add(serverAddress, reg);
 
@@ -150,6 +154,8 @@ public sealed class ServerStatusCache : IServerSource
         var inferredTags = ServerTagInfer.InferTags(status);
 
         data.Tags = baseTags.Concat(inferredTags).ToArray();
+
+        data.NotifyChanged();
     }
 
     public async Task UpdateInfoForCore(ServerStatusData data, Func<CancellationToken, Task<ServerInfo?>> fetch)

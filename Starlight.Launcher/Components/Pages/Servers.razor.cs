@@ -12,6 +12,7 @@ namespace Starlight.Launcher.Components.Pages;
 public partial class Servers : ComponentBase, IDisposable
 {
     [Inject] SettingsService Settings { get; set; } = null!;
+    [Inject] HubServerFetcher Fetcher { get; set; } = null!;
     [Inject] LocalizationManager Localization { get; set; } = null!;
     private ServerListFilters Filters = new();
     private readonly CancellationTokenSource _disposeCts = new();
@@ -191,12 +192,12 @@ public partial class Servers : ComponentBase, IDisposable
         var favorites = Settings.GetFavorites();
         var alreadyExist = favorites.FirstOrDefault(x => x.Address == server.Address);
 
-        if (alreadyExist == null || alreadyExist == default)
+        if ((alreadyExist == null || alreadyExist == default) && server.HubAddress != null)
         {
-            favorites.Add(new FavoriteServer(server.Name, server.Address));
+            favorites.Add(new FavoriteServer(server.Name, server.Address, server.HubAddress));
             await Settings.WriteFavoritesAsync(favorites);
         }
-        else
+        else if (alreadyExist != null)
         {
             favorites.Remove(alreadyExist);
             await Settings.WriteFavoritesAsync(favorites);

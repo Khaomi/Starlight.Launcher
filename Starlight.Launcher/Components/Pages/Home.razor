@@ -1,1 +1,12 @@
 ﻿@page "/"
+
+<div>
+    <div>
+        <MudVirtualize Items="FavoriteServers"
+                       Context="server"
+                       ItemSize="56"
+                       OverscanCount="3">
+            <ServerListItem @key="server.Address" Data="server" IsInFavorites="@(FavoriteServers.Contains(server))" OnInfoNeeded="HandleInfoNeeded" OnFavorites="async x => await HandleFavorite(x)" />
+        </MudVirtualize>
+    </div>
+</div>

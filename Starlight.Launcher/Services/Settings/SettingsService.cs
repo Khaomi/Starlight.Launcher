@@ -118,7 +118,7 @@ public class SettingsService : IAsyncDisposable
             {
                 var json = JsonSerializer.Serialize(_settings, JsonOptions);
 
-                await WriteFileSafeAsync(json, Path.GetDirectoryName(_filePath)!);
+                await WriteFileSafeAsync(json, Path.GetDirectoryName(_filePath)!, _filePath);
             }
             catch (Exception ex)
             {
@@ -136,7 +136,7 @@ public class SettingsService : IAsyncDisposable
             {
                 var json = JsonSerializer.Serialize(_favorites, JsonOptions);
 
-                await WriteFileSafeAsync(json, Path.GetDirectoryName(_favoritesPath)!);
+                await WriteFileSafeAsync(json, Path.GetDirectoryName(_favoritesPath)!, _favoritesPath);
             }
             catch (Exception ex)
             {
@@ -149,13 +149,13 @@ public class SettingsService : IAsyncDisposable
         }
     }
 
-    private async Task WriteFileSafeAsync(string content, string dir)
+    private async Task WriteFileSafeAsync(string content, string dir, string filePath)
     {
         Directory.CreateDirectory(dir);
 
-        var tempFile = _filePath + ".tmp";
+        var tempFile = filePath + ".tmp";
         await File.WriteAllTextAsync(tempFile, content);
-        File.Move(tempFile, _filePath, true);
+        File.Move(tempFile, filePath, true);
     }
 
     #region Sync Methods
