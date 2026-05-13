@@ -10,6 +10,7 @@
     font-size: 0.72rem;
     line-height: 1;
     text-align: center;
+    color: var(--mud-palette-text-secondary);
 }
 
 .bottom-nav-item {
@@ -21,6 +22,10 @@
 }
 
 .bottom-nav-item:hover {
+    color: var(--mud-palette-text-primary);
+}
+
+.bottom-nav-item:hover span {
     color: var(--mud-palette-text-primary);
 }
 

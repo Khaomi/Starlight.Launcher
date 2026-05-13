@@ -1,7 +1,6 @@
 ﻿@using Starlight.Launcher.Models.Settings
 @inherits LayoutComponentBase
 
-<MudThemeProvider Theme="_theme" IsDarkMode="_isDarkMode"/>
 <MudPopoverProvider />
 
 <MudLayout Class="@(_navigation == AppNavigationPosition.Bottom || _navigation == AppNavigationPosition.Top || _isSmallScreen ? "has-bottom-nav" : "")">

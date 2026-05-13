@@ -8,7 +8,7 @@ public record AppSettings
     /// <summary>
     /// App theme
     /// </summary>
-    public AppTheme Theme { get; init; } = AppTheme.Dark;
+    public AppTheme Theme { get; init; } = AppTheme.System;
 
     /// <summary>
     /// Determines should we place navigation menu at the bottom of app or at the left side
