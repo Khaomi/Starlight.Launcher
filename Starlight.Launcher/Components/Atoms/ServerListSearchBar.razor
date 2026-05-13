@@ -1,75 +1,61 @@
 @using Starlight.Launcher.Models.ServerStatus
 
-<MudStack Row="true"
-          AlignItems="AlignItems.Center"
-          Justify="Justify.SpaceBetween"
-          Wrap="Wrap.Wrap"
-          Spacing="2">
-
-    <MudStack Row="true"
-              AlignItems="AlignItems.Center"
-              Spacing="2"
-              Wrap="Wrap.Wrap">
+<div class="server-toolbar__searchbar">
+    <div class="server-toolbar__searchbar-left">
 
         <MudTextField T="string"
                       Value="Filters.SearchQuery"
                       ValueChanged="OnSearchChanged"
                       Placeholder="@Localization["servers-list-search-bar-placeholder"]"
-                      Variant="Variant.Text"
+                      Variant="Variant.Outlined"
                       Margin="Margin.Dense"
                       Adornment="Adornment.Start"
                       AdornmentIcon="@Icons.Material.Filled.Search"
                       Clearable="true"
                       Immediate="true"
-                      Class="server-toolbar__search" />
+                      Class="server-toolbar__search server-toolbar__pill" />
 
         <MudSelect T="ServerSortMode"
                    Value="Filters.SortBy"
                    ValueChanged="OnSortChanged"
-                   Variant="Variant.Text"
+                   Variant="Variant.Outlined"
                    Margin="Margin.Dense"
                    Dense="true"
-                   Class="server-toolbar__sort">
+                   Class="server-toolbar__sort server-toolbar__pill">
             <MudSelectItem Value="ServerSortMode.Players">@Localization["servers-list-search-bar-players"]</MudSelectItem>
             <MudSelectItem Value="ServerSortMode.Name">@Localization["servers-list-search-bar-name"]</MudSelectItem>
             <MudSelectItem Value="ServerSortMode.Ping">@Localization["servers-list-search-bar-ping"]</MudSelectItem>
         </MudSelect>
 
-        <MudChipSet T="string" Class="server-toolbar__filters">
-            <MudChip OnClick="ToggleHideEmpty"
-                     Color="@(Filters.HideEmpty ? Color.Primary : Color.Default)"
-                     Variant="@(Filters.HideEmpty ? Variant.Filled : Variant.Text)"
-                     Size="Size.Small">
+        <div class="server-toolbar__chips">
+            <button type="button"
+                    class="server-toolbar__chip @(Filters.HideEmpty ? "is-active" : "")"
+                    @onclick="ToggleHideEmpty">
                 @Localization["server-list-hide-empty"]
-            </MudChip>
+            </button>
 
-            <MudChip OnClick="ToggleHideFull"
-                     Color="@(Filters.HideFull ? Color.Primary : Color.Default)"
-                     Variant="@(Filters.HideFull ? Variant.Filled : Variant.Text)"
-                     Size="Size.Small">
+            <button type="button"
+                    class="server-toolbar__chip @(Filters.HideFull ? "is-active" : "")"
+                    @onclick="ToggleHideFull">
                 @Localization["server-list-hide-full"]
-            </MudChip>
+            </button>
 
-            <MudChip OnClick="ToggleHideAdult"
-                     Color="@(Filters.HideAdult ? Color.Primary : Color.Default)"
-                     Variant="@(Filters.HideAdult ? Variant.Filled : Variant.Text)"
-                     Size="Size.Small">
+            <button type="button"
+                    class="server-toolbar__chip @(Filters.HideAdult ? "is-active" : "")"
+                    @onclick="ToggleHideAdult">
                 @Localization["server-list-hide-adult"]
-            </MudChip>
+            </button>
 
-            <MudChip OnClick="ToggleOnlyAdult"
-                     Color="@(Filters.OnlyAdult ? Color.Error : Color.Default)"
-                     Variant="@(Filters.OnlyAdult ? Variant.Filled : Variant.Text)"
-                     Size="Size.Small">
+            <button type="button"
+                    class="server-toolbar__chip server-toolbar__chip--danger @(Filters.OnlyAdult ? "is-active" : "")"
+                    @onclick="ToggleOnlyAdult">
                 @Localization["server-list-only-adult"]
-            </MudChip>
-        </MudChipSet>
+            </button>
+        </div>
 
-    </MudStack>
+    </div>
 
-    <MudStack Row="true"
-              AlignItems="AlignItems.Center"
-              Spacing="1">
+    <div class="server-toolbar__searchbar-right">
 
         @{
             var (statusText, statusColor) = GetStatusDisplay();
@@ -78,19 +64,20 @@
         <MudTooltip Text="@statusText">
             <MudIcon Icon="@Icons.Material.Filled.Circle"
                      Color="statusColor"
-                     Size="Size.Small" />
+                     Size="Size.Small"
+                     Class="server-toolbar__status-dot" />
         </MudTooltip>
 
-        <MudText Typo="Typo.caption"
-                 Color="Color.Secondary">
-            @FilteredCount / @TotalCount
+        <MudText Typo="Typo.caption" Class="server-toolbar__counter">
+            @FilteredCount<span class="server-toolbar__counter-slash">/</span>@TotalCount
         </MudText>
 
         <MudIconButton Icon="@(Filters.TagsExpanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.Tune)"
                        Color="@(HasActiveTagFilters ? Color.Primary : Color.Default)"
                        Variant="Variant.Text"
                        Size="Size.Small"
-                       OnClick="ToggleTagsExpanded" />
+                       OnClick="ToggleTagsExpanded"
+                       Class="server-toolbar__icon-btn" />
 
         <MudIconButton Icon="@Icons.Material.Filled.Refresh"
                        Color="Color.Default"
@@ -98,7 +85,7 @@
                        Size="Size.Small"
                        Disabled="@IsRefreshing"
                        OnClick="OnRefresh"
-                       Class="@(IsRefreshing ? "mud-spinner" : "")" />
-    </MudStack>
+                       Class="@("server-toolbar__icon-btn " + (IsRefreshing ? "mud-spinner" : ""))" />
+    </div>
 
-</MudStack>
+</div>

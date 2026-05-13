@@ -1,10 +1,15 @@
-<MudPaper Elevation="0" Square="true" Class="server-toolbar">
-    <MudCollapse Expanded="Filters.TagsExpanded">
-        <div class="server-toolbar__tags-panel @(HasSearchAbove ? "has-top-divider" : "") @(HasSearchBelow ? "has-bottom-divider" : "") @(IsBottom ? "is-bottom" : "")">
+<MudCollapse Expanded="Filters.TagsExpanded">
+    <div class="server-toolbar__tags-panel @(HasSearchAbove ? "has-top-divider" : "") @(HasSearchBelow ? "has-bottom-divider" : "") @(IsBottom ? "is-bottom" : "")">
+
+        <div class="server-toolbar__tags-grid">
 
             @if (AvailableRPTags.Count > 0)
             {
-                <MudSelect Variant="Variant.Outlined" Margin="Margin.Dense" T="string" Label="@Localization["servers-list-tags-bar-rp-tags-label"]" MultiSelection="true" SelectedValues="Filters.SelectedRP" SelectedValuesChanged="OnRPTagsChanged">
+                <MudSelect Variant="Variant.Outlined" Margin="Margin.Dense" T="string"
+                           Label="@Localization["servers-list-tags-bar-rp-tags-label"]"
+                           MultiSelection="true" SelectedValues="Filters.SelectedRP"
+                           SelectedValuesChanged="OnRPTagsChanged"
+                           Class="server-toolbar__pill">
                     @foreach (var rpTag in AvailableRPTags)
                     {
                         <MudSelectItem T="string" Value="@rpTag">@rpTag</MudSelectItem>
@@ -14,7 +19,11 @@
 
             @if (AvailableLangTags.Count > 0)
             {
-                <MudSelect Variant="Variant.Outlined" Margin="Margin.Dense" T="string" Label="@Localization["servers-list-tags-bar-lang-tags-label"]" MultiSelection="true" SelectedValues="Filters.SelectedLang" SelectedValuesChanged="OnLangTagsChanged">
+                <MudSelect Variant="Variant.Outlined" Margin="Margin.Dense" T="string"
+                           Label="@Localization["servers-list-tags-bar-lang-tags-label"]"
+                           MultiSelection="true" SelectedValues="Filters.SelectedLang"
+                           SelectedValuesChanged="OnLangTagsChanged"
+                           Class="server-toolbar__pill">
                     @foreach (var langTag in AvailableLangTags)
                     {
                         <MudSelectItem T="string" Value="@langTag">@langTag</MudSelectItem>
@@ -24,7 +33,11 @@
 
             @if (AvailableRegionTags.Count > 0)
             {
-                <MudSelect Variant="Variant.Outlined" Margin="Margin.Dense" T="string" Label="@Localization["servers-list-tags-bar-region-tags-label"]" MultiSelection="true" SelectedValues="Filters.SelectedRegion" SelectedValuesChanged="OnRegionTagsChanged">
+                <MudSelect Variant="Variant.Outlined" Margin="Margin.Dense" T="string"
+                           Label="@Localization["servers-list-tags-bar-region-tags-label"]"
+                           MultiSelection="true" SelectedValues="Filters.SelectedRegion"
+                           SelectedValuesChanged="OnRegionTagsChanged"
+                           Class="server-toolbar__pill">
                     @foreach (var regionTag in AvailableRegionTags)
                     {
                         <MudSelectItem T="string" Value="@regionTag">@regionTag</MudSelectItem>
@@ -32,19 +45,19 @@
                 </MudSelect>
             }
 
-            <div class="server-toolbar__tag-actions-wrapper">
-                <MudCollapse Expanded="HasActiveTagFilters">
-                    <div class="server-toolbar__tag-actions">
-                        <MudButton Size="Size.Small"
-                                   Variant="Variant.Text"
-                                   StartIcon="@Icons.Material.Filled.Clear"
-                                   OnClick="ClearTagFilters">
-                            @Localization["servers-list-tags-bar-clear-filters"]
-                        </MudButton>
-                    </div>
-                </MudCollapse>
-            </div>
-
         </div>
-    </MudCollapse>
-</MudPaper>
+
+        <MudCollapse Expanded="HasActiveTagFilters">
+            <div class="server-toolbar__tag-actions">
+                <MudButton Size="Size.Small"
+                           Variant="Variant.Text"
+                           StartIcon="@Icons.Material.Filled.Clear"
+                           OnClick="ClearTagFilters"
+                           Class="server-toolbar__clear-btn">
+                    @Localization["servers-list-tags-bar-clear-filters"]
+                </MudButton>
+            </div>
+        </MudCollapse>
+
+    </div>
+</MudCollapse>

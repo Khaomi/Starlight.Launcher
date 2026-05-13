@@ -1,8 +1,148 @@
+/* ===== Search bar layout ===== */
+.server-toolbar__searchbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.server-toolbar__searchbar-left {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.server-toolbar__searchbar-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+/* ===== Pill style for MudTextField / MudSelect ===== */
+.server-toolbar__pill .mud-input-outlined .mud-input-outlined-border,
+.server-toolbar__pill.mud-input-outlined .mud-input-outlined-border {
+    border-radius: 999px;
+}
+
+.server-toolbar__pill .mud-input.mud-input-outlined,
+.server-toolbar__pill.mud-input-outlined {
+    border-radius: 999px;
+}
+
+.server-toolbar__pill .mud-input-outlined-border {
+    border-color: var(--mud-palette-lines-inputs);
+    transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.server-toolbar__pill:hover .mud-input-outlined-border {
+    border-color: var(--mud-palette-primary);
+}
+
 .server-toolbar__search {
     min-width: 220px;
-    max-width: 320px;
+    max-width: 340px;
+    flex: 1 1 220px;
 }
 
 .server-toolbar__sort {
-    min-width: 120px;
+    min-width: 110px;
+    max-width: 140px;
+}
+
+/* ===== Custom chip filters ===== */
+.server-toolbar__chips {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.server-toolbar__chip {
+    appearance: none;
+    border: 1px solid var(--mud-palette-lines-default);
+    background: transparent;
+    color: var(--mud-palette-text-secondary);
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    line-height: 1.4;
+    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, transform 80ms ease;
+    user-select: none;
+}
+
+    .server-toolbar__chip:hover {
+        border-color: var(--mud-palette-primary);
+        color: var(--mud-palette-text-primary);
+    }
+
+    .server-toolbar__chip:active {
+        transform: scale(0.97);
+    }
+
+    .server-toolbar__chip.is-active {
+        background: var(--mud-palette-primary);
+        border-color: var(--mud-palette-primary);
+        color: var(--mud-palette-primary-text);
+    }
+
+.server-toolbar__chip--danger.is-active {
+    background: var(--mud-palette-error);
+    border-color: var(--mud-palette-error);
+    color: var(--mud-palette-error-text);
+}
+
+/* ===== Status + counter + icon buttons ===== */
+.server-toolbar__status-dot {
+    font-size: 0.7rem !important;
+}
+
+.server-toolbar__counter {
+    font-variant-numeric: tabular-nums;
+    color: var(--mud-palette-text-secondary);
+    padding: 0 6px;
+    white-space: nowrap;
+}
+
+.server-toolbar__counter-slash {
+    opacity: 0.5;
+    margin: 0 2px;
+}
+
+.server-toolbar__icon-btn {
+    border-radius: 999px !important;
+}
+
+/* ===== Refresh spin ===== */
+.mud-spinner svg {
+    animation: server-toolbar-spin 0.8s linear infinite;
+}
+
+@keyframes server-toolbar-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 720px) {
+    .server-toolbar__search {
+        min-width: 100%;
+        max-width: 100%;
+        flex: 1 1 100%;
+    }
+
+    .server-toolbar__searchbar-right {
+        margin-left: auto;
+    }
 }
