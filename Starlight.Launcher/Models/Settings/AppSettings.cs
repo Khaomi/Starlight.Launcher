@@ -35,13 +35,9 @@ public record AppSettings
     public bool ServerListToolBarTagsBarOpen { get; init; } = true;
     #endregion
     /// <summary>
-    /// AutoSave settings?
+    /// Save interval in milliseconds
     /// </summary>
-    public bool AutoSaveSettings { get; init; } = true;
-    /// <summary>
-    /// AutoSave interval in milliseconds
-    /// </summary>
-    public int AutoSaveIntervalMs { get; init; } = 500;
+    public int SaveIntervalMs { get; init; } = 500;
     /// <summary>
     /// A list of hub urls to use for server lists
     /// </summary>

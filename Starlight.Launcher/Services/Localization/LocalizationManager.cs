@@ -46,7 +46,7 @@ public sealed class LocalizationManager
 #if DEBUG
             _logger.LogDebug("Found system culture {SystemCulture} for current culture {CurrentCulture}", SystemCulture.Name, currentLocale.Name);
 #endif
-            var selectedLocale = settings.GetSettingsAsync().GetAwaiter().GetResult().SelectedLanguage;
+            var selectedLocale = settings.GetSettings().SelectedLanguage;
             if (string.IsNullOrEmpty(selectedLocale))
             {
                 _logger.LogInformation("No locale saved in settings, using system culture");
