@@ -8,6 +8,10 @@
             </MudText>
         </div>
         <MudSelect Variant="Variant.Outlined" T="string" Value="SelectedValue" ValueChanged="OnValueChanged">
+            @if (EmptyOption)
+            {
+                <MudSelectItem T="string" Value="(string?)null">@EmptyOptionName</MudSelectItem>
+            }
             @foreach (var item in Values)
             {
                 <MudSelectItem T="string" Value="@item">@item</MudSelectItem>

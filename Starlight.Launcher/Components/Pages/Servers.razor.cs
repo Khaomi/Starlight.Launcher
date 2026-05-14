@@ -50,8 +50,6 @@ public partial class Servers : ComponentBase, IDisposable
         Settings.FavoritesChanged += OnFavoritesChanged;
 
         RebuildFromFetcher();
-
-        Fetcher.RequestInitialUpdate();
     }
 
     private async void OnFavoritesChanged()

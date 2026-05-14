@@ -38,6 +38,7 @@ public class SettingsService : IAsyncDisposable
         _favoritesPath = Path.Combine(FileSystem.AppDataDirectory, "favorites.json");
         _settings = LoadSettings();
         _favorites = LoadFavorites();
+        RebuildFavoritesIndex(); // Rebuild addresses after load.
     }
 
     private static readonly JsonSerializerOptions JsonOptions = new()

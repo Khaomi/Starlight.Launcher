@@ -37,7 +37,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <MauiIcon Include="Resources\AppIcon\icon.ico" />
+        <MauiIcon Include="Resources\AppIcon\icon.png" />
 
         <MauiImage Include="Resources\Images\*" />
 
@@ -85,7 +85,7 @@
 					{
 						var localeId = Path.GetFileName(dir);
 						var dirFullPath = Path.GetFullPath(dir);
-						var prefixLength = dirFullPath.Length + 1; // +1 чтобы убрать ведущий разделитель
+						var prefixLength = dirFullPath.Length + 1;
 
 						var files = Directory.GetFiles(dir, "*.ftl", SearchOption.AllDirectories)
 											 .Select(f => Path.GetFullPath(f).Substring(prefixLength).Replace('\\', '/'))

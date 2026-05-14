@@ -8,6 +8,7 @@ settings-menu-server-list-category = Server List
 
 settings-menu-language-option = Language
 settings-menu-language-option-description = Select the language for the app.
+settings-menu-language-option-system = System
 
 settings-menu-hub-list-option = Hub List
 settings-menu-hub-list-option-description = Manage the list of hubs.

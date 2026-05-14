@@ -10,6 +10,8 @@ public partial class SettingsSelectorListOption : ComponentBase
     [Parameter] public string Title { get; set; } = default!;
     [Parameter] public string Description { get; set; } = default!;
     [Parameter] public string Icon { get; set; } = default!;
+    [Parameter] public bool EmptyOption { get; set; } = true;
+    [Parameter] public string EmptyOptionName { get; set; } = "Nothing Selected";
     /// <summary>
     /// Means that this component will control value change by itself.
     /// </summary>

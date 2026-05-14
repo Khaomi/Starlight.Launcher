@@ -48,6 +48,8 @@ public static class MauiProgram
 
         var app = builder.Build();
 
+        app.Services.GetRequiredService<HubServerFetcher>().RequestInitialUpdate();
+
         return app;
     }
 }
