@@ -72,12 +72,15 @@
             @FilteredCount<span class="server-toolbar__counter-slash">/</span>@TotalCount
         </MudText>
 
-        <MudIconButton Icon="@(Filters.TagsExpanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.Tune)"
-                       Color="@(HasActiveTagFilters ? Color.Primary : Color.Default)"
-                       Variant="Variant.Text"
-                       Size="Size.Small"
-                       OnClick="ToggleTagsExpanded"
-                       Class="server-toolbar__icon-btn" />
+        @if (TagsExpandButton)
+        {
+            <MudIconButton Icon="@(Filters.TagsExpanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.Tune)"
+                           Color="@(HasActiveTagFilters ? Color.Primary : Color.Default)"
+                           Variant="Variant.Text"
+                           Size="Size.Small"
+                           OnClick="ToggleTagsExpanded"
+                           Class="server-toolbar__icon-btn" />
+        }
 
         <MudIconButton Icon="@Icons.Material.Filled.Refresh"
                        Color="Color.Default"

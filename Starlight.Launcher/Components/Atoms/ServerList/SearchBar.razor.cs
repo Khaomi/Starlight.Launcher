@@ -13,6 +13,7 @@ public partial class SearchBar : ComponentBase
     [Parameter] public int FilteredCount { get; set; }
     [Parameter] public RefreshListStatus Status { get; set; }
     [Parameter] public EventCallback OnRefresh { get; set; }
+    [Parameter] public bool TagsExpandButton { get; set; } = true;
 
     private bool HasActiveTagFilters =>
         Filters.SelectedRP.Count > 0 ||

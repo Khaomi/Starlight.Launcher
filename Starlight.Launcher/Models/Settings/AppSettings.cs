@@ -29,7 +29,7 @@ public record AppSettings
     /// <summary>
     /// Determines should we place TAGS bar at the bottom of APP or at the top
     /// </summary>
-    public ElementPosition ServerListToolBarBottomTagsPosition { get; init; } = ElementPosition.Bottom;
+    public ElementPosition ServerListToolBarBottomTagsPosition { get; init; } = ElementPosition.Left;
     /// <summary>
     /// Determines should we open TAGS bar by default or it should be closed by default
     /// </summary>

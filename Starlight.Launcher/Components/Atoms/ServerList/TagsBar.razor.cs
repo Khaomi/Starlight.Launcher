@@ -14,6 +14,7 @@ public partial class TagsBar : ComponentBase
     [Parameter] public bool IsBottom { get; set; }
     [Parameter] public bool HasSearchAbove { get; set; }
     [Parameter] public bool HasSearchBelow { get; set; }
+    [Parameter] public bool AlwaysExpanded { get; set; } = false;
 
     private void OnRPTagsChanged(IReadOnlyCollection<string?>? strings)
     {
