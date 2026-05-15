@@ -1,3 +1,4 @@
+using Starlight.Launcher.Models.Data;
 using Starlight.Launcher.Models.ServerStatus;
 
 namespace Starlight.Launcher.Models.Settings;
@@ -13,7 +14,7 @@ public record AppSettings
     /// <summary>
     /// Determines should we place navigation menu at the bottom of app or at the left side
     /// </summary>
-    public AppNavigationPosition Navigation { get; init; } = AppNavigationPosition.Bottom;
+    public ElementPosition Navigation { get; init; } = ElementPosition.Bottom;
 
     /// <summary>
     /// Determines should we place search bar at the bottom of TOOLBAR or at the top
@@ -23,12 +24,12 @@ public record AppSettings
     /// <summary>
     /// Determines should we place search bar at the bottom of APP or at the top
     /// </summary>
-    public bool ServerListToolBarBottomSearchBar { get; init ; } = false;
+    public ElementPosition ServerListToolBarSearchPosition { get; init ; } = ElementPosition.Top;
 
     /// <summary>
     /// Determines should we place TAGS bar at the bottom of APP or at the top
     /// </summary>
-    public bool ServerListToolBarBottomTagsBar { get; init; } = true;
+    public ElementPosition ServerListToolBarBottomTagsPosition { get; init; } = ElementPosition.Bottom;
     /// <summary>
     /// Determines should we open TAGS bar by default or it should be closed by default
     /// </summary>

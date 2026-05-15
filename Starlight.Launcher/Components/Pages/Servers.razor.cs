@@ -30,16 +30,16 @@ public partial class Servers : ComponentBase, IDisposable
         new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
     private bool BottomSearch { get; set; }
-    private bool BottomSearchBar { get; set; }
+    private ElementPosition SearchBarPosition { get; set; }
 
-    private bool BottomTagsBar { get; set; }
+    private ElementPosition TagsBarPosition { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         var settings = await Settings.GetSettingsAsync();
         BottomSearch = settings.ServerListToolbarBottomSearch;
-        BottomSearchBar = settings.ServerListToolBarBottomSearchBar;
-        BottomTagsBar = settings.ServerListToolBarBottomTagsBar;
+        SearchBarPosition = settings.ServerListToolBarSearchPosition;
+        TagsBarPosition = settings.ServerListToolBarBottomTagsPosition;
         Fetcher.ServersChanged += OnServersChanged;
         Fetcher.StatusChanged += OnStatusChanged;
         Filters = settings.CachedFilters;

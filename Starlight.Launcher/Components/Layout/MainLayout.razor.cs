@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using MudBlazor;
 using MudBlazor.Services;
-using Starlight.Launcher.Models.Settings;
+using Starlight.Launcher.Models.Data;
 using Starlight.Launcher.Services.Localization;
 using Starlight.Launcher.Services.Settings;
 using Starlight.Launcher.Services.State;
@@ -37,7 +37,7 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowse
     };
 
     private ErrorBoundary? _errorBoundary;
-    private AppNavigationPosition _navigation;
+    private ElementPosition _navigation;
 
     protected override void OnParametersSet()
     {

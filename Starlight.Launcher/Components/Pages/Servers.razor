@@ -1,5 +1,8 @@
-@page "/servers"
+@using Starlight.Launcher.Models.Data
 @using Starlight.Launcher.Services.ServerStatus
+
+@page "/servers"
+
 @implements IDisposable
 
 <div class="server-page">
@@ -24,18 +27,18 @@
     }
     else
     {
-        @if (!BottomSearchBar || !BottomTagsBar)
+        @if (SearchBarPosition != ElementPosition.Bottom || TagsBarPosition != ElementPosition.Bottom)
         {
             <MudPaper Elevation="0" Square="true" Class="server-toolbar">
-                @if (!BottomSearch && !BottomSearchBar)
+                @if (!BottomSearch && SearchBarPosition != ElementPosition.Bottom)
                 {
                     <ServerListSearchBar Filters="Filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
                 }
-                @if (!BottomTagsBar)
+                @if (TagsBarPosition != ElementPosition.Bottom)
                 {
-                    <ServerListTagsBar HasSearchAbove="!BottomSearch && !BottomSearchBar" HasSearchBelow="BottomSearch && !BottomSearchBar" Filters="Filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
+                    <ServerListTagsBar HasSearchAbove="!BottomSearch && SearchBarPosition != ElementPosition.Bottom" HasSearchBelow="BottomSearch && SearchBarPosition != ElementPosition.Bottom" Filters="Filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
                 }
-                @if (BottomSearch && !BottomSearchBar)
+                @if (BottomSearch && SearchBarPosition != ElementPosition.Bottom)
                 {
                     <ServerListSearchBar Filters="Filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
                 }
@@ -75,18 +78,18 @@
                 </MudVirtualize>
             </div>
         }
-        @if (BottomSearchBar || BottomTagsBar)
+        @if (SearchBarPosition == ElementPosition.Bottom || TagsBarPosition == ElementPosition.Bottom)
         {
             <MudPaper Elevation="0" Square="true" Class="server-toolbar">
-                @if (!BottomSearch && BottomSearchBar)
+                @if (!BottomSearch && SearchBarPosition == ElementPosition.Bottom)
                 {
                     <ServerListSearchBar Filters="Filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
                 }
-                @if (BottomTagsBar)
+                @if (TagsBarPosition == ElementPosition.Bottom)
                 {
-                    <ServerListTagsBar HasSearchAbove="!BottomSearch && BottomSearchBar" HasSearchBelow="BottomSearch && BottomSearchBar" IsBottom="true" Filters="Filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
+                    <ServerListTagsBar HasSearchAbove="!BottomSearch && SearchBarPosition == ElementPosition.Bottom" HasSearchBelow="BottomSearch && SearchBarPosition == ElementPosition.Bottom" IsBottom="true" Filters="Filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
                 }
-                @if (BottomSearch && BottomSearchBar)
+                @if (BottomSearch && SearchBarPosition == ElementPosition.Bottom)
                 {
                     <ServerListSearchBar Filters="Filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
                 }

@@ -1,15 +1,15 @@
-﻿@using Starlight.Launcher.Models.Settings
+﻿@using Starlight.Launcher.Models.Data
 @inherits LayoutComponentBase
 
 <MudPopoverProvider />
 
-<MudLayout Class="@(_navigation == AppNavigationPosition.Bottom || _navigation == AppNavigationPosition.Top || _isSmallScreen ? "has-bottom-nav" : "")">
+<MudLayout Class="@(_navigation == ElementPosition.Bottom || _navigation == ElementPosition.Top || _isSmallScreen ? "has-bottom-nav" : "")">
     <MudAppBar Elevation="1">
-        @if (_navigation == AppNavigationPosition.Bottom || _isSmallScreen)
+        @if (_navigation == ElementPosition.Bottom || _isSmallScreen)
         {
             <MudText Typo="Typo.h5" Class="ml-3">STARLIGHT</MudText>
         }
-        else if (_navigation == AppNavigationPosition.Top)
+        else if (_navigation == ElementPosition.Top)
         {
             <div class="bottom-nav">
                 <NavLink href="/" Match="NavLinkMatch.All" class="bottom-nav-item" ActiveClass="active">
@@ -34,9 +34,9 @@
         }
     </MudAppBar>
 
-    @if ((_navigation == AppNavigationPosition.Left || _navigation == AppNavigationPosition.Right) && !_isSmallScreen)
+    @if ((_navigation == ElementPosition.Left || _navigation == ElementPosition.Right) && !_isSmallScreen)
     {
-        <MudDrawer Anchor="_navigation == AppNavigationPosition.Left ? Anchor.Left : Anchor.Right" Elevation="1" ClipMode="DrawerClipMode.Never" Open="true" Variant="@DrawerVariant.Responsive">
+        <MudDrawer Anchor="_navigation == ElementPosition.Left ? Anchor.Left : Anchor.Right" Elevation="1" ClipMode="DrawerClipMode.Never" Open="true" Variant="@DrawerVariant.Responsive">
             <MudDrawerHeader>
                 <MudText Typo="Typo.h5" Class="ml-3">STARLIGHT</MudText>
             </MudDrawerHeader>
@@ -54,7 +54,7 @@
         </MudDrawer>
     }
 
-    <MudMainContent Class="@(_navigation == AppNavigationPosition.Bottom || _isSmallScreen ? "has-bottom-nav" : "")">
+    <MudMainContent Class="@(_navigation == ElementPosition.Bottom || _isSmallScreen ? "has-bottom-nav" : "")">
         <ErrorBoundary @ref="_errorBoundary">
             <ChildContent>
                 @Body
@@ -67,15 +67,15 @@
         </ErrorBoundary>
     </MudMainContent>
 
-    @if (_navigation is AppNavigationPosition.Bottom or AppNavigationPosition.Top || _isSmallScreen)
+    @if (_navigation is ElementPosition.Bottom or ElementPosition.Top || _isSmallScreen)
     {
         <MudAppBar Bottom="true" Fixed="true" Elevation="3">
-            @if (_navigation == AppNavigationPosition.Top)
+            @if (_navigation == ElementPosition.Top)
             {
                 <MudSpacer />
                 <MudText Typo="Typo.h5" Class="mr-3">STARLIGHT</MudText>
             }
-            else if (_navigation == AppNavigationPosition.Bottom)
+            else if (_navigation == ElementPosition.Bottom)
             {
                 <div class="bottom-nav">
                     <NavLink href="/" Match="NavLinkMatch.All" class="bottom-nav-item" ActiveClass="active">
