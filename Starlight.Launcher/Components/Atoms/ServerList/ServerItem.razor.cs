@@ -5,16 +5,16 @@ using Robust.Launcher.Api.Models.ServerStatus;
 using Starlight.Launcher.Components.Pages;
 using Starlight.Launcher.Services.Localization;
 
-namespace Starlight.Launcher.Components.Atoms;
+namespace Starlight.Launcher.Components.Atoms.ServerList;
 
-public partial class ServerListItem : ComponentBase
+public partial class ServerItem : ComponentBase
 {
     [Inject] private LocalizationManager Localization { get; set; } = null!;
     [Parameter, EditorRequired] public ServerStatusData Data { get; set; } = null!;
     [Parameter] public EventCallback<ServerStatusData> OnInfoNeeded { get; set; }
     [Parameter] public EventCallback<ServerStatusData> OnFavorites { get; set; }
     [Parameter] public bool IsInFavorites { get; set; } = false;
-    [Inject] private ILogger<ServerListItem> _logger { get; set; } = null!;
+    [Inject] private ILogger<ServerItem> _logger { get; set; } = null!;
 
     private CancellationTokenSource? _infoCts;
 

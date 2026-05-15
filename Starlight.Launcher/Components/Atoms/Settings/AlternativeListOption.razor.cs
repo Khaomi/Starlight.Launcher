@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Components;
 using Starlight.Launcher.Services.Localization;
 
-namespace Starlight.Launcher.Components.Atoms;
+namespace Starlight.Launcher.Components.Atoms.Settings;
 
-public partial class SettingsAlternativeListOption : ComponentBase
+public partial class AlternativeListOption : ComponentBase
 {
     [Inject] private LocalizationManager Localization { get; set; } = null!;
 

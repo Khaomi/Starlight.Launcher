@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Components;
 
-namespace Starlight.Launcher.Components.Atoms;
+namespace Starlight.Launcher.Components.Atoms.Settings;
 
-public partial class SettingsSelectorListOption : ComponentBase
+public partial class SelectorListOption : ComponentBase
 {
     [Parameter, EditorRequired] public List<string> Values { get; set; }
     [Parameter] public string? SelectedValue { get; set; } = null;

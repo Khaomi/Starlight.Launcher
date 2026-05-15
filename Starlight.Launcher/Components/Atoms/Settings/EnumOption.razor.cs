@@ -1,11 +1,12 @@
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
 
-namespace Starlight.Launcher.Components.Atoms;
+namespace Starlight.Launcher.Components.Atoms.Settings;
 
-public partial class SettingsBoolOption : ComponentBase
+public partial class EnumOption : ComponentBase
 {
-    [Parameter] public bool Value { get; set; } = true;
-    [Parameter] public EventCallback<bool> ValueChanged { get; set; }
+    [Parameter, EditorRequired] public Enum Values { get; set; }
+    [Parameter] public int SelectedValue { get; set; } = 0;
+    [Parameter] public EventCallback<int> ValueChanged { get; set; }
     [Parameter] public string Title { get; set; } = default!;
     [Parameter] public string Description { get; set; } = default!;
     [Parameter] public string Icon { get; set; } = default!;
@@ -13,24 +14,24 @@ public partial class SettingsBoolOption : ComponentBase
     /// Means that this component will control value change by itself.
     /// </summary>
     [Parameter] public bool SelfValueControl { get; set; } = true;
-    [Parameter] public Action<bool>? SelfValueControlAction { get; set; }
-    [Parameter] public Func<Task<bool>>? SelfValueControlInitialization { get; set; }
+    [Parameter] public Action<int>? SelfValueControlAction { get; set; }
+    [Parameter] public Func<Task<int>>? SelfValueControlInitialization { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
         if (SelfValueControlInitialization is null)
             return;
-        Value = await SelfValueControlInitialization.Invoke();
+        SelectedValue = await SelfValueControlInitialization.Invoke();
     }
 
-    private async Task OnValueChanged(bool value)
+    private async Task OnValueChanged(int value)
     {
         if (!SelfValueControl)
             await ValueChanged.InvokeAsync(value);
         else
         {
-            Value = value;
+            SelectedValue = value;
             SelfValueControlAction?.Invoke(value);
         }
     }

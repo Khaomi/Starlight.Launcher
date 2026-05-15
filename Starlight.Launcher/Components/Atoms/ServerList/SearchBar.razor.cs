@@ -3,9 +3,9 @@ using Starlight.Launcher.Models.ServerStatus;
 using Starlight.Launcher.Services.Localization;
 using Starlight.Launcher.Services.ServerStatus;
 
-namespace Starlight.Launcher.Components.Atoms;
+namespace Starlight.Launcher.Components.Atoms.ServerList;
 
-public partial class ServerListSearchBar : ComponentBase
+public partial class SearchBar : ComponentBase
 {
     [Inject] LocalizationManager Localization { get; set; } = null!;
     [Parameter, EditorRequired] public ServerListFilters Filters { get; set; } = null!;

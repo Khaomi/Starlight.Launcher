@@ -1,3 +1,4 @@
+@using Starlight.Launcher.Components.Atoms.ServerList
 @using Starlight.Launcher.Models.Data
 @using Starlight.Launcher.Services.ServerStatus
 
@@ -32,15 +33,15 @@
             <MudPaper Elevation="0" Square="true" Class="server-toolbar">
                 @if (!BottomSearch && SearchBarPosition != ElementPosition.Bottom)
                 {
-                    <ServerListSearchBar Filters="Filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
+                    <SearchBar Filters="Filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
                 }
                 @if (TagsBarPosition != ElementPosition.Bottom)
                 {
-                    <ServerListTagsBar HasSearchAbove="!BottomSearch && SearchBarPosition != ElementPosition.Bottom" HasSearchBelow="BottomSearch && SearchBarPosition != ElementPosition.Bottom" Filters="Filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
+                    <TagsBar HasSearchAbove="!BottomSearch && SearchBarPosition != ElementPosition.Bottom" HasSearchBelow="BottomSearch && SearchBarPosition != ElementPosition.Bottom" Filters="Filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
                 }
                 @if (BottomSearch && SearchBarPosition != ElementPosition.Bottom)
                 {
-                    <ServerListSearchBar Filters="Filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
+                    <SearchBar Filters="Filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
                 }
             </MudPaper>
         }
@@ -73,7 +74,7 @@
                 Context="server"
                 ItemSize="56"
                 OverscanCount="3">
-                    <ServerListItem @key="server.Address" Data="server"
+                    <ServerItem @key="server.Address" Data="server"
                                     IsInFavorites="@(_favoriteAddresses.Contains(server.Address))" OnInfoNeeded="HandleInfoNeeded" OnFavorites="async x => await HandleFavorite(x)" />
                 </MudVirtualize>
             </div>
@@ -83,15 +84,15 @@
             <MudPaper Elevation="0" Square="true" Class="server-toolbar">
                 @if (!BottomSearch && SearchBarPosition == ElementPosition.Bottom)
                 {
-                    <ServerListSearchBar Filters="Filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
+                    <SearchBar Filters="Filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
                 }
                 @if (TagsBarPosition == ElementPosition.Bottom)
                 {
-                    <ServerListTagsBar HasSearchAbove="!BottomSearch && SearchBarPosition == ElementPosition.Bottom" HasSearchBelow="BottomSearch && SearchBarPosition == ElementPosition.Bottom" IsBottom="true" Filters="Filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
+                    <TagsBar HasSearchAbove="!BottomSearch && SearchBarPosition == ElementPosition.Bottom" HasSearchBelow="BottomSearch && SearchBarPosition == ElementPosition.Bottom" IsBottom="true" Filters="Filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
                 }
                 @if (BottomSearch && SearchBarPosition == ElementPosition.Bottom)
                 {
-                    <ServerListSearchBar Filters="Filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
+                    <SearchBar Filters="Filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" />
                 }
             </MudPaper>
         }
