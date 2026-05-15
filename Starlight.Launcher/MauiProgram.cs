@@ -37,6 +37,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<LocalizationManager>();
         builder.Services.AddTransient<IMauiInitializeService, LocalizationInitializer>();
         builder.Services.AddSingleton<HubApi>();
+        builder.Services.AddSingleton<AuthApi>();
         builder.Services.AddSingleton<HubServerFetcher>();
         builder.Services.AddSingleton<ServerStatusCache>();
         builder.Services.AddMauiBlazorWebView();
