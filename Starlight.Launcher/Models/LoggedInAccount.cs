@@ -1,9 +1,10 @@
+using Robust.Launcher.Api.Models;
 using Robust.Launcher.Api.Models.Data;
-using System;
+using Starlight.Launcher.Models.Helpers;
 
-namespace Robust.Launcher.Api.Models;
+namespace Starlight.Launcher.Api.Models;
 
-public abstract class LoggedInAccount
+public abstract class LoggedInAccount : ObservableObject
 {
     public string Username => LoginInfo.Username;
     public Guid UserId => LoginInfo.UserId;

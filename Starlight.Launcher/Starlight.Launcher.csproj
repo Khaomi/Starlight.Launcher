@@ -63,9 +63,7 @@
 		<ProjectReference Include="..\Robust.Launcher.Api\Robust.Launcher.Api.csproj" />
 	</ItemGroup>
 
-	<UsingTask TaskName="GenerateIndex"
-			   TaskFactory="RoslynCodeTaskFactory"
-			   AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+	<UsingTask TaskName="GenerateIndex" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
 		<ParameterGroup>
 			<LocaleRoot ParameterType="System.String" Required="true" />
 			<OutputFile ParameterType="System.String" Required="true" />
@@ -111,7 +109,6 @@
 			<LocalizationFiles Include="Resources\Raw\Locale\**\*.ftl" />
 		</ItemGroup>
 
-		<GenerateIndex LocaleRoot="$(MSBuildProjectDirectory)\Resources\Raw\Locale"
-					   OutputFile="$(MSBuildProjectDirectory)\Resources\Raw\Locale\manifest.json" />
+		<GenerateIndex LocaleRoot="$(MSBuildProjectDirectory)\Resources\Raw\Locale" OutputFile="$(MSBuildProjectDirectory)\Resources\Raw\Locale\manifest.json" />
 	</Target>
 </Project>

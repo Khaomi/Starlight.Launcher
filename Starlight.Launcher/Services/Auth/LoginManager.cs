@@ -2,12 +2,17 @@ using Robust.Launcher.Api.Api;
 using Robust.Launcher.Api.Models;
 using Robust.Launcher.Api.Models.Data;
 using Serilog;
+using Starlight.Launcher.Api.Models;
+using Starlight.Launcher.Models.Helpers;
+using Starlight.Launcher.Services.Settings;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace Starlight.Launcher.Services.Auth;
 
 // This is different from DataManager in that this class actually manages logic more complex than raw storage.
 // Checking and refreshing tokens, marking accounts as "need signing in again", etc...
-public sealed class LoginManager
+public sealed class LoginManager : ObservableObject
 {
     // TODO: If the user tries to connect to a server or such
     // on the split second interval that the launcher does a token refresh
@@ -19,6 +24,11 @@ public sealed class LoginManager
     private readonly AuthApi _authApi;
 
     private IDisposable? _timer;
+
+    public static readonly TimeSpan TokenRefreshInterval = TimeSpan.FromDays(7);
+
+    private CancellationTokenSource? _cts;
+    private Task? _refreshTask;
 
     private Guid? _activeLoginId;
 
@@ -39,9 +49,12 @@ public sealed class LoginManager
                 //}
             }
 
-            //this.RaiseAndSetIfChanged(ref _activeLoginId, value);
-            //this.RaisePropertyChanged(nameof(ActiveAccount));
-            //_cfg.SelectedLoginId = value;
+            if (SetField(ref _activeLoginId, value))
+            {
+                OnPropertyChanged(nameof(ActiveAccount));
+
+                //_cfg.SelectedLoginId = value;
+            }
         }
     }
 
@@ -53,7 +66,7 @@ public sealed class LoginManager
 
     //public IObservableCache<LoggedInAccount, Guid> Logins { get; }
 
-    public LoginManager(AuthApi authApi)
+    public LoginManager(AuthApi authApi, SettingsService settings)
     {
         _authApi = authApi;
 
@@ -79,19 +92,31 @@ public sealed class LoginManager
     {
         // Set up timer so that if the user leaves their launcher open for a month or something
         // his tokens don't expire.
-        //_timer = DispatcherTimer.Run(() =>
-        //{
-        //    async void Impl()
-        //    {
-        //        await RefreshAllTokens();
-        //    }
+        _cts = new CancellationTokenSource();
 
-        //    Impl();
-        //    return true;
-        //}, ConfigConstants.TokenRefreshInterval, DispatcherPriority.Background);
+        _refreshTask = RunRefreshLoop(_cts.Token);
+
+        await RefreshAllTokens();
 
         // Refresh all tokens we got.
         await RefreshAllTokens();
+    }
+
+    private async Task RunRefreshLoop(CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(TokenRefreshInterval);
+
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                await RefreshAllTokens();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // normal shutdown
+        }
     }
 
     private async Task RefreshAllTokens()
@@ -156,31 +181,31 @@ public sealed class LoginManager
 
     private async Task UpdateSingleAccountStatus(ActiveLoginData data)
     {
-        //if (data.LoginInfo.Token.ShouldRefresh())
-        //{
-        //    Log.Debug("Refreshing token for {login}", data.LoginInfo);
+        if (data.LoginInfo.Token.ShouldRefresh())
+        {
+            Log.Debug("Refreshing token for {login}", data.LoginInfo);
             // If we need to refresh the token anyways we'll just
             // implicitly do the "is it still valid" with the refresh request.
-        //    var newTokenHopefully = await _authApi.RefreshTokenAsync(data.LoginInfo.Token.Token);
-        //    if (newTokenHopefully == null)
-        //    {
+            var newTokenHopefully = await _authApi.RefreshTokenAsync(data.LoginInfo.Token.Token);
+            if (newTokenHopefully == null)
+            {
                 // Token expired or whatever?
-        //        data.SetStatus(AccountLoginStatus.Expired);
-        //        Log.Debug("Token for {login} expired while refreshing it", data.LoginInfo);
-        //    }
-        //    else
-        //    {
-        //        Log.Debug("Refreshed token for {login}", data.LoginInfo);
-        //        data.LoginInfo.Token = newTokenHopefully.Value;
-        //        data.SetStatus(AccountLoginStatus.Available);
-        //    }
-        //}
-        //else if (data.Status == AccountLoginStatus.Unsure)
-        //{
-        //    var valid = await _authApi.CheckTokenAsync(data.LoginInfo.Token.Token);
-        //    Log.Debug("Token for {login} still valid? {valid}", data.LoginInfo, valid);
-        //    data.SetStatus(valid ? AccountLoginStatus.Available : AccountLoginStatus.Expired);
-        //}
+                data.SetStatus(AccountLoginStatus.Expired);
+                Log.Debug("Token for {login} expired while refreshing it", data.LoginInfo);
+            }
+            else
+            {
+                Log.Debug("Refreshed token for {login}", data.LoginInfo);
+                data.LoginInfo.Token = newTokenHopefully.Value;
+                data.SetStatus(AccountLoginStatus.Available);
+            }
+        }
+        else if (data.Status == AccountLoginStatus.Unsure)
+        {
+            var valid = await _authApi.CheckTokenAsync(data.LoginInfo.Token.Token);
+            Log.Debug("Token for {login} still valid? {valid}", data.LoginInfo, valid);
+            data.SetStatus(valid ? AccountLoginStatus.Available : AccountLoginStatus.Expired);
+        }
     }
 
     private sealed class ActiveLoginData : LoggedInAccount
@@ -195,8 +220,17 @@ public sealed class LoginManager
 
         public void SetStatus(AccountLoginStatus status)
         {
-            //this.RaiseAndSetIfChanged(ref _status, status, nameof(Status));
-            Log.Debug("Setting status for login {account} to {status}", LoginInfo, status);
+            if (_status == status)
+                return;
+
+            _status = status;
+
+            Log.Debug(
+                "Setting status for login {account} to {status}",
+                LoginInfo,
+                status);
+
+            OnPropertyChanged(nameof(Status));
         }
     }
 }
