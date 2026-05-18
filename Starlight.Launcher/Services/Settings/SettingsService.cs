@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Robust.Launcher.Api.Models.Data;
 using Serilog;
 using Starlight.Launcher.Models.Data;
 using Starlight.Launcher.Models.ServerStatus;
@@ -10,24 +11,33 @@ namespace Starlight.Launcher.Services.Settings;
 public class SettingsService : IAsyncDisposable
 {
     #region Variables
-    private readonly string _filePath;
-    private readonly string _favoritesPath;
 
     private CancellationTokenSource? _saveCts;
 
 
     private AppSettings _settings;
     private readonly SemaphoreSlim _settingsLock = new(1, 1);
+    private readonly string _filePath;
 
     private List<FavoriteServer> _favorites;
     private readonly SemaphoreSlim _favoritesLock = new(1, 1);
+    private readonly string _favoritesPath;
     private volatile HashSet<string> _favoriteAddresses = new(StringComparer.OrdinalIgnoreCase);
 
-    public IReadOnlySet<string> GetFavoriteAddressesSnapshot() => _favoriteAddresses;
+    private Dictionary<Guid, LoginInfo> _logins = new();
+    private readonly SemaphoreSlim _loginsLock = new(1, 1);
+    private readonly string _loginsPath;
 
     private readonly ILogger<SettingsService> _logger;
 
     public event Action? FavoritesChanged;
+
+    public event Action? LoginsChanged;
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = true
+    };
 
     #endregion
 
@@ -36,17 +46,16 @@ public class SettingsService : IAsyncDisposable
         _logger = logger;
         _filePath = Path.Combine(FileSystem.AppDataDirectory, "settings.json");
         _favoritesPath = Path.Combine(FileSystem.AppDataDirectory, "favorites.json");
+        _loginsPath = Path.Combine(FileSystem.AppDataDirectory, "logins.json");
         _settings = LoadSettings();
         _favorites = LoadFavorites();
+        _logins = LoadLogins();
         RebuildFavoritesIndex(); // Rebuild addresses after load.
     }
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = true
-    };
+    public IReadOnlySet<string> GetFavoriteAddressesSnapshot() => _favoriteAddresses;
 
-    public void ScheduleSave(bool favorites = false)
+    public void ScheduleSave(bool favorites = false, bool logins = false)
     {
         var cts = new CancellationTokenSource();
         var old = Interlocked.Exchange(ref _saveCts, cts);
@@ -58,7 +67,7 @@ public class SettingsService : IAsyncDisposable
             try
             {
                 await Task.Delay(_settings.SaveIntervalMs, cts.Token);
-                await SaveAsync(favorites);
+                await SaveAsync(favorites, logins);
             }
             catch (OperationCanceledException) { }
             catch (Exception ex)
@@ -110,7 +119,31 @@ public class SettingsService : IAsyncDisposable
         }
     }
 
-    public async Task SaveAsync(bool favorites)
+    private Dictionary<Guid, LoginInfo> LoadLogins()
+    {
+        try
+        {
+            if (!File.Exists(_loginsPath))
+            {
+                _logger.LogInformation("Can't find logins file, fallback to empty.");
+                return new();
+            }
+
+            var json = File.ReadAllText(_loginsPath);
+            var logins = JsonSerializer.Deserialize<List<LoginInfo>>(json) ?? new();
+
+            _logger.LogInformation("Successfully loaded logins");
+
+            return logins.ToDictionary(x => x.UserId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to load logins, using empty list");
+            return new();
+        }
+    }
+
+    public async Task SaveAsync(bool favorites, bool logins = false)
     {
         if (!favorites)
         {
@@ -146,6 +179,25 @@ public class SettingsService : IAsyncDisposable
             finally
             {
                 _favoritesLock.Release();
+            }
+        }
+
+        if (logins)
+        {
+            await _loginsLock.WaitAsync();
+            try
+            {
+                var json = JsonSerializer.Serialize(_logins.Values, JsonOptions);
+
+                await WriteFileSafeAsync(json, Path.GetDirectoryName(_loginsPath)!, _loginsPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to save logins");
+            }
+            finally
+            {
+                _loginsLock.Release();
             }
         }
     }
@@ -309,6 +361,41 @@ public class SettingsService : IAsyncDisposable
 
     #endregion
 
+    #region Sync Methods Logins
+
+    public Dictionary<Guid, LoginInfo> GetLogins()
+    {
+        _loginsLock.Wait();
+        try
+        {
+            return _logins;
+        }
+        finally
+        {
+            _loginsLock.Release();
+        }
+    }
+
+    public void WriteLogins(Dictionary<Guid, LoginInfo> logins)
+    {
+        _loginsLock.Wait();
+        try
+        {
+            _logins = logins;
+            RebuildFavoritesIndex();
+        }
+        finally
+        {
+            _loginsLock.Release();
+        }
+
+        LoginsChanged?.Invoke();
+
+        ScheduleSave(logins: true);
+    }
+
+    #endregion
+
     private void RebuildFavoritesIndex()
     {
         _favoriteAddresses = new HashSet<string>(
@@ -322,7 +409,7 @@ public class SettingsService : IAsyncDisposable
         cts?.Cancel();
         cts?.Dispose();
 
-        await SaveAsync(false);
+        await SaveAsync(false, true);
         await SaveAsync(true);
 
         _settingsLock.Dispose();
