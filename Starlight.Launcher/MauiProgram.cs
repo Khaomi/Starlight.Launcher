@@ -4,6 +4,7 @@ using Robust.Launcher.Api.Api;
 using Robust.Launcher.Api.Models.ServerStatus;
 using Robust.Launcher.Api.Utility;
 using Serilog;
+using Starlight.Launcher.Services.Auth;
 using Starlight.Launcher.Services.Localization;
 using Starlight.Launcher.Services.ServerStatus;
 using Starlight.Launcher.Services.Settings;
@@ -32,6 +33,9 @@ public static class MauiProgram
 
         var httpClient = HappyEyeballsHttp.CreateHttpClient();
         builder.Services.AddSingleton(httpClient);
+        builder.Services.AddSingleton<IDispatcher>(sp =>
+            sp.GetRequiredService<IDispatcherProvider>().GetForCurrentThread()
+                ?? throw new InvalidOperationException("No dispatcher available"));
         builder.Services.AddSingleton<SettingsService>();
         builder.Services.AddSingleton<AppState>();
         builder.Services.AddSingleton<LocalizationManager>();
@@ -40,6 +44,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<AuthApi>();
         builder.Services.AddSingleton<HubServerFetcher>();
         builder.Services.AddSingleton<ServerStatusCache>();
+        builder.Services.AddSingleton<LoginManager>();
         builder.Services.AddMauiBlazorWebView();
         builder.Services.AddMudServices();
 
@@ -50,6 +55,7 @@ public static class MauiProgram
         var app = builder.Build();
 
         app.Services.GetRequiredService<HubServerFetcher>().RequestInitialUpdate();
+        app.Services.GetRequiredService<LoginManager>().Initialize();
 
         return app;
     }
