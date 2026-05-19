@@ -1,0 +1,303 @@
+@page "/auth"
+@using Robust.Launcher.Api.Api
+@using Robust.Launcher.Api.Models
+@using Starlight.Launcher.Api.Models
+@using Starlight.Launcher.Services.Auth
+@inject LoginManager LoginManager
+@inject AuthApi AuthApi
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+@implements IDisposable
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+    <MudPaper Class="pa-6" Elevation="3">
+
+        @switch (_mode)
+        {
+            case Mode.AccountList:
+                <MudText Typo="Typo.h5" Class="mb-4"> Accounts </MudText>
+
+                @if (LoginManager.Logins.Count == 0)
+                {
+                    <MudText Class="mb-4">You haven't added any accounts yet.</MudText>
+                }
+                else
+                {
+                    <MudList T = "LoggedInAccount" Dense = "true">
+                        @foreach (var account in LoginManager.Logins)
+                        {
+                            var acc = account;
+                            var isActive = LoginManager.ActiveAccountId == acc.UserId;
+
+                            <MudListItem T = "LoggedInAccount" Class = "my-1">
+                                <MudStack Row = "true" AlignItems = "AlignItems.Center" Justify = "Justify.SpaceBetween" Style = "width:100%">
+                                    <MudStack Spacing = "0">
+                                        <MudText Typo = "Typo.body1">
+                                            @acc.LoginInfo.Username
+                                            @if (isActive)
+                                            {
+                                                <MudChip T = "string" Size = "Size.Small" Color = "Color.Primary" Class = "ml-2">active</MudChip>
+                                            }
+                                        </MudText>
+                                        <MudText Typo = "Typo.caption" > @StatusLabel(acc.Status) </MudText>
+                                    </MudStack>
+
+                                    <MudStack Row = "true" Spacing = "1">
+                                        @if (acc.Status == AccountLoginStatus.Expired)
+                                        {
+                                            <MudButton Size = "Size.Small"
+                                              Variant = "Variant.Filled"
+                                              Color = "Color.Warning"
+                                              OnClick = "() => BeginRelogin(acc)">
+                                                Login again
+                                            </MudButton>
+                                        }
+                                        else
+                                        {
+                                            <MudButton Size = "Size.Small"
+                                              Variant = "Variant.Filled"
+                                              Color = "Color.Primary"
+                                              Disabled = "@(isActive || _busy)"
+                                              OnClick = "() => SelectAccount(acc)" >
+                                                Select
+                                            </MudButton>
+                                        }
+
+                                        <MudIconButton Icon = "@Icons.Material.Filled.Delete"
+                                          Color = "Color.Error"
+                                          Size = "Size.Small"
+                                          Disabled = "_busy"
+                                          OnClick = "() => RemoveAccount(acc)"/>
+                                    </MudStack>
+                                </MudStack>
+                            </MudListItem>
+                            <MudDivider/>
+                        }
+                    </MudList>
+                }
+
+                <MudButton Variant = "Variant.Filled"
+                  Color = "Color.Primary"
+                  FullWidth = "true"
+                  StartIcon = "@Icons.Material.Filled.Add"
+                  Class = "mt-4"
+                  OnClick = "GoToSignIn" >
+                    Add Account
+                </MudButton>
+                break;
+
+            case Mode.SignIn:
+                <MudStack Row = "true" AlignItems = "AlignItems.Center" Class = "mb-4">
+                    @if (LoginManager.Logins.Count > 0)
+                    {
+                        <MudIconButton Icon = "@Icons.Material.Filled.ArrowBack"
+                          OnClick = "BackToAccountList"
+                          Disabled = "_busy"/>
+                    }
+                    <MudText Typo = "Typo.h5">
+                        @(_relogUserId.HasValue ? "Log in again" : "Log in")
+                    </MudText>
+                </MudStack>
+
+                <MudTextField @bind-Value = "_signInUsername"
+                  Label = "Username"
+                  Variant = "Variant.Outlined"
+                  Disabled = "@(_busy || _relogUserId.HasValue)"
+                  Class = "mb-3"/>
+
+                <MudTextField @bind-Value = "_signInPassword"
+                  Label = "Password"
+                  InputType = "InputType.Password"
+                  Variant = "Variant.Outlined"
+                  Disabled = "_busy"
+                  Class = "mb-3"
+                  OnKeyDown = "OnSignInKey"/>
+
+                @if (_signInTfaRequired)
+                {
+                    <MudTextField @bind-Value = "_signInTfaCode"
+                      Label = "2FA Code"
+                      Variant = "Variant.Outlined"
+                      Disabled = "_busy"
+                      Class = "mb-3"
+                      OnKeyDown = "OnSignInKey"/>
+                }
+
+                @if (!string.IsNullOrEmpty(_signInError))
+                {
+                    <MudAlert Severity = "Severity.Error" Class = "mb-3"> @_signInError </MudAlert>
+                }
+
+                @if (_signInShowResend)
+                {
+                    <MudButton Variant = "Variant.Text"
+                      Color = "Color.Info"
+                      FullWidth = "true"
+                      Disabled = "_busy"
+                      OnClick = "ResendConfirmation"
+                      Class = "mb-3">
+                        Resend the confirmation email
+                    </MudButton>
+                }
+
+                <MudButton Variant = "Variant.Filled"
+                  Color = "Color.Primary"
+                  FullWidth = "true"
+                  Disabled = "_busy"
+                  OnClick = "DoSignIn"
+                  Class = "mb-3">
+                    @if (_busy)
+                    {
+                        <MudProgressCircular Size = "Size.Small" Indeterminate = "true" Class = "mr-2"/>
+                        <span>Login...</span>
+                    }
+                    else
+                    {
+                        <span>Sign In</span>
+                    }
+                </MudButton>
+
+                <MudStack Row = "true" Justify = "Justify.SpaceBetween">
+                    <MudButton Variant = "Variant.Text"
+                      Disabled = "_busy"
+                      OnClick = "() => SwitchMode(Mode.ForgotPassword)">
+                        Forgot your password?
+                    </MudButton>
+                    <MudButton Variant = "Variant.Text"
+                      Disabled = "_busy"
+                      OnClick = "() => SwitchMode(Mode.Register)">
+                        Registration
+                    </MudButton>
+                </MudStack>
+                break;
+
+            case Mode.Register:
+                <MudStack Row = "true" AlignItems = "AlignItems.Center" Class = "mb-4">
+                    <MudIconButton Icon = "@Icons.Material.Filled.ArrowBack"
+                      OnClick = "() => SwitchMode(Mode.SignIn)"
+                      Disabled = "_busy"/>
+                    <MudText Typo = "Typo.h5"> Registration </MudText>
+                </MudStack>
+
+                @if (_registerSuccessMessage != null)
+                {
+                    <MudAlert Severity = "Severity.Success" Class = "mb-3"> @_registerSuccessMessage </MudAlert>
+                    <MudButton Variant = "Variant.Filled"
+                      Color = "Color.Primary"
+                      FullWidth = "true"
+                      OnClick = "() => SwitchMode(Mode.SignIn)" >
+                        Sign In
+                    </MudButton>
+                    return;
+                }
+
+                <MudTextField @bind-Value = "_registerUsername"
+                  Label = "Username"
+                  Variant = "Variant.Outlined"
+                  Disabled = "_busy"
+                  Class = "mb-3"/>
+
+                <MudTextField @bind-Value = "_registerEmail"
+                  Label = "Email"
+                  InputType = "InputType.Email"
+                  Variant = "Variant.Outlined"
+                  Disabled = "_busy"
+                  Class = "mb-3"/>
+
+                <MudTextField @bind-Value = "_registerPassword"
+                  Label = "Password"
+                  InputType = "InputType.Password"
+                  Variant = "Variant.Outlined"
+                  Disabled = "_busy"
+                  Class = "mb-3"/>
+
+                <MudTextField @bind-Value = "_registerPasswordConfirm"
+                  Label = "Confirm password"
+                  InputType = "InputType.Password"
+                  Variant = "Variant.Outlined"
+                  Disabled = "_busy"
+                  Class = "mb-3"/>
+
+                @if (_registerErrors != null && _registerErrors.Length > 0)
+                {
+                    <MudAlert Severity = "Severity.Error" Class = "mb-3">
+                        @foreach (var err in _registerErrors)
+                        {
+                            <div> @err </div>
+                        }
+                    </MudAlert>
+                }
+
+                <MudButton Variant = "Variant.Filled"
+                  Color = "Color.Primary"
+                  FullWidth = "true"
+                  Disabled = "_busy"
+                  OnClick = "DoRegister">
+                    @if (_busy)
+                    {
+                        <MudProgressCircular Size = "Size.Small" Indeterminate = "true" Class = "mr-2"/>
+                        <span>Registration...</span>
+                    }
+                    else
+                    {
+                        <span>Sign up</span>
+                    }
+                </MudButton>
+                break;
+
+            case Mode.ForgotPassword:
+                <MudStack Row = "true" AlignItems = "AlignItems.Center" Class = "mb-4">
+                    <MudIconButton Icon = "@Icons.Material.Filled.ArrowBack"
+                      OnClick = "() => SwitchMode(Mode.SignIn)"
+                      Disabled = "_busy" />
+                    <MudText Typo="Typo.h5">Password Recovery</MudText>
+                </MudStack>
+
+                @if (_forgotSuccess)
+                {
+                    <MudAlert Severity = "Severity.Success" Class = "mb-3">
+                        If an account with that email address exists, password reset instructions have been sent to it.
+                    </MudAlert>
+                    <MudButton Variant = "Variant.Filled"
+                      Color = "Color.Primary"
+                      FullWidth = "true"
+                      OnClick = "() => SwitchMode(Mode.SignIn)">
+                        Sign In
+                    </MudButton>
+                    return;
+                }
+
+                <MudText Class="mb-3">Enter the email address associated with your account.</MudText>
+
+                <MudTextField @bind-Value = "_forgotEmail"
+                  Label = "Email"
+                  InputType = "InputType.Email"
+                  Variant = "Variant.Outlined"
+                  Disabled = "_busy"
+                  Class = "mb-3"/>
+
+                @if (!string.IsNullOrEmpty(_forgotError))
+                {
+                    <MudAlert Severity = "Severity.Error" Class = "mb-3"> @_forgotError </MudAlert>
+                }
+
+                <MudButton Variant = "Variant.Filled"
+                  Color = "Color.Primary"
+                  FullWidth = "true"
+                  Disabled = "_busy"
+                  OnClick = "DoForgotPassword">
+                    @if (_busy)
+                    {
+                        <MudProgressCircular Size = "Size.Small" Indeterminate = "true" Class = "mr-2"/>
+                        <span>Sending...</span>
+                    }
+                    else
+                    {
+                        <span>Send</span>
+                    }
+                </MudButton>
+                break;
+        }
+
+    </MudPaper>
+</MudContainer>
