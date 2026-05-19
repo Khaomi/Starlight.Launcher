@@ -12,7 +12,9 @@ public class SettingsService : IAsyncDisposable
 {
     #region Variables
 
-    private CancellationTokenSource? _saveCts;
+    private CancellationTokenSource? _settingsSaveCts;
+    private CancellationTokenSource? _favoritesSaveCts;
+    private CancellationTokenSource? _loginsSaveCts;
 
 
     private AppSettings _settings;
@@ -55,24 +57,41 @@ public class SettingsService : IAsyncDisposable
 
     public IReadOnlySet<string> GetFavoriteAddressesSnapshot() => _favoriteAddresses;
 
-    public void ScheduleSave(bool favorites = false, bool logins = false)
+    public void ScheduleSave(bool settings = true, bool favorites = false, bool logins = false)
+    {
+        if (settings)
+            ScheduleSaveInternal(ref _settingsSaveCts, SaveSettingsAsync, "settings");
+
+        if (favorites)
+            ScheduleSaveInternal(ref _favoritesSaveCts, SaveFavoritesAsync, "favorites");
+
+        if (logins)
+            ScheduleSaveInternal(ref _loginsSaveCts, SaveLoginsAsync, "logins");
+    }
+
+    private void ScheduleSaveInternal(
+        ref CancellationTokenSource? ctsField,
+        Func<Task> saveAction,
+        string what)
     {
         var cts = new CancellationTokenSource();
-        var old = Interlocked.Exchange(ref _saveCts, cts);
+        var old = Interlocked.Exchange(ref ctsField, cts);
         old?.Cancel();
         old?.Dispose();
+
+        var delay = _settings.SaveIntervalMs;
 
         _ = Task.Run(async () =>
         {
             try
             {
-                await Task.Delay(_settings.SaveIntervalMs, cts.Token);
-                await SaveAsync(favorites, logins);
+                await Task.Delay(delay, cts.Token);
+                await saveAction();
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException) { /* перепланировано */ }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Auto-save failed");
+                _logger.LogError(ex, "Auto-save failed for {what}", what);
             }
         });
     }
@@ -143,63 +162,70 @@ public class SettingsService : IAsyncDisposable
         }
     }
 
-    public async Task SaveAsync(bool favorites, bool logins = false)
+    private async Task SaveSettingsAsync()
     {
-        if (!favorites)
+        await _settingsLock.WaitAsync();
+        try
         {
-            await _settingsLock.WaitAsync();
-            try
-            {
-                var json = JsonSerializer.Serialize(_settings, JsonOptions);
-
-                await WriteFileSafeAsync(json, Path.GetDirectoryName(_filePath)!, _filePath);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to save settings");
-            }
-            finally
-            {
-                _settingsLock.Release();
-            }
+            var json = JsonSerializer.Serialize(_settings, JsonOptions);
+            await WriteFileSafeAsync(json, Path.GetDirectoryName(_filePath)!, _filePath);
+            _logger.LogDebug("Settings saved");
         }
-        else
+        catch (Exception ex)
         {
-            await _favoritesLock.WaitAsync();
-            try
-            {
-                var json = JsonSerializer.Serialize(_favorites, JsonOptions);
-
-                await WriteFileSafeAsync(json, Path.GetDirectoryName(_favoritesPath)!, _favoritesPath);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to save favorites");
-            }
-            finally
-            {
-                _favoritesLock.Release();
-            }
+            _logger.LogError(ex, "Failed to save settings");
         }
-
-        if (logins)
+        finally
         {
-            await _loginsLock.WaitAsync();
-            try
-            {
-                var json = JsonSerializer.Serialize(_logins.Values, JsonOptions);
-
-                await WriteFileSafeAsync(json, Path.GetDirectoryName(_loginsPath)!, _loginsPath);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to save logins");
-            }
-            finally
-            {
-                _loginsLock.Release();
-            }
+            _settingsLock.Release();
         }
+    }
+
+    private async Task SaveFavoritesAsync()
+    {
+        await _favoritesLock.WaitAsync();
+        try
+        {
+            var json = JsonSerializer.Serialize(_favorites, JsonOptions);
+            await WriteFileSafeAsync(json, Path.GetDirectoryName(_favoritesPath)!, _favoritesPath);
+            _logger.LogDebug("Favorites saved");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save favorites");
+        }
+        finally
+        {
+            _favoritesLock.Release();
+        }
+    }
+
+    private async Task SaveLoginsAsync()
+    {
+        await _loginsLock.WaitAsync();
+        try
+        {
+            var json = JsonSerializer.Serialize(_logins.Values, JsonOptions);
+            await WriteFileSafeAsync(json, Path.GetDirectoryName(_loginsPath)!, _loginsPath);
+            _logger.LogDebug("Logins saved ({count})", _logins.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save logins");
+        }
+        finally
+        {
+            _loginsLock.Release();
+        }
+    }
+
+    public async Task SaveAllAsync(bool settings = true, bool favorites = true, bool logins = true)
+    {
+        var tasks = new List<Task>();
+        if (settings) tasks.Add(SaveSettingsAsync());
+        if (favorites) tasks.Add(SaveFavoritesAsync());
+        if (logins) tasks.Add(SaveLoginsAsync());
+        await Task.WhenAll(tasks);
     }
 
     private async Task WriteFileSafeAsync(string content, string dir, string filePath)
@@ -248,7 +274,7 @@ public class SettingsService : IAsyncDisposable
             _settingsLock.Release();
         }
 
-        ScheduleSave();
+        ScheduleSave(settings: true);
     }
 
     #endregion
@@ -286,7 +312,7 @@ public class SettingsService : IAsyncDisposable
             _settingsLock.Release();
         }
 
-        ScheduleSave();
+        ScheduleSave(settings: true);
     }
 
     #endregion
@@ -321,7 +347,7 @@ public class SettingsService : IAsyncDisposable
 
         FavoritesChanged?.Invoke();
 
-        ScheduleSave(true);
+        ScheduleSave(settings: false, favorites: true);
     }
 
     #endregion
@@ -356,7 +382,7 @@ public class SettingsService : IAsyncDisposable
 
         FavoritesChanged?.Invoke();
 
-        ScheduleSave(true);
+        ScheduleSave(settings: false, favorites: true);
     }
 
     #endregion
@@ -376,9 +402,60 @@ public class SettingsService : IAsyncDisposable
         }
     }
 
+    public void AddLogin(LoginInfo login)
+    {
+        _loginsLock.Wait();
+        try
+        {
+            _logins[login.UserId] = login;
+        }
+        finally
+        {
+            _loginsLock.Release();
+        }
+
+        LoginsChanged?.Invoke();
+
+        ScheduleSave(settings: false, logins: true);
+    }
+
     public void WriteLogins(Dictionary<Guid, LoginInfo> logins)
     {
         _loginsLock.Wait();
+        try
+        {
+            _logins = logins;
+        }
+        finally
+        {
+            _loginsLock.Release();
+        }
+
+        LoginsChanged?.Invoke();
+
+        ScheduleSave(settings: false, logins: true);
+    }
+
+    #endregion
+
+    #region Async Methods Logins
+
+    public async Task<Dictionary<Guid, LoginInfo>> GetLoginsAsync()
+    {
+        await _loginsLock.WaitAsync();
+        try
+        {
+            return _logins;
+        }
+        finally
+        {
+            _loginsLock.Release();
+        }
+    }
+
+    public async Task WriteLoginsAsync(Dictionary<Guid, LoginInfo> logins)
+    {
+        await _loginsLock.WaitAsync();
         try
         {
             _logins = logins;
@@ -405,14 +482,15 @@ public class SettingsService : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        var cts = Interlocked.Exchange(ref _saveCts, null);
-        cts?.Cancel();
-        cts?.Dispose();
+        Interlocked.Exchange(ref _settingsSaveCts, null)?.Cancel();
+        Interlocked.Exchange(ref _favoritesSaveCts, null)?.Cancel();
+        Interlocked.Exchange(ref _loginsSaveCts, null)?.Cancel();
 
-        await SaveAsync(false, true);
-        await SaveAsync(true);
+        await SaveAllAsync();
 
         _settingsLock.Dispose();
+        _favoritesLock.Dispose();
+        _loginsLock.Dispose();
 
         GC.SuppressFinalize(this);
     }
@@ -429,6 +507,6 @@ public class SettingsService : IAsyncDisposable
             _settingsLock.Release();
         }
 
-        ScheduleSave();
+        ScheduleSave(settings: true);
     }
 }
