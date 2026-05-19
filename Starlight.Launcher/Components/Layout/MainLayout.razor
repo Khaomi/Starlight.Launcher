@@ -2,55 +2,30 @@
 @inherits LayoutComponentBase
 
 <MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
 
 <MudLayout Class="@(_navigation == ElementPosition.Bottom || _navigation == ElementPosition.Top || _isSmallScreen ? "has-bottom-nav" : "")">
     <MudAppBar Elevation="1">
         @if (_navigation == ElementPosition.Bottom || _isSmallScreen)
         {
             <MudText Typo="Typo.h5" Class="ml-3">STARLIGHT</MudText>
+            <MudSpacer />
+            <MudIconButton />
+            <MudTooltip Text="@Localization["main-layout-auth-tab"]">
+                <MudIconButton Href="/auth" Icon="@Icons.Material.Filled.People" Size="Size.Medium" />
+            </MudTooltip>
         }
         else if (_navigation == ElementPosition.Top)
         {
-            <div class="bottom-nav">
-                <NavLink href="/" Match="NavLinkMatch.All" class="bottom-nav-item" ActiveClass="active">
-                    <div class="nav-inner">
-                        <MudIcon Icon="@Icons.Material.Filled.Home" Color="@(IsActive("/", NavLinkMatch.All) ? Color.Primary : Color.Default)" Size="Size.Medium" />
-                        <span>@Localization["main-layout-home-tab"]</span>
-                    </div>
-                </NavLink>
-                <NavLink href="/servers" Match="NavLinkMatch.All" class="bottom-nav-item" ActiveClass="active">
-                    <div class="nav-inner">
-                        <MudIcon Icon="@Icons.Material.Filled.Computer" Color="@(IsActive("/servers", NavLinkMatch.All) ? Color.Primary : Color.Default)" Size="Size.Medium" />
-                        <span>@Localization["main-layout-servers-tab"]</span>
-                    </div>
-                </NavLink>
-                <NavLink href="/settings" Match="NavLinkMatch.Prefix" class="bottom-nav-item" ActiveClass="active">
-                    <div class="nav-inner">
-                        <MudIcon Icon="@Icons.Material.Filled.Settings" Color="@(IsActive("/settings", NavLinkMatch.All) ? Color.Primary : Color.Default)" Size="Size.Medium" />
-                        <span>@Localization["main-layout-settings-tab"]</span>
-                    </div>
-                </NavLink>
-            </div>
+            <HorizontalNavBar />
         }
     </MudAppBar>
 
     @if ((_navigation == ElementPosition.Left || _navigation == ElementPosition.Right) && !_isSmallScreen)
     {
         <MudDrawer Anchor="_navigation == ElementPosition.Left ? Anchor.Left : Anchor.Right" Elevation="1" ClipMode="DrawerClipMode.Never" Open="true" Variant="@DrawerVariant.Responsive">
-            <MudDrawerHeader>
-                <MudText Typo="Typo.h5" Class="ml-3">STARLIGHT</MudText>
-            </MudDrawerHeader>
-            <MudNavMenu Dense="true" Margin="Margin.Normal" Rounded="true" Color="Color.Primary" Class="pa-2">
-                <MudNavLink Icon="@Icons.Material.Filled.Home" Href="/" Match="NavLinkMatch.All">
-                    @Localization["main-layout-home-tab"]
-                </MudNavLink>
-                <MudNavLink Icon="@Icons.Material.Filled.Computer" Href="/servers" Match="NavLinkMatch.All">
-                    @Localization["main-layout-servers-tab"]
-                </MudNavLink>
-                <MudNavLink Icon="@Icons.Material.Filled.Settings" Href="/settings" Match="NavLinkMatch.All">
-                    @Localization["main-layout-settings-tab"]
-                </MudNavLink>
-            </MudNavMenu>
+            <VerticalNavBar />
         </MudDrawer>
     }
 
@@ -72,31 +47,15 @@
         <MudAppBar Bottom="true" Fixed="true" Elevation="3">
             @if (_navigation == ElementPosition.Top)
             {
+                <MudTooltip Text="@Localization["main-layout-auth-tab"]">
+                    <MudIconButton Href="/auth" Icon="@Icons.Material.Filled.People" Size="Size.Medium" />
+                </MudTooltip>
                 <MudSpacer />
                 <MudText Typo="Typo.h5" Class="mr-3">STARLIGHT</MudText>
             }
             else if (_navigation == ElementPosition.Bottom)
             {
-                <div class="bottom-nav">
-                    <NavLink href="/" Match="NavLinkMatch.All" class="bottom-nav-item" ActiveClass="active">
-                        <div class="nav-inner">
-                            <MudIcon Icon="@Icons.Material.Filled.Home" Color="@(IsActive("/", NavLinkMatch.All) ? Color.Primary : Color.Default)" Size="Size.Medium" />
-                            <span>@Localization["main-layout-home-tab"]</span>
-                        </div>
-                    </NavLink>
-                    <NavLink href="/servers" Match="NavLinkMatch.All" class="bottom-nav-item" ActiveClass="active">
-                        <div class="nav-inner">
-                            <MudIcon Icon="@Icons.Material.Filled.Computer" Color="@(IsActive("/servers", NavLinkMatch.All) ? Color.Primary : Color.Default)" Size="Size.Medium" />
-                            <span>@Localization["main-layout-servers-tab"]</span>
-                        </div>
-                    </NavLink>
-                    <NavLink href="/settings" Match="NavLinkMatch.Prefix" class="bottom-nav-item" ActiveClass="active">
-                        <div class="nav-inner">
-                            <MudIcon Icon="@Icons.Material.Filled.Settings" Color="@(IsActive("/settings", NavLinkMatch.All) ? Color.Primary : Color.Default)" Size="Size.Medium" />
-                            <span>@Localization["main-layout-settings-tab"]</span>
-                        </div>
-                    </NavLink>
-                </div>
+                <HorizontalNavBar />
             }
         </MudAppBar>
     }

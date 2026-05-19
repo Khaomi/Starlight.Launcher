@@ -19,7 +19,6 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowse
     [Inject] private SettingsService Settings { get; set; } = null!;
     [Inject] private LocalizationManager Localization { get; set; } = null!;
     [Inject] private AppState State { get; set; } = null!;
-    [Inject] private NavigationManager Navigation { get; set; } = null!;
     [Inject] private IBrowserViewportService BrowserViewportService { get; set; } = null!;
 
     Guid IBrowserViewportObserver.Id { get; } = Guid.NewGuid();
@@ -61,18 +60,6 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowse
         await JS.InvokeVoidAsync("appTheme.set", themeName);
     }
 
-    private bool IsActive(string href, NavLinkMatch match = NavLinkMatch.Prefix)
-    {
-        var current = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0];
-        current = "/" + current.TrimEnd('/');
-        var target = href.TrimEnd('/');
-        if (string.IsNullOrEmpty(target)) target = "/";
-
-        return match == NavLinkMatch.All
-            ? string.Equals(current, target, StringComparison.OrdinalIgnoreCase)
-            : current.StartsWith(target, StringComparison.OrdinalIgnoreCase);
-    }
-
     private void AppCalledRepaint()
     {
         _ = InvokeAsync(async () =>
@@ -84,16 +71,9 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowse
         });
     }
 
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
-        => InvokeAsync(StateHasChanged);
-
-    protected override void OnInitialized()
-        => Navigation.LocationChanged += OnLocationChanged;
-
     public async ValueTask DisposeAsync()
     {
         await BrowserViewportService.UnsubscribeAsync(this);
-        Navigation.LocationChanged -= OnLocationChanged;
         State.OnChange -= AppCalledRepaint;
     }
 
