@@ -47,6 +47,10 @@ public record AppSettings
     /// Currently selected language. Should be a key from LocalizationsIndex. Default is "en-US"
     /// </summary>
     public string? SelectedLanguage { get; init; } = null;
+    /// <summary>
+    /// Currently selected login.
+    /// </summary>
+    public Guid? SelectedLoginId { get; set; } = null;
 
     #region Cache
     public ServerListFilters CachedFilters { get; set; } = new ServerListFilters();

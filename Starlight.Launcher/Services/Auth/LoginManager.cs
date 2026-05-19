@@ -5,25 +5,15 @@ using Serilog;
 using Starlight.Launcher.Api.Models;
 using Starlight.Launcher.Models.Helpers;
 using Starlight.Launcher.Services.Settings;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
+using System.Collections.ObjectModel;
 
 namespace Starlight.Launcher.Services.Auth;
 
-// This is different from DataManager in that this class actually manages logic more complex than raw storage.
-// Checking and refreshing tokens, marking accounts as "need signing in again", etc...
-public sealed class LoginManager : ObservableObject
+public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
 {
-    // TODO: If the user tries to connect to a server or such
-    // on the split second interval that the launcher does a token refresh
-    // (once a week, if you leave it open for long).
-    // there is a possibility the token used by said action will be invalid because it's actively being replaced
-    // oh well.
-    // Do I really care to fix that?
-
     private readonly AuthApi _authApi;
-
-    private IDisposable? _timer;
+    private readonly SettingsService _settings;
+    private readonly IDispatcher _dispatcher;
 
     public static readonly TimeSpan TokenRefreshInterval = TimeSpan.FromDays(7);
 
@@ -32,7 +22,13 @@ public sealed class LoginManager : ObservableObject
 
     private Guid? _activeLoginId;
 
-    //private readonly IObservableCache<ActiveLoginData, Guid> _logins;
+    private readonly Dictionary<Guid, ActiveLoginData> _logins = new();
+    private readonly object _loginsLock = new();
+
+    private readonly ObservableCollection<LoggedInAccount> _loginsView = new();
+    public ReadOnlyObservableCollection<LoggedInAccount> Logins { get; }
+
+    public event Action? LoginsChanged;
 
     public Guid? ActiveAccountId
     {
@@ -41,65 +37,120 @@ public sealed class LoginManager : ObservableObject
         {
             if (value != null)
             {
-                //var lookup = _logins.Lookup(value.Value);
-
-                //if (!lookup.HasValue)
-                //{
-                //    throw new ArgumentException("We do not have a login with that ID.");
-                //}
+                lock (_loginsLock)
+                {
+                    if (!_logins.ContainsKey(value.Value))
+                        throw new ArgumentException("We do not have a login with that ID.");
+                }
             }
 
             if (SetField(ref _activeLoginId, value))
             {
                 OnPropertyChanged(nameof(ActiveAccount));
 
-                //_cfg.SelectedLoginId = value;
+                var appSettings = _settings.GetSettings();
+                appSettings.SelectedLoginId = value;
+                _settings.WriteSettings(appSettings);
             }
         }
     }
 
     public LoggedInAccount? ActiveAccount
     {
-        //get => _activeLoginId == null ? null : _logins.Lookup(_activeLoginId.Value).Value;
+        get
+        {
+            if (_activeLoginId == null)
+                return null;
+
+            lock (_loginsLock)
+            {
+                return _logins.TryGetValue(_activeLoginId.Value, out var data) ? data : null;
+            }
+        }
         set => ActiveAccountId = value?.UserId;
     }
 
-    //public IObservableCache<LoggedInAccount, Guid> Logins { get; }
-
-    public LoginManager(AuthApi authApi, SettingsService settings)
+    public LoginManager(AuthApi authApi, SettingsService settings, IDispatcher dispatcher)
     {
         _authApi = authApi;
+        _settings = settings;
+        _dispatcher = dispatcher;
 
-        //_logins = _cfg.Logins
-        //    .Connect()
-        //    .Transform(p => new ActiveLoginData(p))
-        //    .OnItemRemoved(p =>
-        //    {
-        //        if (p.LoginInfo.UserId == _activeLoginId)
-        //        {
-        //            ActiveAccount = null;
-        //        }
-        //    })
-        //    .AsObservableCache();
+        Logins = new ReadOnlyObservableCollection<LoggedInAccount>(_loginsView);
 
-        //Logins = _logins
-        //    .Connect()
-        //    .Transform((data, guid) => (LoggedInAccount)data)
-        //    .AsObservableCache();
+        foreach (var loginInfo in _settings.GetLogins().Values)
+        {
+            var data = new ActiveLoginData(loginInfo);
+            _logins[loginInfo.UserId] = data;
+            _loginsView.Add(data);
+        }
+
+        var selectedId = _settings.GetSettings().SelectedLoginId;
+        if (selectedId.HasValue && _logins.ContainsKey(selectedId.Value))
+        {
+            _activeLoginId = selectedId;
+        }
+
+        _settings.LoginsChanged += OnSettingsLoginsChanged;
     }
 
-    public async Task Initialize()
+    private void OnSettingsLoginsChanged()
     {
-        // Set up timer so that if the user leaves their launcher open for a month or something
-        // his tokens don't expire.
-        _cts = new CancellationTokenSource();
+        var current = _settings.GetLogins();
 
+        List<ActiveLoginData> toRemoveFromView = new();
+        List<ActiveLoginData> toAddToView = new();
+        bool activeWasRemoved = false;
+
+        lock (_loginsLock)
+        {
+            var toRemove = _logins.Keys.Where(k => !current.ContainsKey(k)).ToList();
+            foreach (var id in toRemove)
+            {
+                if (_logins.Remove(id, out var data))
+                    toRemoveFromView.Add(data);
+
+                if (_activeLoginId == id)
+                {
+                    _activeLoginId = null;
+                    activeWasRemoved = true;
+                }
+            }
+
+            foreach (var (id, info) in current)
+            {
+                if (!_logins.ContainsKey(id))
+                {
+                    var data = new ActiveLoginData(info);
+                    _logins[id] = data;
+                    toAddToView.Add(data);
+                }
+            }
+        }
+
+        if (toRemoveFromView.Count > 0 || toAddToView.Count > 0)
+        {
+            DispatchToUi(() =>
+            {
+                foreach (var d in toRemoveFromView)
+                    _loginsView.Remove(d);
+                foreach (var d in toAddToView)
+                    _loginsView.Add(d);
+            });
+        }
+
+        LoginsChanged?.Invoke();
+
+        if (activeWasRemoved)
+            OnPropertyChanged(nameof(ActiveAccount));
+    }
+
+    public void Initialize()
+    {
+        _cts = new CancellationTokenSource();
         _refreshTask = RunRefreshLoop(_cts.Token);
 
-        await RefreshAllTokens();
-
-        // Refresh all tokens we got.
-        await RefreshAllTokens();
+        Task.Run(async () => await RefreshAllTokens());
     }
 
     private async Task RunRefreshLoop(CancellationToken cancellationToken)
@@ -126,18 +177,22 @@ public sealed class LoginManager : ObservableObject
         const int delayStart = 2;
         const int delayValue = 200;
 
-        /*await Task.WhenAll(_logins.Items.Select(async (l, i) =>
+        ActiveLoginData[] snapshot;
+        lock (_loginsLock)
+        {
+            snapshot = _logins.Values.ToArray();
+        }
+
+        await Task.WhenAll(snapshot.Select(async (l, i) =>
         {
             if (l.Status == AccountLoginStatus.Expired)
             {
-                // Literally don't even bother we already know it's dead and the user has to solve it.
                 Log.Debug("Token for {login} is already expired", l.LoginInfo);
                 return;
             }
 
             if (l.LoginInfo.Token.IsTimeExpired())
             {
-                // Oh hey, time expiry.
                 Log.Debug("Token for {login} expired due to time", l.LoginInfo);
                 l.SetStatus(AccountLoginStatus.Expired);
                 return;
@@ -152,18 +207,77 @@ public sealed class LoginManager : ObservableObject
             }
             catch (AuthApiException e)
             {
-                // TODO: Maybe retry to refresh tokens sooner if an error occured.
-                // Ignore, I guess.
                 Log.Warning(e, "AuthApiException while trying to refresh token for {login}", l.LoginInfo);
             }
-        }));*/
+        }));
+
+        PersistLogins();
     }
 
     public void AddFreshLogin(LoginInfo info)
     {
-        //_cfg.AddLogin(info);
+        ActiveLoginData data;
+        bool isNew = false;
 
-        //_logins.Lookup(info.UserId).Value.SetStatus(AccountLoginStatus.Available);
+        lock (_loginsLock)
+        {
+            if (_logins.TryGetValue(info.UserId, out var existing))
+            {
+                existing.LoginInfo.Token = info.Token;
+                data = existing;
+            }
+            else
+            {
+                data = new ActiveLoginData(info);
+                _logins[info.UserId] = data;
+                isNew = true;
+            }
+        }
+
+        if (isNew)
+        {
+            DispatchToUi(() => _loginsView.Add(data));
+        }
+
+        data.SetStatus(AccountLoginStatus.Available);
+
+        _settings.AddLogin(info);
+    }
+
+    public void RemoveLogin(Guid userId)
+    {
+        ActiveLoginData? removed = null;
+        bool wasActive = false;
+
+        lock (_loginsLock)
+        {
+            if (_logins.Remove(userId, out var data))
+                removed = data;
+
+            if (_activeLoginId == userId)
+            {
+                _activeLoginId = null;
+                wasActive = true;
+            }
+        }
+
+        if (removed != null)
+        {
+            DispatchToUi(() => _loginsView.Remove(removed));
+        }
+
+        if (wasActive)
+        {
+            OnPropertyChanged(nameof(ActiveAccount));
+
+            var appSettings = _settings.GetSettings();
+            appSettings.SelectedLoginId = null;
+            _settings.WriteSettings(appSettings);
+        }
+
+        var current = _settings.GetLogins();
+        if (current.Remove(userId))
+            _settings.WriteLogins(current);
     }
 
     public void UpdateToNewToken(LoggedInAccount account, LoginToken token)
@@ -171,6 +285,8 @@ public sealed class LoginManager : ObservableObject
         var cast = (ActiveLoginData)account;
         cast.SetStatus(AccountLoginStatus.Available);
         account.LoginInfo.Token = token;
+
+        PersistLogins();
     }
 
     /// <exception cref="AuthApiException">Thrown if an API error occured.</exception>
@@ -184,12 +300,9 @@ public sealed class LoginManager : ObservableObject
         if (data.LoginInfo.Token.ShouldRefresh())
         {
             Log.Debug("Refreshing token for {login}", data.LoginInfo);
-            // If we need to refresh the token anyways we'll just
-            // implicitly do the "is it still valid" with the refresh request.
             var newTokenHopefully = await _authApi.RefreshTokenAsync(data.LoginInfo.Token.Token);
             if (newTokenHopefully == null)
             {
-                // Token expired or whatever?
                 data.SetStatus(AccountLoginStatus.Expired);
                 Log.Debug("Token for {login} expired while refreshing it", data.LoginInfo);
             }
@@ -205,6 +318,41 @@ public sealed class LoginManager : ObservableObject
             var valid = await _authApi.CheckTokenAsync(data.LoginInfo.Token.Token);
             Log.Debug("Token for {login} still valid? {valid}", data.LoginInfo, valid);
             data.SetStatus(valid ? AccountLoginStatus.Available : AccountLoginStatus.Expired);
+        }
+    }
+
+    private void PersistLogins()
+    {
+        Dictionary<Guid, LoginInfo> snapshot;
+        lock (_loginsLock)
+        {
+            snapshot = _logins.ToDictionary(kv => kv.Key, kv => kv.Value.LoginInfo);
+        }
+        _settings.WriteLogins(snapshot);
+    }
+
+    private void DispatchToUi(Action action)
+    {
+        if (_dispatcher.IsDispatchRequired)
+            _dispatcher.Dispatch(action);
+        else
+            action();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _settings.LoginsChanged -= OnSettingsLoginsChanged;
+
+        if (_cts != null)
+        {
+            _cts.Cancel();
+            try
+            {
+                if (_refreshTask != null)
+                    await _refreshTask;
+            }
+            catch (OperationCanceledException) { }
+            _cts.Dispose();
         }
     }
 
