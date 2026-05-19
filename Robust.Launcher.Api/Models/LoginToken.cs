@@ -4,8 +4,8 @@ namespace Robust.Launcher.Api.Models;
 
 public readonly struct LoginToken
 {
-    public readonly string Token;
-    public readonly DateTimeOffset ExpireTime;
+    public string Token { get; }
+    public DateTimeOffset ExpireTime { get; }
 
     public LoginToken(string token, DateTimeOffset expireTime)
     {
