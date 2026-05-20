@@ -2,23 +2,18 @@ using Serilog;
 using Robust.Launcher.Api.Models.Data;
 using Robust.Launcher.Api.Models.EngineManager;
 using Robust.Launcher.Api.Utility;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.IO.Compression;
-using System.Linq;
-using System.Net.Http;
 using System.Net.Http.Json;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading;
-using System.Threading.Tasks;
 using TerraFX.Interop.WinRT;
+using Starlight.Launcher.Services.Auth;
+using Robust.Launcher.Api.Models;
 
-namespace Robust.Launcher.Api.Models;
+namespace Starlight.Launcher.Services;
 
 /// <summary>
 /// Responsible for actually launching the game.
@@ -27,7 +22,7 @@ namespace Robust.Launcher.Api.Models;
 public partial class Connector
 {
     private readonly Updater _updater;
-    //private readonly LoginManager _loginManager;
+    private readonly LoginManager _loginManager;
     private readonly IEngineManager _engineManager;
 
     private ConnectionStatus _status = ConnectionStatus.None;
@@ -38,11 +33,12 @@ public partial class Connector
     private ServerPrivacyPolicyInfo? _serverPrivacyPolicyInfo;
     private bool _privacyPolicyDifferentVersion;
 
-    public Connector(Updater updater, IEngineManager engineManager, HttpClient http)
+    public Connector(Updater updater, IEngineManager engineManager, HttpClient http, LoginManager login)
     {
         _updater = updater;
         _engineManager = engineManager;
         _http = http;
+        _loginManager = login;
     }
 
     //public ConnectionStatus Status

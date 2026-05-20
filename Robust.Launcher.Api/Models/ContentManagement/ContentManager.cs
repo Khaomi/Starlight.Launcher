@@ -133,7 +133,7 @@ public sealed class ContentManager
     /// <remarks>
     /// This method may make modifications to the DB to remove orphaned <c>RunningClient</c> entries.
     /// </remarks>
-    internal static List<long> GetRunningClientVersions(SqliteConnection con)
+    public static List<long> GetRunningClientVersions(SqliteConnection con)
     {
         var running = new List<long>();
         var toRemove = new List<int>();

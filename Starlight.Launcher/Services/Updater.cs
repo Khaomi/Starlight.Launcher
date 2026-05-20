@@ -1,30 +1,20 @@
 using Dapper;
 using Microsoft.Data.Sqlite;
-using NSec.Cryptography;
 using Serilog;
 using Robust.Launcher.Api.Models.ContentManagement;
-using Robust.Launcher.Api.Models.Data;
 using Robust.Launcher.Api.Models.EngineManager;
 using Robust.Launcher.Api.Utility;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.IO.Compression;
-using System.Linq;
-using System.Net.Http;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using TerraFX.Interop.Windows;
-using TerraFX.Interop.WinRT;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
+using Robust.Launcher.Api.Models;
 
-namespace Robust.Launcher.Api.Models;
+namespace Starlight.Launcher.Services;
 
 public sealed partial class Updater
 {

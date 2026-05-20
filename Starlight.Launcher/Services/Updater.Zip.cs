@@ -1,21 +1,16 @@
 using Dapper;
 using Microsoft.Data.Sqlite;
-using NSec.Cryptography;
+using Robust.Launcher.Api.Models;
 using Robust.Launcher.Api.Models.ContentManagement;
 using Robust.Launcher.Api.Utility;
 using Serilog;
 using SharpZstd.Interop;
-using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.IO.Compression;
-using System.Threading;
-using System.Threading.Tasks;
-using TerraFX.Interop.Windows;
 using static Robust.Launcher.Api.Utility.Helpers;
 
-namespace Robust.Launcher.Api.Models;
+namespace Starlight.Launcher.Services;
 
 //
 // Logic for updater zip downloads.

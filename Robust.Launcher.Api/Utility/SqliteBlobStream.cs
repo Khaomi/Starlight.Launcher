@@ -10,7 +10,7 @@ namespace Robust.Launcher.Api.Utility;
 /// Expecting Microsoft top engineers to understand basic API design principles is too much to ask for,
 /// so I can't in any way use blob re-open with Microsoft.Data.Sqlite.SqliteBlob.
 /// </summary>
-internal sealed class SqliteBlobStream : Stream
+public sealed class SqliteBlobStream : Stream
 {
     private readonly sqlite3_blob _blob;
     private readonly bool _ownsBlob;
