@@ -1,9 +1,11 @@
 using Dapper;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Data.Sqlite;
-using Serilog;
+using Robust.Launcher.Api.Models;
 using Robust.Launcher.Api.Models.ContentManagement;
 using Robust.Launcher.Api.Models.EngineManager;
 using Robust.Launcher.Api.Utility;
+using Serilog;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 using System.Numerics;
@@ -12,7 +14,6 @@ using System.Security.Cryptography;
 using System.Text;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
-using Robust.Launcher.Api.Models;
 
 namespace Starlight.Launcher.Services;
 
@@ -31,12 +32,14 @@ public sealed partial class Updater
 
     private readonly IEngineManager _engineManager;
     private readonly HttpClient _http;
+    private readonly IDispatcher _dispatcher;
     private bool _updating;
 
-    public Updater(IEngineManager engineManager, HttpClient http)
+    public Updater(IEngineManager engineManager, HttpClient http, IDispatcher dispatcher)
     {
         _engineManager = engineManager;
         _http = http;
+        _dispatcher = dispatcher;
     }
 
     // Note: these get updated from different threads. Observe responsibly.
@@ -695,7 +698,7 @@ public sealed partial class Updater
             && !string.IsNullOrEmpty(buildInfo.ManifestDownloadUrl)
             && !string.IsNullOrEmpty(buildInfo.ManifestHash))
         {
-            //manifestHash = await ManifestDownloadNewVersion(buildInfo, con, versionId, state, cancel);
+            manifestHash = await ManifestDownloadNewVersion(buildInfo, con, versionId, state, cancel);
         }
         else if (buildInfo.DownloadUrl != null)
         {
@@ -830,7 +833,10 @@ public sealed partial class Updater
 
     private void DownloadProgressCallback(long downloaded, long total)
     {
-        //Dispatcher.UIThread.Post(() => Progress = (downloaded, total, ProgressUnit.Bytes));
+        _dispatcher.Dispatch(() =>
+        {
+            Progress = (downloaded, total, ProgressUnit.Bytes);
+        });
     }
 
     internal static byte[] HashFileSha256(Stream stream)
