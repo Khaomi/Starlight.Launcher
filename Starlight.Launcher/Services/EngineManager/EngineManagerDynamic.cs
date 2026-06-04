@@ -4,17 +4,10 @@ using NSec.Cryptography;
 using Robust.Launcher.Api.Utility;
 using Serilog;
 using Robust.Launcher.Api.Models.Data;
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.IO.MemoryMappedFiles;
-using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Json;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 using Robust.Launcher.Api.Models;
+using Starlight.Launcher.Services.Settings;
 
 namespace Starlight.Launcher.Services.EngineManager;
 
@@ -25,53 +18,54 @@ public sealed partial class EngineManagerDynamic : IEngineManager
 {
     public const string OverrideVersionName = "_OVERRIDE_";
 
-    //private readonly DataManager _cfg;
+    private readonly SettingsService _settings;
     private readonly HttpClient _http;
 
-    public EngineManagerDynamic(HttpClient http)
+    public EngineManagerDynamic(HttpClient http, SettingsService settings)
     {
-        //_cfg = Locator.Current.GetRequiredService<DataManager>();
+        _settings = settings;
         _http = http;
     }
 
     public string GetEnginePath(string engineVersion)
     {
+        var settings = _settings.GetSettings();
 #if DEVELOPMENT
-        if (_cfg.GetCVar(CVars.EngineOverrideEnabled))
+        if (settings.EngineOverrideEnabled)
         {
-            return FindOverrideZip("Robust.Client", _cfg.GetCVar(CVars.EngineOverridePath));
+            return FindOverrideZip("Robust.Client", settings.EngineOverridePath);
         }
 #endif
 
-        //if (!_cfg.EngineInstallations.Lookup(engineVersion).HasValue)
-        //{
-        //    throw new ArgumentException("We do not have that engine version!");
-        //}
+        if (!_settings.GetEngines().TryGetValue(engineVersion, out _))
+            throw new ArgumentException("We do not have that engine version!");
 
-        return "";
-        //return Path.Combine(LauncherPaths.DirEngineInstallations, $"{engineVersion}.zip");
+        return Path.Combine(settings.DirEngineInstallations, $"{engineVersion}.zip");
     }
 
     public string GetEngineModule(string moduleName, string moduleVersion)
     {
+        var settings = _settings.GetSettings();
 #if DEVELOPMENT
-        if (_cfg.GetCVar(CVars.EngineOverrideEnabled))
+        if (settings.EngineOverrideEnabled)
             moduleVersion = OverrideVersionName;
 #endif
 
-        return "";
-        //return Path.Combine(LauncherPaths.DirModuleInstallations, moduleName, moduleVersion);
+        return Path.Combine(settings.DirModuleInstallations, moduleName, moduleVersion);
     }
 
     public string GetEngineSignature(string engineVersion)
     {
 #if DEVELOPMENT
-        if (_cfg.GetCVar(CVars.EngineOverrideEnabled))
+        var settings = _settings.GetSettings();
+        if (settings.EngineOverrideEnabled)
             return "DEADBEEF";
 #endif
 
-        return "";
-        //return _cfg.EngineInstallations.Lookup(engineVersion).Value.Signature;
+        if (!_settings.GetEngines().TryGetValue(engineVersion, out var installedEngine))
+            throw new ArgumentException("Invalid engine version in GET!");
+
+        return installedEngine.Signature;
     }
 
     public async Task<EngineInstallationResult> DownloadEngineIfNecessary(
@@ -79,8 +73,9 @@ public sealed partial class EngineManagerDynamic : IEngineManager
         Helpers.DownloadProgressCallback? progress = null,
         CancellationToken cancel = default)
     {
+        var settings = _settings.GetSettings();
 #if DEVELOPMENT
-        if (_cfg.GetCVar(CVars.EngineOverrideEnabled))
+        if (settings.EngineOverrideEnabled)
         {
             // Engine override means we don't need to download anything, we have it locally!
             // At least, if we don't, we'll just blame the developer that enabled it.
@@ -100,11 +95,11 @@ public sealed partial class EngineManagerDynamic : IEngineManager
             engineVersion,
             foundVersion.Version);
 
-        //if (_cfg.EngineInstallations.Lookup(foundVersion.Version).HasValue)
-        //{
+        if (_settings.GetEngines().TryGetValue(foundVersion.Version, out _))
+        {
             // Already have the engine version, we're good.
-        //    return new EngineInstallationResult(foundVersion.Version, false);
-        //}
+            return new EngineInstallationResult(foundVersion.Version, false);
+        }
 
         Log.Information("Installing engine version {version}...", foundVersion.Version);
 
@@ -120,26 +115,25 @@ public sealed partial class EngineManagerDynamic : IEngineManager
 
         Log.Debug("Downloading engine: {EngineDownloadUrl}", buildInfo.Url);
 
-        //Helpers.EnsureDirectoryExists(LauncherPaths.DirEngineInstallations);
+        Helpers.EnsureDirectoryExists(settings.DirEngineInstallations);
 
-        //var downloadTarget = Path.Combine(LauncherPaths.DirEngineInstallations, $"{foundVersion.Version}.zip");
-        //await using var file = File.Create(downloadTarget, 4096, FileOptions.Asynchronous);
+        var downloadTarget = Path.Combine(settings.DirEngineInstallations, $"{foundVersion.Version}.zip");
+        await using var file = File.Create(downloadTarget, 4096, FileOptions.Asynchronous);
 
         try
         {
-            //await _http.DownloadToStream(buildInfo.Url, file, progress, cancel: cancel);
+            await _http.DownloadToStream(buildInfo.Url, file, progress, cancel: cancel);
         }
         catch (OperationCanceledException)
         {
             // Don't leave behind garbage.
-            //await file.DisposeAsync();
-            //File.Delete(downloadTarget);
+            await file.DisposeAsync();
+            File.Delete(downloadTarget);
 
             throw;
         }
 
-        //_cfg.AddEngineInstallation(new InstalledEngineVersion(foundVersion.Version, buildInfo.Signature));
-        //_cfg.CommitConfig();
+        _settings.AddInstalledEngine(new InstalledEngineVersion(foundVersion.Version, buildInfo.Signature));
         return new EngineInstallationResult(foundVersion.Version, true);
     }
 
@@ -151,7 +145,8 @@ public sealed partial class EngineManagerDynamic : IEngineManager
         CancellationToken cancel = default)
     {
 #if DEVELOPMENT
-        if (_cfg.GetCVar(CVars.EngineOverrideEnabled))
+        var settings = _settings.GetSettings();
+        if (settings.CVars.EngineOverrideEnabled)
         {
             // For modules we have to extract them from the zip to disk first.
             // So it's a little more involved than just giving a different zip path to the launch code.
@@ -253,14 +248,14 @@ public sealed partial class EngineManagerDynamic : IEngineManager
 
         await ClearModuleDir(modPath, modVersionPath);
 
-        //var zipPath = FindOverrideZip(name, _cfg.GetCVar(CVars.EngineOverridePath));
-        //using var zip = File.OpenRead(zipPath);
+        var zipPath = FindOverrideZip(name, _settings.GetSettings().EngineOverridePath);
+        using var zip = File.OpenRead(zipPath);
 
         // Note: not marking directory as compressed since it would take a while to start.
-        //ExtractModule(name, modVersionPath, zip);
+        ExtractModule(name, modVersionPath, zip);
     }
 
-    private static void GetModulePaths(
+    private void GetModulePaths(
         string module,
         string version,
         out string moduleDiskPath,
@@ -268,8 +263,8 @@ public sealed partial class EngineManagerDynamic : IEngineManager
     {
         moduleDiskPath = "";
         moduleVersionDiskPath = "";
-        //moduleDiskPath = Path.Combine(LauncherPaths.DirModuleInstallations, module);
-        //moduleVersionDiskPath = Path.Combine(moduleDiskPath, version);
+        moduleDiskPath = Path.Combine(_settings.GetSettings().DirModuleInstallations, module);
+        moduleVersionDiskPath = Path.Combine(moduleDiskPath, version);
     }
 
     private static async Task ClearModuleDir(string modDiskPath, string modVersionDiskPath)
@@ -299,7 +294,7 @@ public sealed partial class EngineManagerDynamic : IEngineManager
         }
     }
 
-    private static unsafe bool VerifyModuleSignature(FileStream stream, string signature)
+    private unsafe bool VerifyModuleSignature(FileStream stream, string signature)
     {
         if (stream.Length > int.MaxValue)
             throw new InvalidOperationException("Unable to handle files larger than 2 GiB");
@@ -321,14 +316,14 @@ public sealed partial class EngineManagerDynamic : IEngineManager
         {
             var span = new ReadOnlySpan<byte>(ptr, (int)stream.Length);
 
-            //var pubKey = PublicKey.Import(
-                //SignatureAlgorithm.Ed25519,
-                //File.ReadAllBytes(LauncherPaths.PathPublicKey),
-                //KeyBlobFormat.PkixPublicKeyText);
+            var pubKey = PublicKey.Import(
+                SignatureAlgorithm.Ed25519,
+                File.ReadAllBytes(_settings.GetSettings().PathPublicKey),
+                KeyBlobFormat.PkixPublicKeyText);
 
-            //var sigBytes = Convert.FromHexString(signature);
+            var sigBytes = Convert.FromHexString(signature);
 
-            //return SignatureAlgorithm.Ed25519.Verify(pubKey, span, sigBytes);
+            return SignatureAlgorithm.Ed25519.Verify(pubKey, span, sigBytes);
             return true;
         }
         finally
@@ -340,7 +335,7 @@ public sealed partial class EngineManagerDynamic : IEngineManager
     public async Task<EngineModuleManifest> GetEngineModuleManifest(CancellationToken cancel = default)
     {
         //return await ConfigConstants.RobustModulesManifest.GetFromJsonAsync<EngineModuleManifest>(_http, cancel) ??
-            //throw new InvalidDataException();
+        //    throw new InvalidDataException();
 
         return default!;
     }
@@ -371,20 +366,18 @@ public sealed partial class EngineManagerDynamic : IEngineManager
             }
         }
 
-        //var toCull = _cfg.EngineInstallations.Items.Where(i => !modulesUsed.Contains(("Robust", i.Version))).ToArray();
+        var toCull = _settings.GetEngines().Values.Where(i => !modulesUsed.Contains(("Robust", i.Version))).ToArray();
 
-        /*
         foreach (var installation in toCull)
         {
             Log.Debug("Culling unused version {engineVersion}", installation.Version);
 
             var path = GetEnginePath(installation.Version);
 
-            _cfg.RemoveEngineInstallation(installation);
+            _settings.RemoveInstalledEngine(installation.Version);
 
             await Task.Run(() => File.Delete(path));
         }
-        */
 
         // Cull modules
         //var toCullModules = _cfg.EngineModules.Where(m => !modulesUsed.Contains((m.Name, m.Version))).ToArray();

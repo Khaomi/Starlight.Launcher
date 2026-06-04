@@ -14,6 +14,7 @@ public sealed partial class SettingsService : IAsyncDisposable
     private CancellationTokenSource? _settingsSaveCts;
     private CancellationTokenSource? _favoritesSaveCts;
     private CancellationTokenSource? _loginsSaveCts;
+    private CancellationTokenSource? _enginesSaveCts;
 
 
     private AppSettings _settings;
@@ -29,11 +30,18 @@ public sealed partial class SettingsService : IAsyncDisposable
     private readonly SemaphoreSlim _loginsLock = new(1, 1);
     private readonly string _loginsPath;
 
+    // Version to engine version info(signature)
+    private Dictionary<string, InstalledEngineVersion> _engineInstallations;
+    private readonly SemaphoreSlim _enginesLock = new(1, 1);
+    private readonly string _enginesPath;
+
     private readonly ILogger<SettingsService> _logger;
 
     public event Action? FavoritesChanged;
 
     public event Action? LoginsChanged;
+
+    public event Action? EnginesChanged;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -48,24 +56,29 @@ public sealed partial class SettingsService : IAsyncDisposable
         _filePath = Path.Combine(FileSystem.AppDataDirectory, "settings.json");
         _favoritesPath = Path.Combine(FileSystem.AppDataDirectory, "favorites.json");
         _loginsPath = Path.Combine(FileSystem.AppDataDirectory, "logins.json");
-        _settings = LoadSettings();
-        _favorites = LoadFavorites();
-        _logins = LoadLogins();
+        _enginesPath = Path.Combine(FileSystem.AppDataDirectory, "engines.json");
+        _settings = LoadJson(_filePath, new AppSettings());
+        _favorites = LoadJson(_favoritesPath, new List<FavoriteServer>());
+        _logins = LoadJson(_loginsPath, new List<LoginInfo>()).ToDictionary(x => x.UserId);
+        _engineInstallations = LoadJson(_enginesPath, new List<InstalledEngineVersion>()).ToDictionary(x => x.Version);
         RebuildFavoritesIndex(); // Rebuild addresses after load.
     }
 
     public IReadOnlySet<string> GetFavoriteAddressesSnapshot() => _favoriteAddresses;
 
-    public void ScheduleSave(bool settings = true, bool favorites = false, bool logins = false)
+    public void ScheduleSave(bool settings = true, bool favorites = false, bool logins = false, bool engines = false)
     {
         if (settings)
-            ScheduleSaveInternal(ref _settingsSaveCts, SaveSettingsAsync, "settings");
+            ScheduleSaveInternal(ref _settingsSaveCts, () => SaveJsonAsync(_filePath, _settingsLock, _settings), "settings");
 
         if (favorites)
-            ScheduleSaveInternal(ref _favoritesSaveCts, SaveFavoritesAsync, "favorites");
+            ScheduleSaveInternal(ref _favoritesSaveCts, () => SaveJsonAsync(_favoritesPath, _favoritesLock, _favorites), "favorites");
 
         if (logins)
-            ScheduleSaveInternal(ref _loginsSaveCts, SaveLoginsAsync, "logins");
+            ScheduleSaveInternal(ref _loginsSaveCts, () => SaveJsonAsync(_loginsPath, _loginsLock, _logins.Values), "logins");
+
+        if (engines)
+            ScheduleSaveInternal(ref _enginesSaveCts, () => SaveJsonAsync(_enginesPath, _enginesLock, _engineInstallations.Values), "engines");
     }
 
     private void ScheduleSaveInternal(
@@ -95,90 +108,34 @@ public sealed partial class SettingsService : IAsyncDisposable
         });
     }
 
-    private AppSettings LoadSettings()
+    private async Task SaveJsonAsync<T>(string path, SemaphoreSlim slim, T obj)
     {
+        await slim.WaitAsync();
         try
         {
-            if (!File.Exists(_filePath))
-            {
-                _logger.LogInformation("Can't find settings file, fallback to empty.");
-                return new();
-            }
-
-            var json = File.ReadAllText(_filePath);
-            _logger.LogInformation("Successfully loaded settings");
-            return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+            var json = JsonSerializer.Serialize(obj, JsonOptions);
+            await WriteFileSafeAsync(json, Path.GetDirectoryName(path)!, path);
+#if DEBUG
+            _logger.LogDebug("{0} saved", path);
+#endif
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to load settings, using defaults");
-            return new();
-        }
-    }
-
-    private async Task SaveSettingsAsync()
-    {
-        await _settingsLock.WaitAsync();
-        try
-        {
-            var json = JsonSerializer.Serialize(_settings, JsonOptions);
-            await WriteFileSafeAsync(json, Path.GetDirectoryName(_filePath)!, _filePath);
-            _logger.LogDebug("Settings saved");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to save settings");
+            _logger.LogError(ex, "Failed to save {0}", path);
         }
         finally
         {
-            _settingsLock.Release();
+            slim.Release();
         }
     }
 
-    private async Task SaveFavoritesAsync()
-    {
-        await _favoritesLock.WaitAsync();
-        try
-        {
-            var json = JsonSerializer.Serialize(_favorites, JsonOptions);
-            await WriteFileSafeAsync(json, Path.GetDirectoryName(_favoritesPath)!, _favoritesPath);
-            _logger.LogDebug("Favorites saved");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to save favorites");
-        }
-        finally
-        {
-            _favoritesLock.Release();
-        }
-    }
-
-    private async Task SaveLoginsAsync()
-    {
-        await _loginsLock.WaitAsync();
-        try
-        {
-            var json = JsonSerializer.Serialize(_logins.Values, JsonOptions);
-            await WriteFileSafeAsync(json, Path.GetDirectoryName(_loginsPath)!, _loginsPath);
-            _logger.LogDebug("Logins saved ({count})", _logins.Count);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to save logins");
-        }
-        finally
-        {
-            _loginsLock.Release();
-        }
-    }
-
-    public async Task SaveAllAsync(bool settings = true, bool favorites = true, bool logins = true)
+    public async Task SaveAllAsync(bool settings = true, bool favorites = true, bool logins = true, bool engines = true)
     {
         var tasks = new List<Task>();
-        if (settings) tasks.Add(SaveSettingsAsync());
-        if (favorites) tasks.Add(SaveFavoritesAsync());
-        if (logins) tasks.Add(SaveLoginsAsync());
+        if (settings) tasks.Add(SaveJsonAsync(_filePath, _settingsLock, _settings));
+        if (favorites) tasks.Add(SaveJsonAsync(_favoritesPath, _favoritesLock, _favorites));
+        if (logins) tasks.Add(SaveJsonAsync(_loginsPath, _loginsLock, _logins.Values));
+        if (engines) tasks.Add(SaveJsonAsync(_enginesPath, _enginesLock, _engineInstallations.Values));
         await Task.WhenAll(tasks);
     }
 
@@ -299,5 +256,29 @@ public sealed partial class SettingsService : IAsyncDisposable
         }
 
         ScheduleSave(settings: true);
+    }
+
+    private T LoadJson<T>(string path, T fallback)
+    {
+        try
+        {
+            if (!File.Exists(path))
+            {
+                _logger.LogInformation("Can't find {0} file, fallback to empty.", path);
+                return fallback;
+            }
+
+            var json = File.ReadAllText(path);
+            var result = JsonSerializer.Deserialize<T>(json) ?? fallback;
+
+            _logger.LogInformation("Successfully loaded {0}", path);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to load {0}, using empty list", path);
+            return fallback;
+        }
     }
 }

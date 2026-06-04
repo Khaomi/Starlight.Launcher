@@ -6,36 +6,12 @@ namespace Starlight.Launcher.Services.Settings;
 
 public sealed partial class SettingsService
 {
-    private Dictionary<Guid, LoginInfo> LoadLogins()
-    {
-        try
-        {
-            if (!File.Exists(_loginsPath))
-            {
-                _logger.LogInformation("Can't find logins file, fallback to empty.");
-                return new();
-            }
-
-            var json = File.ReadAllText(_loginsPath);
-            var logins = JsonSerializer.Deserialize<List<LoginInfo>>(json) ?? new();
-
-            _logger.LogInformation("Successfully loaded logins");
-
-            return logins.ToDictionary(x => x.UserId);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to load logins, using empty list");
-            return new();
-        }
-    }
-
     public Dictionary<Guid, LoginInfo> GetLogins()
     {
         _loginsLock.Wait();
         try
         {
-            return _logins;
+            return new Dictionary<Guid, LoginInfo>(_logins);
         }
         finally
         {
@@ -82,7 +58,7 @@ public sealed partial class SettingsService
         await _loginsLock.WaitAsync();
         try
         {
-            return _logins;
+            return new Dictionary<Guid, LoginInfo>(_logins);
         }
         finally
         {
@@ -96,7 +72,6 @@ public sealed partial class SettingsService
         try
         {
             _logins = logins;
-            RebuildFavoritesIndex();
         }
         finally
         {
@@ -105,6 +80,6 @@ public sealed partial class SettingsService
 
         LoginsChanged?.Invoke();
 
-        ScheduleSave(logins: true);
+        ScheduleSave(settings: false, logins: true);
     }
 }

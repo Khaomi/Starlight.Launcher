@@ -26,6 +26,8 @@ public partial record AppSettings
     public string PathClientMacLog => Path.Combine(DirLauncherData, "client.mac.log");
     public string PathClientStdoutLog => Path.Combine(DirLauncherData, "client.stdout.log");
     public string PathClientStderrLog => Path.Combine(DirLauncherData, "client.stderr.log");
+    public string DirEngineInstallations => Path.Combine(DirLauncherData, "engines");
+    public string DirModuleInstallations => Path.Combine(DirLauncherData, "modules");
 
     #endregion
 

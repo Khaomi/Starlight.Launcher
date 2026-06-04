@@ -66,6 +66,18 @@ public partial record AppSettings
     /// Disable engine signature verification. For debugging/development only.
     /// </summary>
     public bool DisableSigning { get; init; } = false;
+
+    /// <summary>
+    /// Enable local overriding of engine versions.
+    /// </summary>
+    /// <remarks>
+    /// If enabled and on a development build,
+    /// the launcher will pull all engine versions and modules from <see cref="EngineOverridePath"/>.
+    /// This can be set to <c>RobustToolbox/release/</c> to instantly pull in packaged engine builds.
+    /// </remarks>
+    public bool EngineOverrideEnabled { get; init; } = false;
+
+    public string EngineOverridePath { get; init; } = "";
     #endregion
 
     #region Privacy policies
