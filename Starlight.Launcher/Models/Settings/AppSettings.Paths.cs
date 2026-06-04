@@ -20,7 +20,7 @@ public partial record AppSettings
     public string PathContentDb => Path.Combine(DirLauncherData, "content.db");
 
     // Public key used to verify engine signatures (loader-side, currently unused / passing disabled below).
-    public string PathPublicKey => Path.Combine(DirLauncherData, "signing_key");
+    public string PathPublicKey => Path.Combine(DirLauncherInstall, "signing_key");
 
     // Client log outputs.
     public string PathClientMacLog => Path.Combine(DirLauncherData, "client.mac.log");
