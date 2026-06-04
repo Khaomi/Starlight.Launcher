@@ -20,13 +20,22 @@ public static class MauiProgram
     {
         try
         {
+#if DEBUG && WINDOWS
+            ConsoleHelper.CreateConsole();
+#endif
             var builder = MauiApp.CreateBuilder();
 
-            var logger = new LoggerConfiguration().WriteTo.Debug().WriteTo.File(Path.Combine(FileSystem.Current.AppDataDirectory, "log.txt"), rollingInterval: RollingInterval.Day).CreateLogger();
+            var logger = new LoggerConfiguration()
+#if DEBUG
+                .MinimumLevel.Debug()
+#endif
+                .WriteTo.Console()
+                .WriteTo.File(Path.Combine(FileSystem.Current.AppDataDirectory, "log.txt"), rollingInterval: RollingInterval.Day).CreateLogger();
+
+            Log.Logger = logger;
 
             builder.Logging.ClearProviders();
             builder.Logging.AddSerilog(logger);
-            Log.Logger = logger;
 
             builder
                 .UseMauiApp<App>()
@@ -36,29 +45,23 @@ public static class MauiProgram
                     fonts.AddFont("CormorantGaramond-Regular.ttf", "Cormorant Garamond");
                 });
 
-            try
-            {
-                var httpClient = HappyEyeballsHttp.CreateHttpClient();
-                builder.Services.AddSingleton(httpClient);
-                builder.Services.AddSingleton<SettingsService>();
-                builder.Services.AddSingleton<AppState>();
-                builder.Services.AddSingleton<LocalizationManager>();
-                builder.Services.AddTransient<IMauiInitializeService, LocalizationInitializer>();
-                builder.Services.AddSingleton<HubApi>();
-                builder.Services.AddSingleton<AuthApi>();
-                builder.Services.AddSingleton<HubServerFetcher>();
-                builder.Services.AddSingleton<ServerStatusCache>();
-                builder.Services.AddSingleton<IEngineManager, EngineManagerDynamic>();
-                builder.Services.AddSingleton<Updater>();
-                builder.Services.AddSingleton<LoginManager>();
-                builder.Services.AddTransient<Connector>();
-                builder.Services.AddMauiBlazorWebView();
-                builder.Services.AddMudServices();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-            }
+            var httpClient = HappyEyeballsHttp.CreateHttpClient();
+            builder.Services.AddSingleton(httpClient);
+            builder.Services.AddSingleton<SettingsService>();
+            builder.Services.AddSingleton<AppState>();
+            builder.Services.AddSingleton<LocalizationManager>();
+            builder.Services.AddTransient<IMauiInitializeService, LocalizationInitializer>();
+            builder.Services.AddSingleton<HubApi>();
+            builder.Services.AddSingleton<AuthApi>();
+            builder.Services.AddSingleton<HubServerFetcher>();
+            builder.Services.AddSingleton<ServerStatusCache>();
+            builder.Services.AddSingleton<ContentManager>();
+            builder.Services.AddSingleton<IEngineManager, EngineManagerDynamic>();
+            builder.Services.AddSingleton<Updater>();
+            builder.Services.AddSingleton<LoginManager>();
+            builder.Services.AddTransient<Connector>();
+            builder.Services.AddMauiBlazorWebView();
+            builder.Services.AddMudServices();
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();
@@ -68,6 +71,7 @@ public static class MauiProgram
 
             app.Services.GetRequiredService<HubServerFetcher>().RequestInitialUpdate();
             app.Services.GetRequiredService<LoginManager>().Initialize();
+            app.Services.GetRequiredService<ContentManager>().Initialize();
 
             return app;
         }

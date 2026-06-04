@@ -724,15 +724,15 @@ public partial class Connector : ObservableObject
 #endif
             basePath = Path.GetFullPath(Path.Combine(
                 settings.DirLauncherInstall,
-                "..", "..", "..", "..",
-                "SS14.Loader", "bin", buildConfiguration, "net10.0"));
+                "..", "..", "..", "..", "..",
+                "Robust.Loader", "bin", buildConfiguration, "net10.0"));
         }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
         {
             return new ProcessStartInfo
             {
-                FileName = Path.Combine(basePath, "SS14.Loader")
+                FileName = Path.Combine(basePath, "Robust.Loader")
             };
         }
 
@@ -740,7 +740,7 @@ public partial class Connector : ObservableObject
         {
             return new ProcessStartInfo
             {
-                FileName = Path.Combine(basePath, "SS14.Loader.exe"),
+                FileName = Path.Combine(basePath, "Robust.Loader.exe"),
             };
         }
 
@@ -801,7 +801,7 @@ public partial class Connector : ObservableObject
             {
                 return new ProcessStartInfo
                 {
-                    FileName = Path.Combine(basePath, "SS14.Loader"),
+                    FileName = Path.Combine(basePath, "Robust.Loader"),
                 };
             }
         }

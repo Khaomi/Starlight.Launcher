@@ -1,8 +1,11 @@
 using Dapper;
 using Microsoft.Data.Sqlite;
+using Robust.Launcher.Api.Models.ContentManagement;
 using Robust.Launcher.Api.Models.Data;
 using Robust.Launcher.Api.Utility;
 using Serilog;
+using Starlight.Launcher.Services.Settings;
+using Starlight.Launcher.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,10 +13,17 @@ using System.IO;
 using System.IO.Compression;
 using System.Threading.Tasks;
 
-namespace Robust.Launcher.Api.Models.ContentManagement;
+namespace Starlight.Launcher.Services;
 
 public sealed class ContentManager
 {
+    private readonly SettingsService _settings;
+
+    public ContentManager(SettingsService settings)
+    {
+        _settings = settings;
+    }
+
     public void Initialize()
     {
         using var con = GetSqliteConnection();
@@ -25,7 +35,7 @@ public sealed class ContentManager
         Log.Debug("Migrating content database...");
 
         var sw = Stopwatch.StartNew();
-        var success = Migrator.Migrate(con, "SS14.Launcher.Models.ContentManagement.Migrations");
+        var success = Migrator.Migrate(con, "Starlight.Launcher.Services.ContentManagement.Migrations");
         if (!success)
             throw new Exception("Migrations failed!");
 
@@ -105,14 +115,14 @@ public sealed class ContentManager
         }
     }
 
-    public static SqliteConnection GetSqliteConnection()
+    public SqliteConnection GetSqliteConnection()
     {
         var con = new SqliteConnection(GetContentDbConnectionString());
         con.Open();
         return con;
     }
 
-    private static string GetContentDbConnectionString()
+    private string GetContentDbConnectionString()
     {
         // Disable pooling: interactions with the content DB are relatively infrequent
         // This means that ALL connections get closed in most cases (between committing download and starting client)
@@ -123,8 +133,7 @@ public sealed class ContentManager
         //
         // (also it means that hitting the "clear server content" button in settings IMMEDIATELY truncates the DB file
         // instead of waiting for the launcher to exit, at least if the client isn't running so it can checkpoint)
-        //return $"Data Source={LauncherPaths.PathContentDb};Mode=ReadWriteCreate;Pooling=False;Foreign Keys=True";
-        return "";
+        return $"Data Source={_settings.GetSettings().PathContentDb};Mode=ReadWriteCreate;Pooling=False;Foreign Keys=True";
     }
 
     /// <summary>

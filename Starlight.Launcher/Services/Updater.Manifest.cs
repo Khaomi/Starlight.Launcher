@@ -5,6 +5,7 @@ using Robust.Launcher.Api.Utility;
 using Serilog;
 using SpaceWizards.Sodium;
 using SQLitePCL;
+using Starlight.Launcher.Utility;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;

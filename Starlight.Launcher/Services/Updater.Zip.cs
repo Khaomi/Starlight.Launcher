@@ -5,6 +5,7 @@ using Robust.Launcher.Api.Models.ContentManagement;
 using Robust.Launcher.Api.Utility;
 using Serilog;
 using SharpZstd.Interop;
+using Starlight.Launcher.Utility;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;

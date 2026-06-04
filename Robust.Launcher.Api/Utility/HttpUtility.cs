@@ -12,26 +12,6 @@ namespace Robust.Launcher.Api.Utility;
 
 public static class HttpUtility
 {
-    private static readonly StringWithQualityHeaderValue ZStdHeader = new StringWithQualityHeaderValue("zstd", 1);
-
-    public static async Task<HttpResponseMessage> SendZStdAsync(
-        this HttpClient client,
-        HttpRequestMessage message,
-        HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead,
-        CancellationToken cancel = default)
-    {
-        message.Headers.AcceptEncoding.Add(ZStdHeader);
-
-        var response = await client.SendAsync(message, completionOption, cancel);
-
-        if (response.Content.Headers.ContentEncoding.LastOrDefault() == "zstd")
-        {
-            response.Content = new ZStdHttpContent(response.Content);
-        }
-
-        return response;
-    }
-
     // Taken from https://github.com/dotnet/runtime/blob/f89fbb96cabe95db5869e3d44c6b48c1c0f8fc1a/src/libraries/System.Net.Http/src/System/Net/Http/SocketsHttpHandler/DecompressionHandler.cs
     // The original code is Copyright © .NET Foundation and Contributors. All rights reserved. Licensed under the MIT License (MIT).
     public abstract class DecompressedContent : HttpContent
@@ -134,19 +114,6 @@ public static class HttpUtility
             }
 
             base.Dispose(disposing);
-        }
-    }
-
-
-    public sealed class ZStdHttpContent : DecompressedContent
-    {
-        public ZStdHttpContent(HttpContent originalContent) : base(originalContent)
-        {
-        }
-
-        protected override Stream GetDecompressedStream(Stream originalStream)
-        {
-            return new ZStdDecompressStream(originalStream);
         }
     }
 }

@@ -98,7 +98,7 @@ public sealed class LocalizationManager
         }
         catch (Exception ex)
         {
-            _logger?.LogWarning(ex, "Can't find localization!");
+            _logger?.LogWarning("Can't find localization: {0} !", key);
             return key;
         }
     }

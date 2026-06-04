@@ -1,57 +1,19 @@
-using System;
 using System.Buffers;
+using System;
 using System.IO;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 using SharpZstd.Interop;
 using static SharpZstd.Interop.Zstd;
+using System.Threading;
 
-namespace Robust.Launcher.Api.Utility;
+namespace Starlight.Launcher.Utility;
 
 public static class ZStd
 {
     public static int CompressBound(int length)
     {
         return (int)ZSTD_compressBound((nuint)length);
-    }
-
-    [ModuleInitializer]
-    public static void InitZStd()
-    {
-        NativeLibrary.SetDllImportResolver(
-            typeof(Zstd).Assembly,
-            ResolveZstd
-            );
-    }
-
-    private static IntPtr ResolveZstd(string name, Assembly assembly, DllImportSearchPath? path)
-    {
-        if (name == "zstd")
-        {
-            if (OperatingSystem.IsLinux())
-            {
-                // Try zstd.so we ship ourselves.
-                if (NativeLibrary.TryLoad("zstd.so", assembly, path, out var handle))
-                    return handle;
-
-                // Try some extra paths from the system too worst case.
-                if (NativeLibrary.TryLoad("libzstd.so.1", assembly, path, out handle))
-                    return handle;
-
-                if (NativeLibrary.TryLoad("libzstd.so", assembly, path, out handle))
-                    return handle;
-            }
-            else if (OperatingSystem.IsMacOS())
-            {
-                if (NativeLibrary.TryLoad("libzstd.1.dylib", assembly, path, out var handle))
-                    return handle;
-            }
-        }
-
-        return IntPtr.Zero;
     }
 }
 

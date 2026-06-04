@@ -1,20 +1,17 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Reflection;
 using Dapper;
 using Microsoft.Data.Sqlite;
 using Serilog;
+using Starlight.Launcher.Services.Settings;
 
-namespace Robust.Launcher.Api.Models.Data;
+namespace Starlight.Launcher.Services;
 
 /// <summary>
 /// Utility class to do SQLite database migrations.
 /// </summary>
 public static class Migrator
 {
-    internal static bool Migrate(SqliteConnection connection, string prefix)
+    public static bool Migrate(SqliteConnection connection, string prefix)
     {
         Log.Debug("Migrating with prefix {Prefix}", prefix);
 
@@ -84,8 +81,7 @@ public static class Migrator
 
     private static IEnumerable<(string name, IMigrationScript)> MigrationFileScriptList(string prefix)
     {
-        /*
-        var assembly = typeof(DataManager).Assembly;
+        var assembly = typeof(SettingsService).Assembly;
         foreach (var resourceName in assembly.GetManifestResourceNames())
         {
             if (!resourceName.EndsWith(".sql") || !resourceName.StartsWith(prefix))
@@ -100,9 +96,6 @@ public static class Migrator
             var scriptContents = reader.ReadToEnd();
             yield return (name, new FileMigrationScript(scriptContents));
         }
-        */
-
-        return [];
     }
 
     public interface IMigrationScript

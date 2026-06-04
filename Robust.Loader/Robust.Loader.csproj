@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
 	<TargetFramework>net10.0</TargetFramework>
     <OutputType>WinExe</OutputType>
@@ -20,7 +20,7 @@
   <ItemGroup>
 	  <!-- I'm not making a new shared project for a single enum. -->
 	  <Compile Include="../Robust.Launcher.Api/Models/ContentManagement/ContentCompressionScheme.cs" />
-	  <Compile Include="../Robust.Launcher.Api/Utility/ZStd.cs" />
+	  <Compile Include="../Starlight.Launcher/Utility/ZStd.cs" />
 	  <Compile Include="../Robust.Launcher.Api/Utility/Libc.cs" />
 	  <Compile Include="../Robust.Launcher.Api/Utility/SqliteBlobStream.cs" />
   </ItemGroup>
@@ -29,9 +29,8 @@
     <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="10.0.8" />
     <PackageReference Include="SQLitePCLRaw.provider.sqlite3" Condition="'$(UseSystemSqlite)' == 'True'" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Condition="'$(UseSystemSqlite)' != 'True'" Version="3.0.3" />
-    <PackageReference Include="NSec.Cryptography" Version="26.4.0" />
+    <PackageReference Include="NSec.Cryptography" Version="24.9.0-preview.2" />
     <!-- Add libsodium to control version, SpaceWizards.Sodium's dependency is behind -->
-    <PackageReference Include="libsodium" Version="1.0.22" />
     <PackageReference Include="Robust.Natives" Version="0.2.4" />
     <PackageReference Include="Robust.Natives.Zstd" Version="0.1.1-zstd1.5.7" />
     <PackageReference Include="SharpZstd.Interop" ExcludeAssets="native" Version="1.5.6" />

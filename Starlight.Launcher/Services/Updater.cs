@@ -34,14 +34,16 @@ public sealed partial class Updater
     private readonly HttpClient _http;
     private readonly IDispatcher _dispatcher;
     private readonly SettingsService _settings;
+    private readonly ContentManager _manager;
     private bool _updating;
 
-    public Updater(IEngineManager engineManager, HttpClient http, IDispatcher dispatcher, SettingsService settings)
+    public Updater(IEngineManager engineManager, HttpClient http, IDispatcher dispatcher, SettingsService settings, ContentManager manager)
     {
         _engineManager = engineManager;
         _http = http;
         _dispatcher = dispatcher;
         _settings = settings;
+        _manager = manager;
     }
 
     // Note: these get updated from different threads. Observe responsibly.
@@ -115,7 +117,7 @@ public sealed partial class Updater
             new Lazy<Task<EngineModuleManifest>>(() => _engineManager.GetEngineModuleManifest(cancel));
 
         // ReSharper disable once UseAwaitUsing
-        using var con = ContentManager.GetSqliteConnection();
+        using var con = _manager.GetSqliteConnection();
         var versionRowId = await Task.Run(
             () => TouchOrDownloadContentUpdateTransacted(buildInfo, con, moduleManifest, cancel),
             CancellationToken.None);
@@ -134,7 +136,7 @@ public sealed partial class Updater
         CancellationToken cancel)
     {
         // ReSharper disable once UseAwaitUsing
-        using var con = ContentManager.GetSqliteConnection();
+        using var con = _manager.GetSqliteConnection();
 
         Status = UpdateStatus.LoadingContentBundle;
 
