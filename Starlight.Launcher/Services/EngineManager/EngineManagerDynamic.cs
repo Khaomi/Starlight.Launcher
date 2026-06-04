@@ -1,7 +1,6 @@
 using Dapper;
 using Microsoft.Data.Sqlite;
 using NSec.Cryptography;
-using Robust.Launcher.Api.Models.EngineManager;
 using Robust.Launcher.Api.Utility;
 using Serilog;
 using Robust.Launcher.Api.Models.Data;
@@ -15,8 +14,9 @@ using System.Net.Http.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Robust.Launcher.Api.Models;
 
-namespace Robust.Launcher.Api.Models.EngineManager;
+namespace Starlight.Launcher.Services.EngineManager;
 
 /// <summary>
 ///     Downloads engine versions from the website.

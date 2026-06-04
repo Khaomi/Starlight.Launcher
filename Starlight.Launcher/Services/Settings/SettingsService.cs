@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging;
 using Robust.Launcher.Api.Models.Data;
-using Serilog;
 using Starlight.Launcher.Models.Data;
 using Starlight.Launcher.Models.ServerStatus;
 using Starlight.Launcher.Models.Settings;
@@ -8,7 +7,7 @@ using System.Text.Json;
 
 namespace Starlight.Launcher.Services.Settings;
 
-public class SettingsService : IAsyncDisposable
+public sealed partial class SettingsService : IAsyncDisposable
 {
     #region Variables
 
@@ -88,7 +87,7 @@ public class SettingsService : IAsyncDisposable
                 await Task.Delay(delay, cts.Token);
                 await saveAction();
             }
-            catch (OperationCanceledException) { /* перепланировано */ }
+            catch (OperationCanceledException) { }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Auto-save failed for {what}", what);
@@ -113,51 +112,6 @@ public class SettingsService : IAsyncDisposable
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to load settings, using defaults");
-            return new();
-        }
-    }
-
-    private List<FavoriteServer> LoadFavorites()
-    {
-        try
-        {
-            if (!File.Exists(_favoritesPath))
-            {
-                _logger.LogInformation("Can't find favorites file, fallback to empty.");
-                return new();
-            }
-
-            var json = File.ReadAllText(_favoritesPath);
-            _logger.LogInformation("Successfully loaded favorites");
-            return JsonSerializer.Deserialize<List<FavoriteServer>>(json) ?? new ();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to load favorites, using empty list");
-            return new();
-        }
-    }
-
-    private Dictionary<Guid, LoginInfo> LoadLogins()
-    {
-        try
-        {
-            if (!File.Exists(_loginsPath))
-            {
-                _logger.LogInformation("Can't find logins file, fallback to empty.");
-                return new();
-            }
-
-            var json = File.ReadAllText(_loginsPath);
-            var logins = JsonSerializer.Deserialize<List<LoginInfo>>(json) ?? new();
-
-            _logger.LogInformation("Successfully loaded logins");
-
-            return logins.ToDictionary(x => x.UserId);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to load logins, using empty list");
             return new();
         }
     }
@@ -316,227 +270,6 @@ public class SettingsService : IAsyncDisposable
     }
 
     #endregion
-
-    #region Favorites sync methods
-
-    public List<FavoriteServer> GetFavorites()
-    {
-        _favoritesLock.Wait();
-        try
-        {
-            return _favorites;
-        }
-        finally
-        {
-            _favoritesLock.Release();
-        }
-    }
-
-    public void WriteFavorites(List<FavoriteServer> favorites)
-    {
-        _favoritesLock.Wait();
-        try
-        {
-            _favorites = favorites;
-            RebuildFavoritesIndex();
-        }
-        finally
-        {
-            _favoritesLock.Release();
-        }
-
-        FavoritesChanged?.Invoke();
-
-        ScheduleSave(settings: false, favorites: true);
-    }
-
-    #endregion
-
-    #region Favorites async methods
-
-    public async Task<List<FavoriteServer>> GetFavoritesAsync()
-    {
-        await _favoritesLock.WaitAsync();
-        try
-        {
-            return _favorites;
-        }
-        finally
-        {
-            _favoritesLock.Release();
-        }
-    }
-
-    public async Task WriteFavoritesAsync(List<FavoriteServer> favorites)
-    {
-        await _favoritesLock.WaitAsync();
-        try
-        {
-            _favorites = favorites;
-            RebuildFavoritesIndex();
-        }
-        finally
-        {
-            _favoritesLock.Release();
-        }
-
-        FavoritesChanged?.Invoke();
-
-        ScheduleSave(settings: false, favorites: true);
-    }
-
-    #endregion
-
-    #region Sync Methods Logins
-
-    public Dictionary<Guid, LoginInfo> GetLogins()
-    {
-        _loginsLock.Wait();
-        try
-        {
-            return _logins;
-        }
-        finally
-        {
-            _loginsLock.Release();
-        }
-    }
-
-    public void AddLogin(LoginInfo login)
-    {
-        _loginsLock.Wait();
-        try
-        {
-            _logins[login.UserId] = login;
-        }
-        finally
-        {
-            _loginsLock.Release();
-        }
-
-        LoginsChanged?.Invoke();
-
-        ScheduleSave(settings: false, logins: true);
-    }
-
-    public void WriteLogins(Dictionary<Guid, LoginInfo> logins)
-    {
-        _loginsLock.Wait();
-        try
-        {
-            _logins = logins;
-        }
-        finally
-        {
-            _loginsLock.Release();
-        }
-
-        LoginsChanged?.Invoke();
-
-        ScheduleSave(settings: false, logins: true);
-    }
-
-    #endregion
-
-    #region Async Methods Logins
-
-    public async Task<Dictionary<Guid, LoginInfo>> GetLoginsAsync()
-    {
-        await _loginsLock.WaitAsync();
-        try
-        {
-            return _logins;
-        }
-        finally
-        {
-            _loginsLock.Release();
-        }
-    }
-
-    public async Task WriteLoginsAsync(Dictionary<Guid, LoginInfo> logins)
-    {
-        await _loginsLock.WaitAsync();
-        try
-        {
-            _logins = logins;
-            RebuildFavoritesIndex();
-        }
-        finally
-        {
-            _loginsLock.Release();
-        }
-
-        LoginsChanged?.Invoke();
-
-        ScheduleSave(logins: true);
-    }
-
-    #endregion
-
-    #region Privacy policies
-
-    public bool HasAcceptedPrivacyPolicy(string identifier, out string? acceptedVersion)
-    {
-        _settingsLock.Wait();
-        try
-        {
-            if (_settings.AcceptedPrivacyPolicies.TryGetValue(identifier, out var policy))
-            {
-                acceptedVersion = policy.Version;
-                return true;
-            }
-
-            acceptedVersion = null;
-            return false;
-        }
-        finally
-        {
-            _settingsLock.Release();
-        }
-    }
-
-    public void AcceptPrivacyPolicy(string identifier, string version)
-    {
-        _settingsLock.Wait();
-        try
-        {
-            _settings.AcceptedPrivacyPolicies[identifier] = new AcceptedPrivacyPolicy
-            {
-                Version = version
-            };
-        }
-        finally
-        {
-            _settingsLock.Release();
-        }
-
-        ScheduleSave(settings: true);
-    }
-
-    public void UpdateConnectedToPrivacyPolicy(string identifier)
-    {
-        _settingsLock.Wait();
-        try
-        {
-            if (_settings.AcceptedPrivacyPolicies.TryGetValue(identifier, out var policy))
-                _settings.AcceptedPrivacyPolicies[identifier] = policy with { LastConnected = DateTimeOffset.UtcNow };
-        }
-        finally
-        {
-            _settingsLock.Release();
-        }
-
-        ScheduleSave(settings: true);
-    }
-
-    #endregion
-
-    private void RebuildFavoritesIndex()
-    {
-        _favoriteAddresses = new HashSet<string>(
-            _favorites.Select(f => f.Address),
-            StringComparer.OrdinalIgnoreCase);
-    }
 
     public async ValueTask DisposeAsync()
     {

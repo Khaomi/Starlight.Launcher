@@ -1,12 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
+using Robust.Launcher.Api.Models;
 using Robust.Launcher.Api.Utility;
 
-namespace Robust.Launcher.Api.Models.EngineManager;
+namespace Starlight.Launcher.Services.EngineManager;
 // This is an interface instead of a class because
 // I was originally planning to make Steam builds bundle the engine with the Steam download.
 

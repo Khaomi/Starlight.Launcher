@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Serilog;
@@ -13,9 +14,10 @@ public sealed class UrlFallbackSet
 {
     public static readonly TimeSpan AttemptDelay = TimeSpan.FromSeconds(3);
 
-    public readonly ImmutableArray<string> Urls;
-    public readonly UrlFallbackSetStats Stats;
+    public ImmutableArray<string> Urls { get; init; }
+    public UrlFallbackSetStats Stats { get; init; }
 
+    [JsonConstructor]
     public UrlFallbackSet(ImmutableArray<string> urls, UrlFallbackSetStats? stats = null)
     {
         if (urls.Length == 0)
@@ -134,11 +136,26 @@ public sealed class UrlFallbackSet
     }
 }
 
-public sealed class UrlFallbackSetStats(int countUrls)
+public sealed class UrlFallbackSetStats
 {
     // I don't actually think we're gonna have more than 2 billion requests in the app's lifetime,
     // but I definitely know we're never gonna have 2^63.
-    public readonly long[] RequestCount = new long[countUrls];
+    public long[] RequestCount { get; init; } = [];
+
+    [JsonConstructor]
+    public UrlFallbackSetStats(long[] requestCount)
+    {
+        RequestCount = requestCount;
+    }
+
+    public UrlFallbackSetStats(int countUrls)
+    {
+        RequestCount = new long[countUrls];
+    }
+
+    public UrlFallbackSetStats()
+    {
+    }
 
     public void AddSuccessfulRequest(int idx)
     {

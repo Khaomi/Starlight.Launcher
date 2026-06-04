@@ -8,7 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using static System.Net.WebRequestMethods;
 
-namespace Robust.Launcher.Api.Models.EngineManager;
+namespace Starlight.Launcher.Services.EngineManager;
 
 public sealed partial class EngineManagerDynamic
 {

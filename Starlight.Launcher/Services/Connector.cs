@@ -1,6 +1,5 @@
 using Serilog;
 using Robust.Launcher.Api.Models.Data;
-using Robust.Launcher.Api.Models.EngineManager;
 using Robust.Launcher.Api.Utility;
 using System.Diagnostics;
 using System.IO.Compression;
@@ -13,6 +12,9 @@ using Starlight.Launcher.Services.Auth;
 using Robust.Launcher.Api.Models;
 using Starlight.Launcher.Services.Settings;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Starlight.Launcher.Services.EngineManager;
+using Starlight.Launcher.Models.Settings;
+using TerraFX.Interop.Windows;
 
 namespace Starlight.Launcher.Services;
 
@@ -27,38 +29,6 @@ public partial class Connector : ObservableObject
     private readonly IEngineManager _engineManager;
     private readonly SettingsService _settings;
     private readonly HttpClient _http;
-
-    #region Hardcoded paths & config (TODO: move into AppSettings / config)
-
-    // Base directory for all launcher data. This is currently the one "real" hardcoded path.
-    private static readonly string DirLauncherData = FileSystem.AppDataDirectory;
-
-    // Where the launcher itself is installed. Used to locate the loader/engine (release builds).
-    private static readonly string DirLauncherInstall = AppContext.BaseDirectory;
-
-    private static readonly string DirLogs = Path.Combine(DirLauncherData, "logs");
-
-    // SQLite content DB the loader reads versions/blobs from.
-    // IMPORTANT: this MUST point at the same file that ContentManager.GetSqliteConnection() uses,
-    // otherwise the loader won't find the version the Updater just wrote.
-    private static readonly string PathContentDb = Path.Combine(DirLauncherData, "content.db");
-
-    // Public key used to verify engine signatures (loader-side, currently unused / passing disabled below).
-    private static readonly string PathPublicKey = Path.Combine(DirLauncherData, "signing_key");
-
-    // Client log outputs.
-    private static readonly string PathClientMacLog = Path.Combine(DirLogs, "client.mac.log");
-    private static readonly string PathClientStdoutLog = Path.Combine(DirLogs, "client.stdout.log");
-    private static readonly string PathClientStderrLog = Path.Combine(DirLogs, "client.stderr.log");
-
-    // Auth server URL passed to the client for multiplayer auth.
-    // (Original launcher used ConfigConstants.AuthUrl.GetMostSuccessfulUrl().)
-    private const string AuthServerUrl = "https://auth.spacestation14.com/";
-
-    // Username used when no account is logged in.
-    private const string FallbackUsername = "JoeGenero";
-
-    #endregion
 
     private bool _clientExitedBadly;
     private TaskCompletionSource<PrivacyPolicyAcceptResult>? _acceptPrivacyPolicyTcs;
@@ -366,6 +336,7 @@ public partial class Connector : ObservableObject
         Uri? parsedAddr,
         bool contentBundle)
     {
+        var settings = _settings.GetSettings();
         var cVars = new List<(string, string)>();
 
         if (info != null && info.AuthInformation.Mode != AuthMode.Disabled && _loginManager.ActiveAccount != null)
@@ -375,7 +346,7 @@ public partial class Connector : ObservableObject
             cVars.Add(("ROBUST_AUTH_TOKEN", account.LoginInfo.Token.Token));
             cVars.Add(("ROBUST_AUTH_USERID", account.LoginInfo.UserId.ToString()));
             cVars.Add(("ROBUST_AUTH_PUBKEY", info.AuthInformation.PublicKey));
-            cVars.Add(("ROBUST_AUTH_SERVER", AuthServerUrl));
+            cVars.Add(("ROBUST_AUTH_SERVER", settings.AuthServerUrl.GetMostSuccessfulUrl()));
         }
 
         try
@@ -387,7 +358,7 @@ public partial class Connector : ObservableObject
             {
                 // Pass username to launched client.
                 // We don't load username from client_config.toml when launched via launcher.
-                "--username", _loginManager.ActiveAccount?.Username ?? FallbackUsername,
+                "--username", _loginManager.ActiveAccount?.Username ?? AppSettings.FallbackUsername,
 
                 // GLES2 forcing or using default fallback
                 "--cvar", $"display.compat={compatMode}",
@@ -552,7 +523,8 @@ public partial class Connector : ObservableObject
         IEnumerable<string> extraArgs,
         List<(string, string)> env)
     {
-        var pubKey = PathPublicKey;
+        var settings = _settings.GetSettings();
+        var pubKey = settings.PathPublicKey;
         var engineVersion = launchInfo.ModuleInfo.Single(x => x.Module == "Robust").Version;
         var binPath = _engineManager.GetEnginePath(engineVersion);
         var sig = _engineManager.GetEngineSignature(engineVersion);
@@ -568,7 +540,7 @@ public partial class Connector : ObservableObject
             startInfo.EnvironmentVariables[k] = v;
         }
 
-        EnvVar("SS14_LOADER_CONTENT_DB", PathContentDb);
+        EnvVar("SS14_LOADER_CONTENT_DB", settings.PathContentDb);
         EnvVar("SS14_LOADER_CONTENT_VERSION", launchInfo.Version.ToString());
         EnvVar("SS14_LOADER_OVERLAY_ZIP", launchInfo.OverlayZip);
 
@@ -593,7 +565,7 @@ public partial class Connector : ObservableObject
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
-            EnvVar("SS14_LOG_CLIENT", PathClientMacLog);
+            EnvVar("SS14_LOG_CLIENT", settings.PathClientMacLog);
         }
 
         startInfo.RedirectStandardOutput = true;
@@ -638,7 +610,7 @@ public partial class Connector : ObservableObject
             Log.Debug("Setting up manual-pipe logging for new client with PID {pid}.", process.Id);
 
             var fileStdout = new FileStream(
-                PathClientStdoutLog,
+                settings.PathClientStdoutLog,
                 FileMode.Create,
                 FileAccess.Write,
                 FileShare.Delete | FileShare.ReadWrite,
@@ -646,7 +618,7 @@ public partial class Connector : ObservableObject
                 FileOptions.Asynchronous);
 
             var fileStderr = new FileStream(
-                PathClientStderrLog,
+                settings.PathClientStderrLog,
                 FileMode.Create,
                 FileAccess.Write,
                 FileShare.Delete | FileShare.ReadWrite,
@@ -719,8 +691,9 @@ public partial class Connector : ObservableObject
     }
 
 #pragma warning disable 162
-    private static async Task<ProcessStartInfo> GetLoaderStartInfo()
+    private async Task<ProcessStartInfo> GetLoaderStartInfo()
     {
+        var settings = _settings.GetSettings();
         string basePath;
 
 #if FULL_RELEASE
@@ -731,7 +704,7 @@ public partial class Connector : ObservableObject
 
         if (release)
         {
-            basePath = DirLauncherInstall;
+            basePath = settings.DirLauncherInstall;
             if (OperatingSystem.IsMacOS())
                 basePath = Path.Combine(basePath, "..", "..");
             else
@@ -745,7 +718,7 @@ public partial class Connector : ObservableObject
             const string buildConfiguration = "Debug";
 #endif
             basePath = Path.GetFullPath(Path.Combine(
-                DirLauncherInstall,
+                settings.DirLauncherInstall,
                 "..", "..", "..", "..",
                 "SS14.Loader", "bin", buildConfiguration, "net10.0"));
         }

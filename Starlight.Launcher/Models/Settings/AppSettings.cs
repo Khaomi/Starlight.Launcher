@@ -3,7 +3,7 @@ using Starlight.Launcher.Models.ServerStatus;
 
 namespace Starlight.Launcher.Models.Settings;
 
-public record AppSettings
+public partial record AppSettings
 {
     #region Appearance
     /// <summary>
