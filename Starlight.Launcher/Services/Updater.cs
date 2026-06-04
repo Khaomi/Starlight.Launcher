@@ -5,6 +5,7 @@ using Robust.Launcher.Api.Models.ContentManagement;
 using Robust.Launcher.Api.Utility;
 using Serilog;
 using Starlight.Launcher.Services.EngineManager;
+using Starlight.Launcher.Services.Settings;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 using System.Numerics;
@@ -32,13 +33,15 @@ public sealed partial class Updater
     private readonly IEngineManager _engineManager;
     private readonly HttpClient _http;
     private readonly IDispatcher _dispatcher;
+    private readonly SettingsService _settings;
     private bool _updating;
 
-    public Updater(IEngineManager engineManager, HttpClient http, IDispatcher dispatcher)
+    public Updater(IEngineManager engineManager, HttpClient http, IDispatcher dispatcher, SettingsService settings)
     {
         _engineManager = engineManager;
         _http = http;
         _dispatcher = dispatcher;
+        _settings = settings;
     }
 
     // Note: these get updated from different threads. Observe responsibly.
@@ -288,7 +291,6 @@ public sealed partial class Updater
         await CullEngineVersionsMaybe(con);
 
         Status = UpdateStatus.CommittingDownload;
-        //_cfg.CommitConfig();
 
         Log.Information("Update done!");
         return new ContentLaunchInfo(versionRowId, modules);
@@ -311,8 +313,10 @@ public sealed partial class Updater
         // We keep at most MaxForkVersionsToKeep of a specific ForkID.
         // Old builds get culled first.
 
-        //var maxVersions = _cfg.GetCVar(CVars.MaxVersionsToKeep);
-        //var maxForkVersions = _cfg.GetCVar(CVars.MaxForkVersionsToKeep);
+        var settings = _settings.GetSettings();
+
+        var maxVersions = settings.MaxVersionsToKeep;
+        var maxForkVersions = settings.MaxForkVersionsToKeep;
 
         var versions = con.Query<ContentVersion>("SELECT * FROM ContentVersion ORDER BY LastUsed DESC").ToArray();
 
@@ -326,7 +330,6 @@ public sealed partial class Updater
         {
             ref var count = ref CollectionsMarshal.GetValueRefOrAddDefault(forkCounts, version.ForkId, out _);
 
-            /*
             var keep = count < maxForkVersions && totalCount < maxVersions;
             if (keep)
             {
@@ -349,23 +352,22 @@ public sealed partial class Updater
                     anythingRemoved = true;
                 }
             }
-            */
         }
 
         //
         // Cull old interrupted downloads.
         //
 
-        //var interruptedKeepHours = _cfg.GetCVar(CVars.InterruptibleDownloadKeepHours);
-        //var affected = con.Execute(
-        //    "DELETE FROM InterruptedDownload WHERE Added < @Threshold",
-        //    new { Threshold = DateTime.UtcNow - TimeSpan.FromHours(interruptedKeepHours) });
+        var interruptedKeepHours = settings.InterruptibleDownloadKeepHours;
+        var affected = con.Execute(
+            "DELETE FROM InterruptedDownload WHERE Added < @Threshold",
+            new { Threshold = DateTime.UtcNow - TimeSpan.FromHours(interruptedKeepHours) });
 
-        //if (affected > 0)
-        //{
-        //    Log.Debug("Deleted {DeletedCount} old interrupted downloads", affected);
-        //    anythingRemoved = true;
-        //}
+        if (affected > 0)
+        {
+            Log.Debug("Deleted {DeletedCount} old interrupted downloads", affected);
+            anythingRemoved = true;
+        }
 
         if (anythingRemoved)
         {
@@ -708,11 +710,11 @@ public sealed partial class Updater
             throw new InvalidOperationException("No download information provided at all!");
         }
 
-        //Log.Debug("Manifest hash: {ManifestHash}", Convert.ToHexString(manifestHash));
+        Log.Debug("Manifest hash: {ManifestHash}", Convert.ToHexString(manifestHash));
 
-        //con.Execute(
-        //    "UPDATE ContentVersion SET Hash = @Hash WHERE Id = @Id",
-        //    new { Hash = manifestHash, Id = versionId });
+        con.Execute(
+            "UPDATE ContentVersion SET Hash = @Hash WHERE Id = @Id",
+            new { Hash = manifestHash, Id = versionId });
 
         // Insert engine dependencies.
 

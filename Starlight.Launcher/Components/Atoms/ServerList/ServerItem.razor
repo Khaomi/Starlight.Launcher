@@ -55,7 +55,17 @@
                 <strong>@Data.PlayerCount</strong><span class="server-row__players-slash">/</span>@Data.SoftMaxPlayerCount
             </span>
         </div>
-        <div class="server-row__favorite">
+
+        <div class="server-row__actions" @onclick:stopPropagation="true">
+            <MudButton Class="server-row__play"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Size="Size.Small"
+                       StartIcon="@Icons.Material.Rounded.PlayArrow"
+                       OnClick="Play">
+                @Localization["servers-list-item-play"]
+            </MudButton>
+
             <MudTooltip Color="@Color.Primary" Text="@Localization["servers-list-item-favorites"]">
                 <MudIconButton Icon="@(IsInFavorites ? Icons.Material.Rounded.Star : Icons.Material.Rounded.StarBorder)"
                                Color="Color.Primary"

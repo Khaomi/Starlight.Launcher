@@ -80,6 +80,22 @@ public partial record AppSettings
     public string EngineOverridePath { get; init; } = "";
 
     public TimeSpan RobustManifestCacheTime = TimeSpan.FromMinutes(15);
+
+    /// <summary>
+    /// Maximum amount of TOTAL versions to keep in the content database.
+    /// </summary>
+    public int MaxVersionsToKeep { get; init; } = 15;
+
+    /// <summary>
+    /// Maximum amount of versions to keep of a specific fork ID.
+    /// </summary>
+    public int MaxForkVersionsToKeep { get; init; } = 3;
+
+    /// <summary>
+    /// If a download gets interrupted, keep the files for a week.
+    /// </summary>
+    public int InterruptibleDownloadKeepHours = 7 * 24;
+
     #endregion
 
     #region Privacy policies

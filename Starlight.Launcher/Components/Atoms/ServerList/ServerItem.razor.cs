@@ -10,6 +10,7 @@ namespace Starlight.Launcher.Components.Atoms.ServerList;
 public partial class ServerItem : ComponentBase
 {
     [Inject] private LocalizationManager Localization { get; set; } = null!;
+    [Inject] private IDialogService DialogService { get; set; } = default!;
     [Parameter, EditorRequired] public ServerStatusData Data { get; set; } = null!;
     [Parameter] public EventCallback<ServerStatusData> OnInfoNeeded { get; set; }
     [Parameter] public EventCallback<ServerStatusData> OnFavorites { get; set; }
@@ -87,6 +88,25 @@ public partial class ServerItem : ComponentBase
         {
             _logger.LogError(ex, $"Failed to open URL {Url}");
         }
+    }
+
+    private async Task Play()
+    {
+        var parameters = new DialogParameters<ConnectingDialog>
+        {
+            { x => x.Address, Data.Address }
+        };
+
+        var options = new DialogOptions
+        {
+            BackdropClick = false,
+            CloseOnEscapeKey = false,
+            CloseButton = false,
+            MaxWidth = MaxWidth.ExtraSmall,
+            FullWidth = true
+        };
+
+        await DialogService.ShowAsync<ConnectingDialog>("Connecting", parameters, options);
     }
 
     private string? ParseIcon(string? icon)
