@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Robust.Launcher.Api.Models.Data;
-using System.Text.Json;
+﻿using Robust.Launcher.Api.Models.Data;
 
 namespace Starlight.Launcher.Services.Settings;
 
@@ -33,7 +31,7 @@ public sealed partial class SettingsService
 
         EnginesChanged?.Invoke();
 
-        ScheduleSave(settings: false, engines: true);
+        ScheduleSaveInternal(ref _enginesSaveCts, () => SaveJsonAsync(_enginesPath, _enginesLock, _engineInstallations.Values), "engines");
     }
 
     public void RemoveInstalledEngine(string version)
@@ -50,7 +48,7 @@ public sealed partial class SettingsService
 
         EnginesChanged?.Invoke();
 
-        ScheduleSave(settings: false, engines: true);
+        ScheduleSaveInternal(ref _enginesSaveCts, () => SaveJsonAsync(_enginesPath, _enginesLock, _engineInstallations.Values), "engines");
     }
 
     public void WriteEngines(Dictionary<string, InstalledEngineVersion> engines)
@@ -67,7 +65,7 @@ public sealed partial class SettingsService
 
         EnginesChanged?.Invoke();
 
-        ScheduleSave(settings: false, engines: true);
+        ScheduleSaveInternal(ref _enginesSaveCts, () => SaveJsonAsync(_enginesPath, _enginesLock, _engineInstallations.Values), "engines");
     }
 
     public async Task<Dictionary<string, InstalledEngineVersion>> GetEnginesAsync()
@@ -97,6 +95,6 @@ public sealed partial class SettingsService
 
         EnginesChanged?.Invoke();
 
-        ScheduleSave(settings: false, engines: true);
+        ScheduleSaveInternal(ref _enginesSaveCts, () => SaveJsonAsync(_enginesPath, _enginesLock, _engineInstallations.Values), "engines");
     }
 }

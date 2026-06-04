@@ -1,12 +1,6 @@
 using Serilog;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net.Http.Json;
 using System.Text.Json.Serialization;
-using System.Threading;
-using System.Threading.Tasks;
-using static System.Net.WebRequestMethods;
 
 namespace Starlight.Launcher.Services.EngineManager;
 
@@ -69,12 +63,13 @@ public sealed partial class EngineManagerDynamic
     {
         // TODO: If-Modified-Since and If-None-Match request conditions.
 
-        //Log.Debug("Loading manifest from {manifestUrl}...", ConfigConstants.RobustBuildsManifest);
-        //_cachedRobustVersionInfo =
-        //    await ConfigConstants.RobustBuildsManifest.GetFromJsonAsync<Dictionary<string, VersionInfo>>(
-        //        _http, cancel);
+        var settings = _settings.GetSettings();
+        Log.Debug("Loading manifest from {manifestUrl}...", settings.RobustBuildsManifest);
+        _cachedRobustVersionInfo =
+            await settings.RobustBuildsManifest.GetFromJsonAsync<Dictionary<string, VersionInfo>>(
+                _http, cancel);
 
-        //_robustCacheValidUntil = _manifestStopwatch.Elapsed + ConfigConstants.RobustManifestCacheTime;
+        _robustCacheValidUntil = _manifestStopwatch.Elapsed + settings.RobustManifestCacheTime;
     }
 
     private FoundVersionInfo? FindVersionInfoInCached(string version, bool followRedirects)

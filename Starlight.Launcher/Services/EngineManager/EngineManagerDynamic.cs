@@ -144,8 +144,8 @@ public sealed partial class EngineManagerDynamic : IEngineManager
         Helpers.DownloadProgressCallback? progress = null,
         CancellationToken cancel = default)
     {
-#if DEVELOPMENT
         var settings = _settings.GetSettings();
+#if DEVELOPMENT
         if (settings.CVars.EngineOverrideEnabled)
         {
             // For modules we have to extract them from the zip to disk first.
@@ -167,13 +167,13 @@ public sealed partial class EngineManagerDynamic : IEngineManager
 
         Log.Debug("Selected module {ModuleName} {ModuleVersion}", moduleName, moduleVersion);
 
-        //var alreadyInstalled = _cfg.EngineModules.Any(m => m.Name == moduleName && m.Version == moduleVersion);
+        var alreadyInstalled = _settings.GetModules().Contains((moduleName, moduleVersion));
 
-        //if (alreadyInstalled)
-        //{
-        //    Log.Debug("Already have module installed!");
-        //    return false;
-        //}
+        if (alreadyInstalled)
+        {
+            Log.Debug("Already have module installed!");
+            return false;
+        }
 
         Log.Information("Installing {ModuleName} {ModuleVersion}", moduleName, moduleVersion);
 
@@ -207,15 +207,15 @@ public sealed partial class EngineManagerDynamic : IEngineManager
             if (!VerifyModuleSignature(tempFile, platformData.Sig))
             {
 #if DEBUG
-                //if (_cfg.GetCVar(CVars.DisableSigning))
-                //{
-                //    Log.Debug("Signature check failed for module, ignoring because signing disabled");
-                //}
-                //else
+                if (settings.DisableSigning)
+                {
+                    Log.Debug("Signature check failed for module, ignoring because signing disabled");
+                }
+                else
 #endif
-                //{
-                //    throw new UpdateException("Failed to verify module signature!");
-                //}
+                {
+                    throw new UpdateException("Failed to verify module signature!");
+                }
             }
 
             // Done downloading, extract...
@@ -229,8 +229,7 @@ public sealed partial class EngineManagerDynamic : IEngineManager
             ExtractModule(moduleName, moduleVersionDiskPath, tempFile);
         }
 
-        //_cfg.AddEngineModule(new InstalledEngineModule(moduleName, moduleVersion));
-        //_cfg.CommitConfig();
+        _settings.AddInstalledModule(new InstalledEngineModule(moduleName, moduleVersion));
 
         Log.Debug("Done installing module!");
 
@@ -324,7 +323,6 @@ public sealed partial class EngineManagerDynamic : IEngineManager
             var sigBytes = Convert.FromHexString(signature);
 
             return SignatureAlgorithm.Ed25519.Verify(pubKey, span, sigBytes);
-            return true;
         }
         finally
         {
@@ -334,10 +332,8 @@ public sealed partial class EngineManagerDynamic : IEngineManager
 
     public async Task<EngineModuleManifest> GetEngineModuleManifest(CancellationToken cancel = default)
     {
-        //return await ConfigConstants.RobustModulesManifest.GetFromJsonAsync<EngineModuleManifest>(_http, cancel) ??
-        //    throw new InvalidDataException();
-
-        return default!;
+        return await _settings.GetSettings().RobustModulesManifest.GetFromJsonAsync<EngineModuleManifest>(_http, cancel) ??
+            throw new InvalidDataException();
     }
 
     public async Task DoEngineCullMaybeAsync(SqliteConnection contenCon)
@@ -380,47 +376,43 @@ public sealed partial class EngineManagerDynamic : IEngineManager
         }
 
         // Cull modules
-        //var toCullModules = _cfg.EngineModules.Where(m => !modulesUsed.Contains((m.Name, m.Version))).ToArray();
+        var toCullModules = _settings.GetModules().Where(m => !modulesUsed.Contains(m)).ToArray();
 
-        /*
         foreach (var module in toCullModules)
         {
             Log.Debug("Culling unused module {EngineModule}", module);
 
             var path = GetEngineModule(module.Name, module.Version);
 
-            _cfg.RemoveEngineModule(module);
+            _settings.RemoveInstalledModule(module);
 
             await Task.Run(() => Directory.Delete(path, true));
         }
-        */
     }
 
     public void ClearAllEngines()
     {
-        /*
-        foreach (var install in _cfg.EngineInstallations.Items.ToArray())
+        foreach (var install in _settings.GetEngines())
         {
-            _cfg.RemoveEngineInstallation(install);
+            _settings.RemoveInstalledEngine(install.Key);
         }
 
-        foreach (var module in _cfg.EngineModules.ToArray())
+        foreach (var module in _settings.GetModules())
         {
-            _cfg.RemoveEngineModule(module);
+            _settings.RemoveInstalledModule(module);
         }
 
-        foreach (var file in Directory.EnumerateFiles(LauncherPaths.DirEngineInstallations))
+        var settings = _settings.GetSettings();
+
+        foreach (var file in Directory.EnumerateFiles(settings.DirEngineInstallations))
         {
             File.Delete(file);
         }
 
-        foreach (var dir in Directory.EnumerateFiles(LauncherPaths.DirModuleInstallations))
+        foreach (var dir in Directory.EnumerateFiles(settings.DirModuleInstallations))
         {
             Directory.Delete(dir, recursive: true);
         }
-
-        _cfg.CommitConfig();
-        */
     }
 
     private static string FindOverrideZip(string name, string dir)

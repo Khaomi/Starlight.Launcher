@@ -15,6 +15,7 @@ public sealed partial class SettingsService : IAsyncDisposable
     private CancellationTokenSource? _favoritesSaveCts;
     private CancellationTokenSource? _loginsSaveCts;
     private CancellationTokenSource? _enginesSaveCts;
+    private CancellationTokenSource? _modulesSaveCts;
 
 
     private AppSettings _settings;
@@ -26,7 +27,7 @@ public sealed partial class SettingsService : IAsyncDisposable
     private readonly string _favoritesPath;
     private volatile HashSet<string> _favoriteAddresses = new(StringComparer.OrdinalIgnoreCase);
 
-    private Dictionary<Guid, LoginInfo> _logins = new();
+    private Dictionary<Guid, LoginInfo> _logins;
     private readonly SemaphoreSlim _loginsLock = new(1, 1);
     private readonly string _loginsPath;
 
@@ -35,6 +36,10 @@ public sealed partial class SettingsService : IAsyncDisposable
     private readonly SemaphoreSlim _enginesLock = new(1, 1);
     private readonly string _enginesPath;
 
+    private HashSet<(string Version, string Name)> _engineModules;
+    private readonly SemaphoreSlim _modulesLock = new(1, 1);
+    private readonly string _modulesPath;
+
     private readonly ILogger<SettingsService> _logger;
 
     public event Action? FavoritesChanged;
@@ -42,6 +47,8 @@ public sealed partial class SettingsService : IAsyncDisposable
     public event Action? LoginsChanged;
 
     public event Action? EnginesChanged;
+
+    public event Action? ModulesChanged;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -57,29 +64,16 @@ public sealed partial class SettingsService : IAsyncDisposable
         _favoritesPath = Path.Combine(FileSystem.AppDataDirectory, "favorites.json");
         _loginsPath = Path.Combine(FileSystem.AppDataDirectory, "logins.json");
         _enginesPath = Path.Combine(FileSystem.AppDataDirectory, "engines.json");
+        _modulesPath = Path.Combine(FileSystem.AppDataDirectory, "modules.json");
         _settings = LoadJson(_filePath, new AppSettings());
         _favorites = LoadJson(_favoritesPath, new List<FavoriteServer>());
         _logins = LoadJson(_loginsPath, new List<LoginInfo>()).ToDictionary(x => x.UserId);
         _engineInstallations = LoadJson(_enginesPath, new List<InstalledEngineVersion>()).ToDictionary(x => x.Version);
+        _engineModules = LoadJson(_modulesPath, new HashSet<(string Version, string Name)>());
         RebuildFavoritesIndex(); // Rebuild addresses after load.
     }
 
     public IReadOnlySet<string> GetFavoriteAddressesSnapshot() => _favoriteAddresses;
-
-    public void ScheduleSave(bool settings = true, bool favorites = false, bool logins = false, bool engines = false)
-    {
-        if (settings)
-            ScheduleSaveInternal(ref _settingsSaveCts, () => SaveJsonAsync(_filePath, _settingsLock, _settings), "settings");
-
-        if (favorites)
-            ScheduleSaveInternal(ref _favoritesSaveCts, () => SaveJsonAsync(_favoritesPath, _favoritesLock, _favorites), "favorites");
-
-        if (logins)
-            ScheduleSaveInternal(ref _loginsSaveCts, () => SaveJsonAsync(_loginsPath, _loginsLock, _logins.Values), "logins");
-
-        if (engines)
-            ScheduleSaveInternal(ref _enginesSaveCts, () => SaveJsonAsync(_enginesPath, _enginesLock, _engineInstallations.Values), "engines");
-    }
 
     private void ScheduleSaveInternal(
         ref CancellationTokenSource? ctsField,
@@ -129,17 +123,20 @@ public sealed partial class SettingsService : IAsyncDisposable
         }
     }
 
-    public async Task SaveAllAsync(bool settings = true, bool favorites = true, bool logins = true, bool engines = true)
+    public async Task SaveAllAsync()
     {
-        var tasks = new List<Task>();
-        if (settings) tasks.Add(SaveJsonAsync(_filePath, _settingsLock, _settings));
-        if (favorites) tasks.Add(SaveJsonAsync(_favoritesPath, _favoritesLock, _favorites));
-        if (logins) tasks.Add(SaveJsonAsync(_loginsPath, _loginsLock, _logins.Values));
-        if (engines) tasks.Add(SaveJsonAsync(_enginesPath, _enginesLock, _engineInstallations.Values));
+        var tasks = new List<Task>
+        {
+            SaveJsonAsync(_filePath, _settingsLock, _settings),
+            SaveJsonAsync(_favoritesPath, _favoritesLock, _favorites),
+            SaveJsonAsync(_loginsPath, _loginsLock, _logins.Values),
+            SaveJsonAsync(_enginesPath, _enginesLock, _engineInstallations.Values),
+            SaveJsonAsync(_modulesPath, _modulesLock, _engineModules)
+        };
         await Task.WhenAll(tasks);
     }
 
-    private async Task WriteFileSafeAsync(string content, string dir, string filePath)
+    private static async Task WriteFileSafeAsync(string content, string dir, string filePath)
     {
         Directory.CreateDirectory(dir);
 
@@ -185,7 +182,7 @@ public sealed partial class SettingsService : IAsyncDisposable
             _settingsLock.Release();
         }
 
-        ScheduleSave(settings: true);
+        ScheduleSaveInternal(ref _settingsSaveCts, () => SaveJsonAsync(_filePath, _settingsLock, _settings), "settings");
     }
 
     #endregion
@@ -223,7 +220,7 @@ public sealed partial class SettingsService : IAsyncDisposable
             _settingsLock.Release();
         }
 
-        ScheduleSave(settings: true);
+        ScheduleSaveInternal(ref _settingsSaveCts, () => SaveJsonAsync(_filePath, _settingsLock, _settings), "settings");
     }
 
     #endregion
@@ -255,7 +252,7 @@ public sealed partial class SettingsService : IAsyncDisposable
             _settingsLock.Release();
         }
 
-        ScheduleSave(settings: true);
+        ScheduleSaveInternal(ref _settingsSaveCts, () => SaveJsonAsync(_filePath, _settingsLock, _settings), "settings");
     }
 
     private T LoadJson<T>(string path, T fallback)

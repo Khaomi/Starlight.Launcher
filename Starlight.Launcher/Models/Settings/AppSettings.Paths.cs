@@ -29,6 +29,15 @@ public partial record AppSettings
     public string DirEngineInstallations => Path.Combine(DirLauncherData, "engines");
     public string DirModuleInstallations => Path.Combine(DirLauncherData, "modules");
 
+    // TODO: Redone to configurable option.
+    private static readonly UrlFallbackSet RobustBuildsBaseUrl = new([
+        "https://robust-builds.cdn.spacestation14.com/",
+        "https://robust-builds.fallback.cdn.spacestation14.com/"
+    ]);
+
+    public UrlFallbackSet RobustBuildsManifest => RobustBuildsBaseUrl + "manifest.json";
+    public UrlFallbackSet RobustModulesManifest => RobustBuildsBaseUrl + "modules.json";
+
     #endregion
 
     #region Auth

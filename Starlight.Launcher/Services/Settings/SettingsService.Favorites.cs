@@ -32,7 +32,7 @@ public sealed partial class SettingsService
 
         FavoritesChanged?.Invoke();
 
-        ScheduleSave(settings: false, favorites: true);
+        ScheduleSaveInternal(ref _favoritesSaveCts, () => SaveJsonAsync(_favoritesPath, _favoritesLock, _favorites), "favorites");
     }
 
     public async Task<List<FavoriteServer>> GetFavoritesAsync()
@@ -63,7 +63,7 @@ public sealed partial class SettingsService
 
         FavoritesChanged?.Invoke();
 
-        ScheduleSave(settings: false, favorites: true);
+        ScheduleSaveInternal(ref _favoritesSaveCts, () => SaveJsonAsync(_favoritesPath, _favoritesLock, _favorites), "favorites");
     }
     private void RebuildFavoritesIndex()
     {

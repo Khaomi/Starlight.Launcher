@@ -33,7 +33,7 @@ public sealed partial class SettingsService
 
         LoginsChanged?.Invoke();
 
-        ScheduleSave(settings: false, logins: true);
+        ScheduleSaveInternal(ref _loginsSaveCts, () => SaveJsonAsync(_loginsPath, _loginsLock, _logins.Values), "logins");
     }
 
     public void WriteLogins(Dictionary<Guid, LoginInfo> logins)
@@ -50,7 +50,7 @@ public sealed partial class SettingsService
 
         LoginsChanged?.Invoke();
 
-        ScheduleSave(settings: false, logins: true);
+        ScheduleSaveInternal(ref _loginsSaveCts, () => SaveJsonAsync(_loginsPath, _loginsLock, _logins.Values), "logins");
     }
 
     public async Task<Dictionary<Guid, LoginInfo>> GetLoginsAsync()
@@ -80,6 +80,6 @@ public sealed partial class SettingsService
 
         LoginsChanged?.Invoke();
 
-        ScheduleSave(settings: false, logins: true);
+        ScheduleSaveInternal(ref _loginsSaveCts, () => SaveJsonAsync(_loginsPath, _loginsLock, _logins.Values), "logins");
     }
 }

@@ -509,13 +509,18 @@ public partial class Connector : ObservableObject
         }
     }
 
-    public static InstalledEngineModule? GetInstalledModuleForEngineVersion(
+    public InstalledEngineModule? GetInstalledModuleForEngineVersion(
         Version engineVersion,
         string moduleName)
     {
         // TODO: needs a source of installed engine modules (the original used a dataManager).
         // IEngineManager doesn't currently expose an enumerable of installed modules.
-        return default!;
+        (string, string)? module = _settings.GetModules().Where(m => m.Name == moduleName).Select(m => new { Version = Version.Parse(m.Version), m }).Where(m => engineVersion >= m.Version).MaxBy(m => m.Version)?.m;
+
+        if (module == null)
+            return null;
+
+        return new InstalledEngineModule(module.Value.Item2, module.Value.Item1);
     }
 
     private async Task<Process?> LaunchClient(

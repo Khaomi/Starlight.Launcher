@@ -78,6 +78,8 @@ public partial record AppSettings
     public bool EngineOverrideEnabled { get; init; } = false;
 
     public string EngineOverridePath { get; init; } = "";
+
+    public TimeSpan RobustManifestCacheTime = TimeSpan.FromMinutes(15);
     #endregion
 
     #region Privacy policies
