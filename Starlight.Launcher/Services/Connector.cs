@@ -9,9 +9,10 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using TerraFX.Interop.WinRT;
 using Starlight.Launcher.Services.Auth;
 using Robust.Launcher.Api.Models;
+using Starlight.Launcher.Services.Settings;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Starlight.Launcher.Services;
 
@@ -19,46 +20,82 @@ namespace Starlight.Launcher.Services;
 /// Responsible for actually launching the game.
 /// Either by connecting to a game server, or by launching a local content bundle.
 /// </summary>
-public partial class Connector
+public partial class Connector : ObservableObject
 {
     private readonly Updater _updater;
     private readonly LoginManager _loginManager;
     private readonly IEngineManager _engineManager;
-
-    private ConnectionStatus _status = ConnectionStatus.None;
-    private bool _clientExitedBadly;
+    private readonly SettingsService _settings;
     private readonly HttpClient _http;
 
+    #region Hardcoded paths & config (TODO: move into AppSettings / config)
+
+    // Base directory for all launcher data. This is currently the one "real" hardcoded path.
+    private static readonly string DirLauncherData = FileSystem.AppDataDirectory;
+
+    // Where the launcher itself is installed. Used to locate the loader/engine (release builds).
+    private static readonly string DirLauncherInstall = AppContext.BaseDirectory;
+
+    private static readonly string DirLogs = Path.Combine(DirLauncherData, "logs");
+
+    // SQLite content DB the loader reads versions/blobs from.
+    // IMPORTANT: this MUST point at the same file that ContentManager.GetSqliteConnection() uses,
+    // otherwise the loader won't find the version the Updater just wrote.
+    private static readonly string PathContentDb = Path.Combine(DirLauncherData, "content.db");
+
+    // Public key used to verify engine signatures (loader-side, currently unused / passing disabled below).
+    private static readonly string PathPublicKey = Path.Combine(DirLauncherData, "signing_key");
+
+    // Client log outputs.
+    private static readonly string PathClientMacLog = Path.Combine(DirLogs, "client.mac.log");
+    private static readonly string PathClientStdoutLog = Path.Combine(DirLogs, "client.stdout.log");
+    private static readonly string PathClientStderrLog = Path.Combine(DirLogs, "client.stderr.log");
+
+    // Auth server URL passed to the client for multiplayer auth.
+    // (Original launcher used ConfigConstants.AuthUrl.GetMostSuccessfulUrl().)
+    private const string AuthServerUrl = "https://auth.spacestation14.com/";
+
+    // Username used when no account is logged in.
+    private const string FallbackUsername = "JoeGenero";
+
+    #endregion
+
+    private bool _clientExitedBadly;
     private TaskCompletionSource<PrivacyPolicyAcceptResult>? _acceptPrivacyPolicyTcs;
     private ServerPrivacyPolicyInfo? _serverPrivacyPolicyInfo;
     private bool _privacyPolicyDifferentVersion;
 
-    public Connector(Updater updater, IEngineManager engineManager, HttpClient http, LoginManager login)
+    public Connector(Updater updater, IEngineManager engineManager, HttpClient http, LoginManager login, SettingsService settings)
     {
         _updater = updater;
         _engineManager = engineManager;
         _http = http;
         _loginManager = login;
+        _settings = settings;
     }
 
-    //public ConnectionStatus Status
-    //{
-        //get => _status;
-        //private set => this.RaiseAndSetIfChanged(ref _status, value);
-    //}
+    private ConnectionStatus _status = ConnectionStatus.None;
+    public ConnectionStatus Status
+    {
+        get => _status;
+        private set => SetProperty(ref _status, value);
+    }
 
-    //public bool ClientExitedBadly
-    //{
-    //    get => _clientExitedBadly;
-    //    private set => this.RaiseAndSetIfChanged(ref _clientExitedBadly, value);
-    //}
+
+    public bool ClientExitedBadly
+    {
+        get => _clientExitedBadly;
+        private set => SetProperty(ref _clientExitedBadly, value);
+    }
 
     public ServerPrivacyPolicyInfo? PrivacyPolicyInfo => _serverPrivacyPolicyInfo;
-    //public bool PrivacyPolicyDifferentVersion
-    //{
-    //    get => _privacyPolicyDifferentVersion;
-    //    private set => this.RaiseAndSetIfChanged(ref _privacyPolicyDifferentVersion, value);
-    //}
+
+    public bool PrivacyPolicyDifferentVersion
+    {
+        get => _privacyPolicyDifferentVersion;
+        private set => SetProperty(ref _privacyPolicyDifferentVersion, value);
+    }
+
 
     public async void Connect(string address, CancellationToken cancel = default)
     {
@@ -69,12 +106,12 @@ public partial class Connector
         catch (ConnectException e)
         {
             Log.Error(e, "Failed to connect: {status}", e.Status);
-            //Status = e.Status;
+            Status = e.Status;
         }
         catch (OperationCanceledException e)
         {
             Log.Information(e, "Cancelled connect");
-            //Status = ConnectionStatus.Cancelled;
+            Status = ConnectionStatus.Cancelled;
         }
         finally
         {
@@ -82,9 +119,9 @@ public partial class Connector
         }
     }
 
-    public async void LaunchContentBundle(IStorageFile file, CancellationToken cancel = default)
+    public async void LaunchContentBundle(FileResult file, CancellationToken cancel = default)
     {
-        //Log.Information("Launching content bundle: {FileName}", file.Path);
+        Log.Information("Launching content bundle: {FileName}", file.FileName);
 
         try
         {
@@ -93,12 +130,12 @@ public partial class Connector
         catch (ConnectException e)
         {
             Log.Error(e, "Failed to launch: {status}", e.Status);
-            //Status = e.Status;
+            Status = e.Status;
         }
         catch (OperationCanceledException e)
         {
             Log.Information(e, "Cancelled launch");
-            //Status = ConnectionStatus.Cancelled;
+            Status = ConnectionStatus.Cancelled;
         }
         finally
         {
@@ -108,14 +145,14 @@ public partial class Connector
 
     private async Task ConnectInternalAsync(string address, CancellationToken cancel)
     {
-        //Status = ConnectionStatus.Connecting;
+        Status = ConnectionStatus.Connecting;
 
         var (info, parsedAddr, infoAddr) = await GetServerInfoAsync(address, cancel);
 
         await HandlePrivacyPolicyAsync(info, cancel);
 
         // Run update.
-        //Status = ConnectionStatus.Updating;
+        Status = ConnectionStatus.Updating;
 
         // Must have been set when retrieving build info (inferred to be automatic zipping).
         Debug.Assert(info.BuildInformation != null, "info.BuildInformation != null");
@@ -137,8 +174,8 @@ public partial class Connector
 
         var identifier = info.PrivacyPolicy.Identifier;
         var version = info.PrivacyPolicy.Version;
-        /*
-        if (_cfg.HasAcceptedPrivacyPolicy(identifier, out var acceptedVersion))
+
+        if (_settings.HasAcceptedPrivacyPolicy(identifier, out var acceptedVersion))
         {
             if (version == acceptedVersion)
             {
@@ -148,8 +185,7 @@ public partial class Connector
                     acceptedVersion);
 
                 // User has previously accepted privacy policy, update last connected time in DB at least.
-                _cfg.UpdateConnectedToPrivacyPolicy(identifier);
-                _cfg.CommitConfig();
+                _settings.UpdateConnectedToPrivacyPolicy(identifier);
                 return;
             }
             else
@@ -158,22 +194,20 @@ public partial class Connector
                 PrivacyPolicyDifferentVersion = true;
             }
         }
-        */
 
         // Ask user for privacy policy acceptance by waiting here.
         Log.Debug("Prompting user for privacy policy acceptance: {Identifer} version {Version}", identifier, version);
         _serverPrivacyPolicyInfo = info.PrivacyPolicy;
         _acceptPrivacyPolicyTcs = new TaskCompletionSource<PrivacyPolicyAcceptResult>();
 
-        //Status = ConnectionStatus.AwaitingPrivacyPolicyAcceptance;
+        Status = ConnectionStatus.AwaitingPrivacyPolicyAcceptance;
         var result = await _acceptPrivacyPolicyTcs.Task.WaitAsync(cancel);
 
         if (result == PrivacyPolicyAcceptResult.Accepted)
         {
             // Yippee they're ok with it.
             Log.Debug("User accepted privacy policy");
-            //_cfg.AcceptPrivacyPolicy(identifier, version);
-            //_cfg.CommitConfig();
+            _settings.AcceptPrivacyPolicy(identifier, version);
             return;
         }
 
@@ -199,14 +233,13 @@ public partial class Connector
     {
         _serverPrivacyPolicyInfo = null;
         _acceptPrivacyPolicyTcs = null;
-        //PrivacyPolicyDifferentVersion = default;
+        PrivacyPolicyDifferentVersion = default;
     }
 
-    private async Task LaunchContentBundleInternal(IStorageFile file, CancellationToken cancel)
+    private async Task LaunchContentBundleInternal(FileResult file, CancellationToken cancel)
     {
-        //Status = ConnectionStatus.Updating;
+        Status = ConnectionStatus.Updating;
 
-        /*
 
         ContentLaunchInfo installation;
         await using (var zipStream = await file.OpenReadAsync())
@@ -266,7 +299,7 @@ public partial class Connector
             //
             if (zipFile.GetEntry("manifest.yml") is null
                 && metadata.BaseBuild is not null
-                && file.TryGetLocalPath() is { } localPath)
+                && file.FullPath is { } localPath)
             {
                 installation = await RunUpdateAsync(metadata.GetBaseBuildInformation(), cancel);
                 installation = installation with { OverlayZip = localPath };
@@ -286,8 +319,6 @@ public partial class Connector
         // I originally wanted to pass through build info,
         // but then realized I'd need to pipe the entries in the SQLite DB ("AnonymousContentBundle") up and ehhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh.
         await LaunchClientWrap(installation, null, null, null, null, true, cancel);
-
-        */
     }
 
     private async Task LaunchClientWrap(
@@ -299,7 +330,7 @@ public partial class Connector
         bool contentBundle = false,
         CancellationToken cancel = default)
     {
-        //Status = ConnectionStatus.StartingClient;
+        Status = ConnectionStatus.StartingClient;
 
         var clientProc = await ConnectLaunchClient(launchInfo, info, buildInfo, connectAddress, parsedAddr, contentBundle);
 
@@ -313,19 +344,19 @@ public partial class Connector
 
             if (!clientProc.HasExited)
             {
-                //Status = ConnectionStatus.ClientRunning;
+                Status = ConnectionStatus.ClientRunning;
                 await waitClient;
                 return;
             }
 
-            //ClientExitedBadly = clientProc.ExitCode != 0;
+            ClientExitedBadly = clientProc.ExitCode != 0;
         }
         else
         {
-            //ClientExitedBadly = true;
+            ClientExitedBadly = true;
         }
 
-        //Status = ConnectionStatus.ClientExited;
+        Status = ConnectionStatus.ClientExited;
     }
 
     private async Task<Process?> ConnectLaunchClient(ContentLaunchInfo launchInfo,
@@ -337,7 +368,6 @@ public partial class Connector
     {
         var cVars = new List<(string, string)>();
 
-        /*
         if (info != null && info.AuthInformation.Mode != AuthMode.Disabled && _loginManager.ActiveAccount != null)
         {
             var account = _loginManager.ActiveAccount;
@@ -345,20 +375,19 @@ public partial class Connector
             cVars.Add(("ROBUST_AUTH_TOKEN", account.LoginInfo.Token.Token));
             cVars.Add(("ROBUST_AUTH_USERID", account.LoginInfo.UserId.ToString()));
             cVars.Add(("ROBUST_AUTH_PUBKEY", info.AuthInformation.PublicKey));
-            cVars.Add(("ROBUST_AUTH_SERVER", ConfigConstants.AuthUrl.GetMostSuccessfulUrl()));
+            cVars.Add(("ROBUST_AUTH_SERVER", AuthServerUrl));
         }
-        */
 
         try
         {
-            /*
-            var compatMode = (_cfg.GetCVar(CVars.CompatMode) && !OperatingSystem.IsMacOS()) || CheckForceCompatMode();
+            // CheckForceCompatMode() (sentinel-file forcing after a GL crash) was dropped during the port.
+            var compatMode = _settings.GetSettings().CompatMode && !OperatingSystem.IsMacOS();
 
             var args = new List<string>
             {
                 // Pass username to launched client.
                 // We don't load username from client_config.toml when launched via launcher.
-                "--username", _loginManager.ActiveAccount?.Username ?? ConfigConstants.FallbackUsername,
+                "--username", _loginManager.ActiveAccount?.Username ?? FallbackUsername,
 
                 // GLES2 forcing or using default fallback
                 "--cvar", $"display.compat={compatMode}",
@@ -414,10 +443,6 @@ public partial class Connector
 
             // Launch client.
             return await LaunchClient(launchInfo, args, cVars);
-
-            */
-
-            return default!;
         }
         catch (Exception e)
         {
@@ -517,12 +542,8 @@ public partial class Connector
         Version engineVersion,
         string moduleName)
     {
-        //return dataManager.EngineModules
-        //    .Where(m => m.Name == moduleName)
-        //    .Select(m => new { Version = Version.Parse(m.Version), m })
-        //    .Where(m => engineVersion >= m.Version)
-        //    .MaxBy(m => m.Version)?.m;
-
+        // TODO: needs a source of installed engine modules (the original used a dataManager).
+        // IEngineManager doesn't currently expose an enumerable of installed modules.
         return default!;
     }
 
@@ -531,7 +552,7 @@ public partial class Connector
         IEnumerable<string> extraArgs,
         List<(string, string)> env)
     {
-        //var pubKey = LauncherPaths.PathPublicKey;
+        var pubKey = PathPublicKey;
         var engineVersion = launchInfo.ModuleInfo.Single(x => x.Module == "Robust").Version;
         var binPath = _engineManager.GetEnginePath(engineVersion);
         var sig = _engineManager.GetEngineSignature(engineVersion);
@@ -540,14 +561,14 @@ public partial class Connector
 
         startInfo.ArgumentList.Add(binPath);
         startInfo.ArgumentList.Add(sig);
-        //startInfo.ArgumentList.Add(pubKey);
+        startInfo.ArgumentList.Add(pubKey);
 
         foreach (var (k, v) in env)
         {
             startInfo.EnvironmentVariables[k] = v;
         }
 
-        //EnvVar("SS14_LOADER_CONTENT_DB", LauncherPaths.PathContentDb);
+        EnvVar("SS14_LOADER_CONTENT_DB", PathContentDb);
         EnvVar("SS14_LOADER_CONTENT_VERSION", launchInfo.Version.ToString());
         EnvVar("SS14_LOADER_OVERLAY_ZIP", launchInfo.OverlayZip);
 
@@ -565,14 +586,14 @@ public partial class Connector
             }
         }
 
-        //if (_cfg.GetCVar(CVars.DisableSigning))
-        //    EnvVar("SS14_DISABLE_SIGNING", "true");
+        if (_settings.GetSettings().DisableSigning)
+            EnvVar("SS14_DISABLE_SIGNING", "true");
 
         EnvVar("SS14_LAUNCHER_PATH", Process.GetCurrentProcess().MainModule!.FileName);
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
-            //EnvVar("SS14_LOG_CLIENT", LauncherPaths.PathClientMacLog);
+            EnvVar("SS14_LOG_CLIENT", PathClientMacLog);
         }
 
         startInfo.RedirectStandardOutput = true;
@@ -593,7 +614,10 @@ public partial class Connector
         EnvVar("DOTNET_MULTILEVEL_LOOKUP", "0");
 
         startInfo.UseShellExecute = false;
-        //startInfo.ArgumentList.AddRange(extraArgs);
+
+        // ProcessStartInfo.ArgumentList is a Collection<string> which has no AddRange, so loop.
+        foreach (var arg in extraArgs)
+            startInfo.ArgumentList.Add(arg);
 
         var commandBuilder = new StringBuilder();
         commandBuilder.Append(startInfo.FileName);
@@ -613,27 +637,23 @@ public partial class Connector
         {
             Log.Debug("Setting up manual-pipe logging for new client with PID {pid}.", process.Id);
 
-            /*
             var fileStdout = new FileStream(
-                LauncherPaths.PathClientStdoutLog,
+                PathClientStdoutLog,
                 FileMode.Create,
                 FileAccess.Write,
                 FileShare.Delete | FileShare.ReadWrite,
                 4096,
                 FileOptions.Asynchronous);
-            */
 
-            /*
             var fileStderr = new FileStream(
-                LauncherPaths.PathClientStderrLog,
+                PathClientStderrLog,
                 FileMode.Create,
                 FileAccess.Write,
                 FileShare.Delete | FileShare.ReadWrite,
                 4096,
                 FileOptions.Asynchronous);
-            */
 
-            //PipeOutput(process, fileStdout, fileStderr);
+            PipeOutput(process, fileStdout, fileStderr);
         }
 
         return process;
@@ -641,7 +661,7 @@ public partial class Connector
         void EnvVar(string envVar, string? value)
         {
             startInfo.EnvironmentVariables[envVar] = value;
-            // Log.Debug("Env: {EnvVar} = {Value}", envVar, value);
+            Log.Debug("Env: {EnvVar} = {Value}", envVar, value);
         }
     }
 
@@ -711,7 +731,7 @@ public partial class Connector
 
         if (release)
         {
-            //basePath = LauncherPaths.DirLauncherInstall;
+            basePath = DirLauncherInstall;
             if (OperatingSystem.IsMacOS())
                 basePath = Path.Combine(basePath, "..", "..");
             else
@@ -724,17 +744,17 @@ public partial class Connector
 #else
             const string buildConfiguration = "Debug";
 #endif
-            //basePath = Path.GetFullPath(Path.Combine(
-            //    LauncherPaths.DirLauncherInstall,
-            //    "..", "..", "..", "..",
-            //    "SS14.Loader", "bin", buildConfiguration, "net10.0"));
+            basePath = Path.GetFullPath(Path.Combine(
+                DirLauncherInstall,
+                "..", "..", "..", "..",
+                "SS14.Loader", "bin", buildConfiguration, "net10.0"));
         }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
         {
             return new ProcessStartInfo
             {
-                //FileName = Path.Combine(basePath, "SS14.Loader")
+                FileName = Path.Combine(basePath, "SS14.Loader")
             };
         }
 
@@ -742,7 +762,7 @@ public partial class Connector
         {
             return new ProcessStartInfo
             {
-                //FileName = Path.Combine(basePath, "SS14.Loader.exe"),
+                FileName = Path.Combine(basePath, "SS14.Loader.exe"),
             };
         }
 
@@ -803,7 +823,7 @@ public partial class Connector
             {
                 return new ProcessStartInfo
                 {
-                    //FileName = Path.Combine(basePath, "SS14.Loader"),
+                    FileName = Path.Combine(basePath, "SS14.Loader"),
                 };
             }
         }

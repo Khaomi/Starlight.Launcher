@@ -55,4 +55,23 @@ public record AppSettings
     #region Cache
     public ServerListFilters CachedFilters { get; set; } = new ServerListFilters();
     #endregion
+
+    #region Game / launch
+    /// <summary>
+    /// Force render compatibility mode (GLES2).
+    /// </summary>
+    public bool CompatMode { get; init; } = false;
+
+    /// <summary>
+    /// Disable engine signature verification. For debugging/development only.
+    /// </summary>
+    public bool DisableSigning { get; init; } = false;
+    #endregion
+
+    #region Privacy policies
+    /// <summary>
+    ///Privacy policies accepted by the user, the key is the policy identifier.
+    /// </summary>
+    public Dictionary<string, AcceptedPrivacyPolicy> AcceptedPrivacyPolicies { get; init; } = new();
+    #endregion
 }
