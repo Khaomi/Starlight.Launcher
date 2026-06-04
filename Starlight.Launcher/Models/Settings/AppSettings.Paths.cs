@@ -26,12 +26,32 @@ public partial record AppSettings
     public string PathClientMacLog => Path.Combine(DirLauncherData, "client.mac.log");
     public string PathClientStdoutLog => Path.Combine(DirLauncherData, "client.stdout.log");
     public string PathClientStderrLog => Path.Combine(DirLauncherData, "client.stderr.log");
-    // Auth server URL passed to the client for multiplayer auth.
-    // (Original launcher used ConfigConstants.AuthUrl.GetMostSuccessfulUrl().)
-    public UrlFallbackSet AuthServerUrl { get; init; } = new(["https://auth.spacestation14.com/", "https://auth.fallback.spacestation14.com/"]);
 
-    // Username used when no account is logged in.
+    #endregion
+
+    #region Auth
+
+    private static readonly List<string> DefaultAuthServerUrls =
+    [
+        "https://auth.spacestation14.com/",
+        "https://auth.fallback.spacestation14.com/"
+    ];
+
+    /// <summary>
+    /// Auth servers in priority order. User-editable, any count.
+    /// </summary>
+    public List<string> AuthServerUrls { get; init; } = [.. DefaultAuthServerUrls];
+
     public const string FallbackUsername = "JoeGenero";
+
+    /// <summary>
+    /// Builds a fresh fallback set from the configured URLs. Falls back to defaults if the user cleared the list.
+    /// </summary>
+    public UrlFallbackSet BuildAuthUrlSet()
+    {
+        var urls = AuthServerUrls is { Count: > 0 } list ? list : DefaultAuthServerUrls;
+        return new UrlFallbackSet([.. urls]);
+    }
 
     #endregion
 }
