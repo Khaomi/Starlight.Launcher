@@ -26,6 +26,12 @@ jobs:
           dotnet-quality: preview
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
+      - name: Restore Workloads
+        shell: pwsh
+        run: |
+          dotnet workload restore ${{ env.MAIN_PROJECT }}
+          dotnet workload restore ${{ env.LOADER_PROJECT }}
+
       - name: Publish (win-x64, self-contained)
         shell: pwsh
         run: |
