@@ -5,6 +5,7 @@ using Microsoft.JSInterop;
 using MudBlazor;
 using MudBlazor.Services;
 using Starlight.Launcher.Models.Data;
+using Starlight.Launcher.Services;
 using Starlight.Launcher.Services.Localization;
 using Starlight.Launcher.Services.Settings;
 using Starlight.Launcher.Services.State;
@@ -20,6 +21,7 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowse
     [Inject] private LocalizationManager Localization { get; set; } = null!;
     [Inject] private AppState State { get; set; } = null!;
     [Inject] private IBrowserViewportService BrowserViewportService { get; set; } = null!;
+    [Inject] private INativeTray Tray { get; set; } = null!;
 
     Guid IBrowserViewportObserver.Id { get; } = Guid.NewGuid();
 
@@ -49,6 +51,9 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowse
         await ApplyThemeAsync();
         _navigation = settings.Navigation;
         State.OnChange += AppCalledRepaint;
+
+        if (settings.CollapseInTrayOnStart)
+            Tray.HideWindow(); // If layout is initialized - window exists, so we can hide it right away if the user wants that.
     }
 
 

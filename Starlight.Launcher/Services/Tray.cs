@@ -16,12 +16,10 @@ public interface INativeTray : IDisposable
 public sealed class TrayCoordinator
 {
     private readonly INativeTray _tray;
-    private readonly SettingsService _settings;
 
-    public TrayCoordinator(INativeTray tray, SettingsService settings)
+    public TrayCoordinator(INativeTray tray)
     {
         _tray = tray;
-        _settings = settings;
     }
 
     public void Initialize()
@@ -34,9 +32,6 @@ public sealed class TrayCoordinator
         };
         _tray.Initialize(new TrayOptions("STARLIGHT.LAUNCHER", "Resources/AppIcon/icon.ico"), menu);
         _tray.IconActivated += (_, _) => _tray.ShowWindow();
-
-        if (_settings.GetSettings().CollapseInTrayOnStart)
-            _tray.HideWindow();
     }
 
     private void QuitApp() => Application.Current?.Quit();
