@@ -266,3 +266,41 @@ h1:focus {
     height: calc(100vh - var(--bottom-nav-height));
     max-height: calc(100vh - var(--bottom-nav-height));
 }
+
+.mud-main-content:has(.settings-page) {
+    height: calc(100vh - 64px);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+    .mud-main-content:has(.settings-page) > .settings-page {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+.mud-tabs.settings-tabs {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.mud-tabs-panels.settings-tabs-panels {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.settings-tabs-panels > .mud-tab-panel {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}

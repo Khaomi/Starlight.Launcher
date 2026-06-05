@@ -1,7 +1,3 @@
-.has-bottom-nav {
-    padding-bottom: 64px;
-}
-
 .mud-main-content.has-bottom-nav {
-    min-height: calc(100vh - 64px) !important;
+    padding-bottom: 64px;
 }

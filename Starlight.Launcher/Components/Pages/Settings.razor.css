@@ -1,8 +1,4 @@
-.settings-tabs {
-    background-color: transparent
-}
-
-.settings-tabs .mud-tabs-panels,
-.settings-tabs .mud-tab-panel {
-    background-color: transparent
+.settings-page {
+    height: 100%;
+    overflow: hidden;
 }

@@ -5,7 +5,7 @@
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-<MudLayout Class="@(_navigation == ElementPosition.Bottom || _navigation == ElementPosition.Top || _isSmallScreen ? "has-bottom-nav" : "")">
+<MudLayout>
     <MudAppBar Elevation="1">
         @if (_navigation == ElementPosition.Bottom || _isSmallScreen)
         {
@@ -29,7 +29,7 @@
         </MudDrawer>
     }
 
-    <MudMainContent Class="@(_navigation == ElementPosition.Bottom || _isSmallScreen ? "has-bottom-nav" : "")">
+    <MudMainContent Class="@(_navigation is ElementPosition.Bottom or ElementPosition.Top || _isSmallScreen ? "has-bottom-nav" : "")">
         <ErrorBoundary @ref="_errorBoundary">
             <ChildContent>
                 @Body
@@ -44,7 +44,7 @@
 
     @if (_navigation is ElementPosition.Bottom or ElementPosition.Top || _isSmallScreen)
     {
-        <MudAppBar Bottom="true" Fixed="true" Elevation="3">
+        <MudAppBar Bottom="true" Elevation="3">
             @if (_navigation == ElementPosition.Top)
             {
                 <MudTooltip Text="@Localization["main-layout-auth-tab"]">
