@@ -1,0 +1,19 @@
+{
+  "en-US": [
+    "UI/Atoms/servers-list-item.ftl",
+    "UI/Atoms/servers-list-search-bar.ftl",
+    "UI/Atoms/servers-list-tags-bar.ftl",
+    "UI/Atoms/settings-alternative-list-option.ftl",
+    "UI/Layout/main.ftl",
+    "UI/Pages/servers.ftl",
+    "UI/Pages/settings.ftl"
+  ],
+  "ru-RU": [
+    "UI/Atoms/servers-list-search-bar.ftl",
+    "UI/Atoms/servers-list-tags-bar.ftl",
+    "UI/Atoms/settings-alternative-list-option.ftl",
+    "UI/Layout/main.ftl",
+    "UI/Pages/servers.ftl",
+    "UI/Pages/settings.ftl"
+  ]
+}

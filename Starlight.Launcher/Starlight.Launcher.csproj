@@ -1,16 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
-	
-	<PropertyGroup Condition="'$(TargetFramework)' == 'net11.0-windows10.0.19041.0'">
-		<OutputType>WinExe</OutputType>
-	</PropertyGroup>
-	
-	<PropertyGroup Condition="'$(TargetFramework)' == 'net11.0-maccatalyst'">
+	<PropertyGroup>
 		<OutputType>Exe</OutputType>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="$([MSBuild]::IsOSPlatform('windows'))">
+		<OutputType>WinExe</OutputType>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<TargetFrameworks>net11.0-maccatalyst</TargetFrameworks>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="$([MSBuild]::IsOSPlatform('windows'))">
+		<TargetFrameworks>$(TargetFrameworks);net11.0-windows10.0.19041.0</TargetFrameworks>
+	</PropertyGroup>
+
     <PropertyGroup>
-        <TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('linux'))">$(TargetFrameworks);net11.0-maccatalyst</TargetFrameworks>
-        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net11.0-windows10.0.19041.0</TargetFrameworks>
 
         <!-- Note for MacCatalyst:
             The default runtime is maccatalyst-x64, except in Release config, in which case the default is maccatalyst-x64;maccatalyst-arm64.
@@ -96,52 +101,8 @@
 	  </PackageReference>
 	</ItemGroup>
 
-	<UsingTask TaskName="GenerateIndex" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
-		<ParameterGroup>
-			<LocaleRoot ParameterType="System.String" Required="true" />
-			<OutputFile ParameterType="System.String" Required="true" />
-		</ParameterGroup>
-		<Task>
-			<Reference Include="System.Text.Json" />
-			<Using Namespace="System.IO" />
-			<Using Namespace="System.Linq" />
-			<Using Namespace="System.Text.Json" />
-			<Code Type="Fragment" Language="cs">
-				<![CDATA[
-				var result = new System.Collections.Generic.Dictionary<string, string[]>();
-
-				if (Directory.Exists(LocaleRoot))
-				{
-					foreach (var dir in Directory.GetDirectories(LocaleRoot))
-					{
-						var localeId = Path.GetFileName(dir);
-						var dirFullPath = Path.GetFullPath(dir);
-						var prefixLength = dirFullPath.Length + 1;
-
-						var files = Directory.GetFiles(dir, "*.ftl", SearchOption.AllDirectories)
-											 .Select(f => Path.GetFullPath(f).Substring(prefixLength).Replace('\\', '/'))
-											 .OrderBy(n => n, StringComparer.Ordinal)
-											 .ToArray();
-
-						if (files.Length > 0)
-						{
-							result[localeId] = files;
-						}
-					}
-				}
-
-				var json = JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
-				File.WriteAllText(OutputFile, json);
-			]]>
-			</Code>
-		</Task>
-	</UsingTask>
-
-	<Target Name="GenerateLocalizationIndex" BeforeTargets="BeforeBuild">
-		<ItemGroup>
-			<LocalizationFiles Include="Resources\Raw\Locale\**\*.ftl" />
-		</ItemGroup>
-
-		<GenerateIndex LocaleRoot="$(MSBuildProjectDirectory)\Resources\Raw\Locale" OutputFile="$(MSBuildProjectDirectory)\Resources\Raw\Locale\manifest.json" />
+	<Target Name="GenerateLocalizationIndex" BeforeTargets="BeforeBuild"
+        Condition="'$(DesignTimeBuild)' != 'true'">
+		<Exec Command="dotnet run -c Release --project &quot;$(MSBuildProjectDirectory)/../LocalizationIndexer/LocalizationIndexer.csproj&quot; -- &quot;$(MSBuildProjectDirectory)/Resources/Raw/Locale&quot; &quot;$(MSBuildProjectDirectory)/Resources/Raw/Locale/manifest.json&quot;" />
 	</Target>
 </Project>

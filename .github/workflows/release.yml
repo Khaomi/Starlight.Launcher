@@ -40,6 +40,11 @@ jobs:
           dotnet publish ${{ env.MAIN_PROJECT }} -c Release -f net11.0-windows10.0.19041.0 -r win-x64 --self-contained true -p:WindowsPackageType=None -p:WindowsAppSDKSelfContained=true -o publish/win-x64
           dotnet publish ${{ env.LOADER_PROJECT }} -c Release -r win-x64 --self-contained true -o publish/win-x64/loader
 
+      - name: Verify launcher output
+        shell: pwsh
+        run: |
+          Get-ChildItem Starlight.Launcher/bin/Release -Recurse | Select-Object FullName
+
       - name: Inspect output
         shell: pwsh
         run: |
