@@ -51,3 +51,26 @@ settings-menu-tray-collapse-close-option-description = Minimize the app to the s
 
 settings-menu-tray-collapse-minimize-option = Collapse on Minimize
 settings-menu-tray-collapse-minimize-option-description = Minimize the app to the system tray when minimizing it.
+
+# Development(Advanced)
+
+settings-menu-development-gles-option = Compatability Mode (GLES2)
+settings-menu-development-gles-option-description = Enable compatibility mode for devices with older graphics hardware. This may reduce performance on modern systems.
+
+settings-menu-development-signing-option = Disable Engine Signature Verification
+settings-menu-development-signing-option-description = Disable signature verification for engine files. This is intended for development purposes and may pose security risks if enabled in production environments.(Works only with Debug configuration)
+
+settings-menu-development-engine-override-option = Engine Override
+settings-menu-development-engine-override-option-description = Override the default engine executable path. This is intended for development purposes and may cause issues if set incorrectly.
+
+settings-menu-development-engine-override-path-option = Engine Override Path
+settings-menu-development-engine-override-path-option-description = The file path to the engine executable to use when Engine Override is enabled. This should point to a valid Engine executable file.
+
+settings-menu-development-robust-manifest-cache-time-option = Robust Manifest Cache Time
+settings-menu-development-robust-manifest-cache-time-option-description = Set the time for which to cache manifest data.
+
+settings-menu-development-max-versions-option = Max Versions
+settings-menu-development-max-versions-option-description = Set the maximum number of versions to keep in the version history. Older versions will be removed when this limit is exceeded.
+
+settings-menu-development-max-fork-versions-option = Max Fork Versions
+settings-menu-development-max-fork-versions-option-description = Set the maximum number of fork versions to keep in the version history. Older fork versions will be removed when this limit is exceeded.

@@ -99,6 +99,10 @@ public partial record AppSettings
 
     public string EngineOverridePath { get; init; } = "";
 
+    /// <summary>
+    /// How long to keep cached copies of Robust manifests (builds/modules) before redownloading. Set to zero or negative to disable caching entirely.
+    /// </summary>
+
     public TimeSpan RobustManifestCacheTime = TimeSpan.FromMinutes(15);
 
     /// <summary>

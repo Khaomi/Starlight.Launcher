@@ -15,7 +15,7 @@ public partial class Settings : ComponentBase, IDisposable
     [Inject] private LocalizationManager Localization { get; set; } = null!;
     [Inject] private AppState State { get; set; } = null!;
     [Inject] private IDialogService Dialog { get; set; } = null!;
-    private List<string> AvailableLanguages = new();
+    private List<string> AvailableLanguages = [];
 
     private MudTabs tabs = null!;
 
@@ -23,7 +23,7 @@ public partial class Settings : ComponentBase, IDisposable
 
     private AppSettings? appSettingsCache = null;
     private DateTime LastCacheUpdate;
-    private TimeSpan CacheUpdateInterval = TimeSpan.FromSeconds(2);
+    private readonly TimeSpan CacheUpdateInterval = TimeSpan.FromSeconds(2);
 
     protected override async Task OnInitializedAsync()
     {
@@ -33,10 +33,8 @@ public partial class Settings : ComponentBase, IDisposable
         await base.OnInitializedAsync();
     }
 
-    private void OnStateChanged()
-    {
-        StateHasChanged();
-    }
+    private void OnStateChanged() 
+        => StateHasChanged();
 
     private async void OnActivePanelIndexChanged(int value)
     {
@@ -71,34 +69,7 @@ public partial class Settings : ComponentBase, IDisposable
         return UpdateSetting(s => update(s, value));
     }
 
-    private Task OnBoolSettingChanged(
-        bool value,
-        Action<bool>? setLocal,
-        Func<AppSettings, bool, AppSettings> update)
-    {
-        setLocal?.Invoke(value);
-
-        return UpdateSetting(s => update(s, value));
-    }
-
-    private Task OnListSettingChanged<T>(List<T> value, Action<List<T>>? setLocal,
-        Func<AppSettings, List<T>, AppSettings> update)
-    {
-        setLocal?.Invoke(value);
-
-        return UpdateSetting(s => update(s, value));
-    }
-
-    private Task OnListSettingChanged<T>(T value, Action<T>? setLocal,
-        Func<AppSettings, T, AppSettings> update)
-    {
-        setLocal?.Invoke(value);
-
-        return UpdateSetting(s => update(s, value));
-    }
-
-    private Task OnEnumSettingChanged(int value, Action<int>? setLocal,
-        Func<AppSettings, int, AppSettings> update, bool callWindowUpdate = false)
+    private Task OnSettingChanged<T>(T value, Action<T>? setLocal, Func<AppSettings, T, AppSettings> update, bool callWindowUpdate = false)
     {
         setLocal?.Invoke(value);
         return UpdateSetting(s => update(s, value), callWindowUpdate);
@@ -132,14 +103,12 @@ public partial class Settings : ComponentBase, IDisposable
         return result;
     }
 
-    private List<Hub> ConvertToHubList(List<(string Url, long Priority)> list)
+    private static List<Hub> ConvertToHubList(List<(string Url, long Priority)> list)
     {
         List<Hub> hubUris = [];
-        foreach (var hub in list)
-        {
-            if (Uri.TryCreate(hub.Url, UriKind.Absolute, out var uri))
-                hubUris.Add(new Hub { HubUri = uri, Priority = hub.Priority });
-        }
+        foreach (var (Url, Priority) in list)
+            if (Uri.TryCreate(Url, UriKind.Absolute, out var uri))
+                hubUris.Add(new Hub { HubUri = uri, Priority = Priority });
 
         return hubUris;
     }
