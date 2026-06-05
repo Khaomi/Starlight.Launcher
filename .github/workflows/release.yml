@@ -50,7 +50,7 @@ jobs:
           /DAppName=${{ env.APP_NAME }}
           /DAppVersion=${{ github.ref_name }}
           /DExeName=${{ env.EXE_NAME }}
-          /DSourceDir=publish\win-x64
+          "/DSourceDir=${{ github.workspace }}\publish\win-x64"
           installer\Starlight.iss
 
       - uses: actions/upload-artifact@v4
