@@ -34,6 +34,26 @@ public partial record AppSettings
     /// Determines should we open TAGS bar by default or it should be closed by default
     /// </summary>
     public bool ServerListToolBarTagsBarOpen { get; init; } = true;
+
+    /// <summary>
+    /// Determines should we collapse app to tray on start or not
+    /// </summary>
+    public bool CollapseInTrayOnStart { get; init; } = false;
+
+    /// <summary>
+    /// Determines should we collapse app to tray after launching game or not
+    /// </summary>
+    public bool CollapseInTrayAfterRun { get; init; } = true;
+
+    /// <summary>
+    /// Determines should we collapse app to tray on close or not
+    /// </summary>
+    public bool CollapseInTrayOnClose { get; init; } = false;
+
+    /// <summary>
+    /// Determines should we collapse app to tray on minimize or not
+    /// </summary>
+    public bool CollapseInTrayOnMinimize { get; init; } = false;
     #endregion
     /// <summary>
     /// Save interval in milliseconds

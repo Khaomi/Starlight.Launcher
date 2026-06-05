@@ -45,9 +45,18 @@ public static class MauiProgram
                     fonts.AddFont("CormorantGaramond-Regular.ttf", "Cormorant Garamond");
                 });
 
+#if WINDOWS
+            builder.Services.AddSingleton<INativeTray, WindowsTray>();
+#elif MACCATALYST
+            builder.Services.AddSingleton<INativeTray, MacTray>();
+            // #elif (Avalonia backend) → builder.Services.AddSingleton<INativeTray, AvaloniaTray>();
+#endif
+            builder.Services.AddSingleton<SettingsService>();
+
+            builder.Services.AddSingleton<TrayCoordinator>();
+
             var httpClient = HappyEyeballsHttp.CreateHttpClient();
             builder.Services.AddSingleton(httpClient);
-            builder.Services.AddSingleton<SettingsService>();
             builder.Services.AddSingleton<AppState>();
             builder.Services.AddSingleton<LocalizationManager>();
             builder.Services.AddTransient<IMauiInitializeService, LocalizationInitializer>();
@@ -72,6 +81,7 @@ public static class MauiProgram
             app.Services.GetRequiredService<HubServerFetcher>().RequestInitialUpdate();
             app.Services.GetRequiredService<LoginManager>().Initialize();
             app.Services.GetRequiredService<ContentManager>().Initialize();
+            app.Services.GetRequiredService<TrayCoordinator>().Initialize();
 
             return app;
         }

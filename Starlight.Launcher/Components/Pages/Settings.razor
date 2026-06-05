@@ -4,8 +4,8 @@
 
 @page "/settings"
 
-<MudTabs Elevation="0" ApplyEffectsToContainer="true" Class="settings-tabs pa-6">
-    <MudTabPanel Text="@Localization["settings-menu-general-category"]">
+<MudTabs @ref="tabs" Elevation="0" ApplyEffectsToContainer="true" Class="settings-tabs pa-6" ActivePanelIndexChanged="OnActivePanelIndexChanged">
+    <MudTabPanel @ref="settingsTab" Text="@Localization["settings-menu-general-category"]">
         <MudContainer MaxWidth="MaxWidth.Small" Class="pa-0">
             <MudText Typo="Typo.overline" Class="mud-text-secondary">@Localization["settings-menu-general-category"]</MudText>
             <SelectorListOption Title="@Localization["settings-menu-language-option"]" Description="@Localization["settings-menu-language-option-description"]" EmptyOption="true" EmptyOptionName="@Localization["settings-menu-language-option-system"]" Icon="@Icons.Material.Filled.Language" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings<string?>(s => s.SelectedLanguage)" SelfValueControlAction="x => OnLanguageChanged(x, null, (s, v) => s with { SelectedLanguage = v })" Values="AvailableLanguages" />
@@ -22,6 +22,15 @@
             <EnumOption Title="@Localization["settings-menu-bottom-search-bar-option"]" Description="@Localization["settings-menu-bottom-search-bar-option-description"]" Icon="@Icons.Material.Filled.YoutubeSearchedFor" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings(s => (int)s.ServerListToolBarSearchPosition)" SelfValueControlAction="x => OnEnumSettingChanged(x, null, (s, v) => s with { ServerListToolBarSearchPosition = (ElementPosition)v })" Values="new ElementPosition()" />
             <EnumOption Title="@Localization["settings-menu-bottom-tags-bar-option"]" Description="@Localization["settings-menu-bottom-tags-bar-option-description"]" Icon="@Icons.Material.Filled.VerticalAlignBottom" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings(s => (int)s.ServerListToolBarBottomTagsPosition)" SelfValueControlAction="x => OnEnumSettingChanged(x, null, (s, v) => s with { ServerListToolBarBottomTagsPosition = (ElementPosition)v })" Values="new ElementPosition()" />
             <BoolOption Title="@Localization["settings-menu-tags-bar-open-option"]" Description="@Localization["settings-menu-tags-bar-open-option-description"]" Icon="@Icons.Material.Filled.OpenInBrowser" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings(s => s.ServerListToolBarTagsBarOpen)" SelfValueControlAction="x => OnBoolSettingChanged(x, null, (s, v) => s with { ServerListToolBarTagsBarOpen = v })" />
+            <MudText Typo="Typo.overline" Class="mud-text-secondary">@Localization["settings-menu-tray-category"]</MudText>
+            <BoolOption Title="@Localization["settings-menu-tray-collapse-start-option"]" Description="@Localization["settings-menu-tray-collapse-start-option-description"]" Icon="@Icons.Material.Filled.PlayDisabled" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings(s => s.CollapseInTrayOnStart)" SelfValueControlAction="x => OnBoolSettingChanged(x, null, (s, v) => s with { CollapseInTrayOnStart = v })" />
+            <BoolOption Title="@Localization["settings-menu-tray-collapse-run-option"]" Description="@Localization["settings-menu-tray-collapse-run-option-description"]" Icon="@Icons.Material.Filled.VideogameAsset" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings(s => s.CollapseInTrayAfterRun)" SelfValueControlAction="x => OnBoolSettingChanged(x, null, (s, v) => s with { CollapseInTrayAfterRun = v })" />
+            <BoolOption Title="@Localization["settings-menu-tray-collapse-close-option"]" Description="@Localization["settings-menu-tray-collapse-close-option-description"]" Icon="@Icons.Material.Filled.Close" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings(s => s.CollapseInTrayOnClose)" SelfValueControlAction="x => OnBoolSettingChanged(x, null, (s, v) => s with { CollapseInTrayOnClose = v })" />
+            <BoolOption Title="@Localization["settings-menu-tray-collapse-minimize-option"]" Description="@Localization["settings-menu-tray-collapse-minimize-option-description"]" Icon="@Icons.Material.Filled.Minimize" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings(s => s.CollapseInTrayOnMinimize)" SelfValueControlAction="x => OnBoolSettingChanged(x, null, (s, v) => s with { CollapseInTrayOnMinimize = v })" />
+        </MudContainer>
+    </MudTabPanel>
+    <MudTabPanel Text="@Localization["settings-menu-development-category"]">
+        <MudContainer MaxWidth="MaxWidth.Small" Class="pa-0">
         </MudContainer>
     </MudTabPanel>
 </MudTabs>

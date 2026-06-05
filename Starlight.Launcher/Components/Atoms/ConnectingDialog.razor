@@ -86,9 +86,6 @@
 </MudDialog>
 
 @code {
-    // NOTE: MudBlazor symbol names shift between major versions. This targets v7/v8
-    // (IMudDialogInstance, BackdropClick/CloseOnEscapeKey). On v6 use MudDialogInstance
-    // and the Disable* option names.
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
 
     [Parameter] public string Address { get; set; } = "";

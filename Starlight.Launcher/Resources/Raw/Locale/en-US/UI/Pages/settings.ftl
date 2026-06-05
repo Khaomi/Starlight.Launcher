@@ -3,6 +3,8 @@
 settings-menu-general-category = General
 settings-menu-appearance-category = Appearance
 settings-menu-server-list-category = Server List
+settings-menu-tray-category = Tray
+settings-menu-development-category = Development
 
 # General
 
@@ -35,3 +37,17 @@ settings-menu-bottom-tags-bar-option-description = Place tags bar at the bottom 
 
 settings-menu-tags-bar-open-option = Tags Bar Open
 settings-menu-tags-bar-open-option-description = Should we keep tags bar open by default?
+
+# Tray
+
+settings-menu-tray-collapse-start-option = Collapse on Start
+settings-menu-tray-collapse-start-option-description = Start the app minimized to the system tray.
+
+settings-menu-tray-collapse-run-option = Collapse on Run
+settings-menu-tray-collapse-run-option-description = Minimize the app to the system tray when running game.
+
+settings-menu-tray-collapse-close-option = Collapse on Close
+settings-menu-tray-collapse-close-option-description = Minimize the app to the system tray when closing it.
+
+settings-menu-tray-collapse-minimize-option = Collapse on Minimize
+settings-menu-tray-collapse-minimize-option-description = Minimize the app to the system tray when minimizing it.

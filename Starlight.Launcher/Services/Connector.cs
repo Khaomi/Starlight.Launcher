@@ -15,6 +15,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Starlight.Launcher.Services.EngineManager;
 using Starlight.Launcher.Models.Settings;
 using TerraFX.Interop.Windows;
+using H.NotifyIcon.Core;
 
 namespace Starlight.Launcher.Services;
 
@@ -29,19 +30,21 @@ public partial class Connector : ObservableObject
     private readonly IEngineManager _engineManager;
     private readonly SettingsService _settings;
     private readonly HttpClient _http;
+    private readonly INativeTray _tray;
 
     private bool _clientExitedBadly;
     private TaskCompletionSource<PrivacyPolicyAcceptResult>? _acceptPrivacyPolicyTcs;
     private ServerPrivacyPolicyInfo? _serverPrivacyPolicyInfo;
     private bool _privacyPolicyDifferentVersion;
 
-    public Connector(Updater updater, IEngineManager engineManager, HttpClient http, LoginManager login, SettingsService settings)
+    public Connector(Updater updater, IEngineManager engineManager, HttpClient http, LoginManager login, SettingsService settings, INativeTray tray)
     {
         _updater = updater;
         _engineManager = engineManager;
         _http = http;
         _loginManager = login;
         _settings = settings;
+        _tray = tray;
     }
 
     private ConnectionStatus _status = ConnectionStatus.None;
@@ -316,6 +319,9 @@ public partial class Connector : ObservableObject
             {
                 Status = ConnectionStatus.ClientRunning;
                 await waitClient;
+                var settings = _settings.GetSettings();
+                if (settings.CollapseInTrayAfterRun)
+                    _tray.HideWindow(); // If run successfully, hide the window to tray if the setting is enabled.
                 return;
             }
 

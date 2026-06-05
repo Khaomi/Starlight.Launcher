@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
+using MudBlazor;
+using Starlight.Launcher.Components.Atoms.Settings;
 using Starlight.Launcher.Models.Settings;
 using Starlight.Launcher.Services.Localization;
 using Starlight.Launcher.Services.Settings;
@@ -12,7 +14,12 @@ public partial class Settings : ComponentBase, IDisposable
     [Inject] private SettingsService Service { get; set; } = null!;
     [Inject] private LocalizationManager Localization { get; set; } = null!;
     [Inject] private AppState State { get; set; } = null!;
+    [Inject] private IDialogService Dialog { get; set; } = null!;
     private List<string> AvailableLanguages = new();
+
+    private MudTabs tabs = null!;
+
+    private MudTabPanel settingsTab = null!;
 
     protected override async Task OnInitializedAsync()
     {
@@ -25,6 +32,30 @@ public partial class Settings : ComponentBase, IDisposable
     private void OnStateChanged()
     {
         StateHasChanged();
+    }
+
+    private void OnActivePanelIndexChanged(int value)
+    {
+        if (value == 2)
+        {
+            var options = new DialogOptions
+            {
+                CloseButton = false,
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+                BackdropClick = false,
+            };
+            Task.Run(async () => {
+                var dialog = await Dialog.ShowAsync<AlertDialog>("Development tab alert", options);
+                if (dialog.Dialog is AlertDialog alert)
+                {
+                    alert.OnCancel += async () =>
+                    {
+                        await tabs.ActivatePanelAsync(settingsTab);
+                    };
+                }
+            });
+        }
     }
 
     private Task OnLanguageChanged(string? value, Action<string?>? setLocal,

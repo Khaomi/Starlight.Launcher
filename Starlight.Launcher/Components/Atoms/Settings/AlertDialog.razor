@@ -1,0 +1,27 @@
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.body1">
+            You're trying to access the tab created only for advanced users or development. 
+            To proceed, you must agree to the condition that after changing any settings, 
+            STARLIGHT does not guarantee that the software will function properly, nor does it guarantee that it will not cause damage to your equipment.
+        </MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton onclick="Cancel" Color="Color.Secondary">Cancel</MudButton>
+        <MudButton OnClick="Close" Color="Color.Primary">OK</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    public event Action? OnCancel;
+
+    private void Close() => MudDialog.Close();
+
+    private void Cancel()
+    {
+        OnCancel?.Invoke();
+        MudDialog.Cancel();
+    }
+}
