@@ -21,6 +21,10 @@ public partial class Settings : ComponentBase, IDisposable
 
     private MudTabPanel settingsTab = null!;
 
+    private AppSettings? appSettingsCache = null;
+    private DateTime LastCacheUpdate;
+    private TimeSpan CacheUpdateInterval = TimeSpan.FromSeconds(2);
+
     protected override async Task OnInitializedAsync()
     {
         var settings = await Service.GetSettingsAsync();
@@ -34,7 +38,7 @@ public partial class Settings : ComponentBase, IDisposable
         StateHasChanged();
     }
 
-    private void OnActivePanelIndexChanged(int value)
+    private async void OnActivePanelIndexChanged(int value)
     {
         if (value == 2)
         {
@@ -45,16 +49,15 @@ public partial class Settings : ComponentBase, IDisposable
                 FullWidth = true,
                 BackdropClick = false,
             };
-            Task.Run(async () => {
-                var dialog = await Dialog.ShowAsync<AlertDialog>("Development tab alert", options);
-                if (dialog.Dialog is AlertDialog alert)
+
+            var dialog = await Dialog.ShowAsync<AlertDialog>("Development tab alert", options);
+            if (dialog.Dialog is AlertDialog alert)
+            {
+                alert.OnCancel += async () =>
                 {
-                    alert.OnCancel += async () =>
-                    {
-                        await tabs.ActivatePanelAsync(settingsTab);
-                    };
-                }
-            });
+                    await tabs.ActivatePanelAsync(settingsTab);
+                };
+            }
         }
     }
 
@@ -95,23 +98,36 @@ public partial class Settings : ComponentBase, IDisposable
     }
 
     private Task OnEnumSettingChanged(int value, Action<int>? setLocal,
-        Func<AppSettings, int, AppSettings> update)
+        Func<AppSettings, int, AppSettings> update, bool callWindowUpdate = false)
     {
         setLocal?.Invoke(value);
-        return UpdateSetting(s => update(s, value));
+        return UpdateSetting(s => update(s, value), callWindowUpdate);
     }
 
-    private async Task UpdateSetting(Func<AppSettings, AppSettings> update)
+    private async Task UpdateSetting(Func<AppSettings, AppSettings> update, bool callWindowUpdate = false)
     {
         var settings = await Service.GetSettingsAsync();
         var newSettings = update(settings);
         await Service.WriteSettingsAsync(newSettings);
-        State.CallUpdate();
+        if (callWindowUpdate)
+            State.CallUpdate();
     }
 
     private async Task<T> FetchSettings<T>(Func<AppSettings, T> func)
     {
-        var settings = await Service.GetSettingsAsync();
+        AppSettings settings;
+        if (appSettingsCache != null &&
+            DateTime.Now - LastCacheUpdate < CacheUpdateInterval)
+        {
+            settings = appSettingsCache;
+        }
+        else
+        {
+            settings = await Service.GetSettingsAsync();
+            appSettingsCache = settings;
+            LastCacheUpdate = DateTime.Now;
+        }
+
         var result = func(settings);
         return result;
     }
