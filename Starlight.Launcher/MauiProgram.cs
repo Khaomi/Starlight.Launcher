@@ -26,9 +26,6 @@ public static class MauiProgram
             var builder = MauiApp.CreateBuilder();
 
             var logger = new LoggerConfiguration()
-#if DEBUG
-                .MinimumLevel.Debug()
-#endif
                 .WriteTo.Console()
                 .WriteTo.File(Path.Combine(FileSystem.Current.AppDataDirectory, "log.txt"), rollingInterval: RollingInterval.Day).CreateLogger();
 
