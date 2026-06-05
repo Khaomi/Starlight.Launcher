@@ -1,0 +1,62 @@
+name: build-and-release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_VERSION: '11.0.x'
+  MAIN_PROJECT: 'Starlight.Launcher/Starlight.Launcher.csproj'
+  LOADER_PROJECT: 'Robust.Loader/Robust.Loader.csproj'
+  EXE_NAME: 'Starlight.Launcher.exe'
+  APP_NAME: 'Starlight.Launcher'
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-quality: preview
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Publish (win-x64, self-contained)
+        shell: pwsh
+        run: |
+          dotnet publish ${{ env.MAIN_PROJECT }}   -c Release -r win-x64 --self-contained true -o publish/win-x64
+          dotnet publish ${{ env.LOADER_PROJECT }} -c Release -r win-x64 --self-contained true -o publish/win-x64
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build installer
+        shell: pwsh
+        run: >
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          /DAppName=${{ env.APP_NAME }}
+          /DAppVersion=${{ github.ref_name }}
+          /DExeName=${{ env.EXE_NAME }}
+          /DSourceDir=publish\win-x64
+          installer\Starlight.iss
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: installer/Output/*.exe
+
+  release:
+    needs: [windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
