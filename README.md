@@ -16,8 +16,6 @@ This launcher was created by Starlight team to replace original ss14 launcher.
 
 It contains many options, has better design and it's more adaptable.
 
-**As of May 20, 2026, it is abandoned.**
-
 ## License
 
 <details>
