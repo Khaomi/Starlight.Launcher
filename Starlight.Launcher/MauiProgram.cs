@@ -23,6 +23,15 @@ public static class MauiProgram
 #if DEBUG && WINDOWS
             ConsoleHelper.CreateConsole();
 #endif
+
+#if WINDOWS
+            var userData = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Starlight.Launcher", "WebView2");
+            Directory.CreateDirectory(userData);
+            Environment.SetEnvironmentVariable("WEBVIEW2_USER_DATA_FOLDER", userData);
+#endif
+
             var builder = MauiApp.CreateBuilder();
 
             var logger = new LoggerConfiguration()
