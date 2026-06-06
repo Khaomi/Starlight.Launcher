@@ -30,7 +30,6 @@ public sealed partial class DiscordRichPresence : IDisposable
         {
             Log.Information("Discord Rich Presence initialized.");
             Log.Information("Connected to discord with user {0}", e.User.Username);
-            UpdatePresence(CurrentPresenceState); // Initial presence update to set the starting state
         };
 
         _client.OnError += (s, e) =>
@@ -47,6 +46,7 @@ public sealed partial class DiscordRichPresence : IDisposable
     public void Initialize()
     {
         _client?.Initialize();
+        UpdatePresence(CurrentPresenceState); // Initial presence update to set the starting state
     }
 
     public void UpdateServerPresence(string serverName)

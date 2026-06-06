@@ -32,6 +32,9 @@
         <Nullable>enable</Nullable>
 		<WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
 
+		<DefineConstants Condition="'$(FullRelease)' == 'True'">FULL_RELEASE;$(DefineConstants)</DefineConstants>
+		<DefineConstants Condition="'$(FullRelease)' != 'True'">DEVELOPMENT;$(DefineConstants)</DefineConstants>
+
         <ApplicationTitle>Starlight.Launcher</ApplicationTitle>
 
         <ApplicationId>com.starlight.launcher</ApplicationId>
