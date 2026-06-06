@@ -1,3 +1,7 @@
+<p align="center">
+  <img alt="Launcher Logo" width="600" src="starlight-logo.png" />
+</p>
+
 <div class="header" align="center">
 
 [![Discord](https://img.shields.io/discord/1272545509562777621?label=Discord&logo=discord&logoColor=white)](https://discord.gg/ssJTANEa)
