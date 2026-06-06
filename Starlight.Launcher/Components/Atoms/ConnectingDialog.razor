@@ -1,6 +1,7 @@
 @using System.ComponentModel
 @using System.Threading
 @using Starlight.Launcher.Services
+@using Robust.Launcher.Api.Models.Data
 @using static Starlight.Launcher.Services.Connector
 @implements IDisposable
 @inject Connector Connector
@@ -90,10 +91,14 @@
 
     [Parameter] public string Address { get; set; } = "";
 
+    [Parameter] public FileResult? ContentBundle { get; set; }
+
     private readonly CancellationTokenSource _cts = new();
     private Timer? _pollTimer;
 
-    private string Title => $"Connecting to {Address}";
+    private string Title => ContentBundle is { } f
+        ? $"Launching {f.FileName}"
+        : $"Connecting to {Address}";
 
     private double Percent =>
         Updater.Progress is { total: > 0 } p ? (double)p.downloaded / p.total * 100.0 : 0;
@@ -133,13 +138,14 @@
     {
         Connector.PropertyChanged += OnConnectorChanged;
 
-        // Updater pushes Progress/Speed/Status from background threads with no change
-        // notification, so poll it while the dialog is open.
         _pollTimer = new Timer(_ => InvokeAsync(StateHasChanged), null,
             TimeSpan.Zero, TimeSpan.FromMilliseconds(250));
 
         // Fire-and-forget: Status drives the UI from here on.
-        Connector.Connect(Address, _cts.Token);
+        if (ContentBundle is { } bundle)
+            Connector.LaunchContentBundle(bundle, _cts.Token);
+        else
+            Connector.Connect(Address, _cts.Token);
     }
 
     private void OnConnectorChanged(object? sender, PropertyChangedEventArgs e)

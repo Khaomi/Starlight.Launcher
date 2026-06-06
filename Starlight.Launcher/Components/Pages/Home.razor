@@ -1,14 +1,31 @@
 ﻿@page "/"
 
 @using Starlight.Launcher.Components.Atoms.ServerList
+@using MudBlazor
 
 <div>
+    <MudStack Row="true" Spacing="2" Class="pa-2">
+        <MudButton StartIcon="@Icons.Material.Filled.Dns"
+                   Variant="Variant.Filled" Color="Color.Primary"
+                   OnClick="OpenDirectConnect">
+            Direct Connect
+        </MudButton>
+        <MudButton StartIcon="@Icons.Material.Filled.Movie"
+                   Variant="Variant.Outlined"
+                   OnClick="LoadReplay">
+            Load Replay
+        </MudButton>
+    </MudStack>
+
     <div>
         <MudVirtualize Items="FavoriteServers"
                        Context="server"
                        ItemSize="56"
                        OverscanCount="3">
-            <ServerItem @key="server.Address" Data="server" IsInFavorites="@(FavoriteServers.Contains(server))" OnInfoNeeded="HandleInfoNeeded" OnFavorites="async x => await HandleFavorite(x)" />
+            <ServerItem @key="server.Address" Data="server"
+                        IsInFavorites="@(FavoriteServers.Contains(server))"
+                        OnInfoNeeded="HandleInfoNeeded"
+                        OnFavorites="async x => await HandleFavorite(x)" />
         </MudVirtualize>
     </div>
 </div>

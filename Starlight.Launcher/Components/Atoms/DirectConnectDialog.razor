@@ -1,0 +1,24 @@
+@using MudBlazor
+@using Microsoft.AspNetCore.Components.Web
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField @bind-Value="Address"
+                      Label="Server Address"
+                      Placeholder="ss14://localhost"
+                      Variant="Variant.Outlined"
+                      Immediate="true"
+                      AutoFocus="true"
+                      OnKeyDown="HandleKeyDown" />
+        <MudCheckBox @bind-Value="AddToFavorites"
+                     Label="Add to Favorites"
+                     Class="mt-2" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Disabled="@(string.IsNullOrWhiteSpace(Address))"
+                   OnClick="Submit">Connect</MudButton>
+    </DialogActions>
+</MudDialog>

@@ -65,6 +65,12 @@ public static class MauiProgram
             builder.Services.AddSingleton<DiscordRichPresence>(); // MacOS doesn't support Discord RPC =(
 #endif
 
+#if WINDOWS
+            builder.Services.AddSingleton<IFileDialogService, WindowsFileDialogService>();
+#elif MACCATALYST
+            builder.Services.AddSingleton<IFileDialogService, MacFileDialogService>();
+#endif
+
             builder.Services.AddSingleton<TrayCoordinator>();
 
             var httpClient = HappyEyeballsHttp.CreateHttpClient();
