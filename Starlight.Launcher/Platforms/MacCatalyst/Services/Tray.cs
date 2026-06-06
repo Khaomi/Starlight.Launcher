@@ -27,7 +27,9 @@ public sealed class MacTray : NSObject, INativeTray
     private readonly List<Action?> _actions = new();
     private IntPtr _statusItem;
 
-    public event EventHandler? IconActivated;
+#pragma warning disable CS0067
+    public event EventHandler? IconActivated; // Can't be used on Mac Catalyst, but we need it to satisfy the interface.
+#pragma warning restore CS0067
     public bool IsWindowVisible { get; private set; } = true;
 
     static MacTray()
