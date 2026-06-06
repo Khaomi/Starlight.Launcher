@@ -212,6 +212,7 @@ public sealed class ServerStatusCache : IServerSource
         data.Description = info.Desc;
         data.Links = info.Links;
         data.StatusInfo = ServerStatusInfoCode.Fetched;
+        data.NotifyChanged();
     }
 
     public void Refresh()

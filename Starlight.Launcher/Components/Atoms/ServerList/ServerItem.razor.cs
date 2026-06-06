@@ -42,6 +42,11 @@ public partial class ServerItem : ComponentBase
     protected override void OnInitialized()
     {
         Data.Changed += OnDataChanged;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
 
         if (Data.StatusInfo == ServerStatusInfoCode.NotFetched)
         {
