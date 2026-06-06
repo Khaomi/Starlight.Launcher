@@ -1,13 +1,23 @@
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using MudBlazor;
 using Robust.Launcher.Api.Api;
 using Robust.Launcher.Api.Models;
+using Serilog;
 using Starlight.Launcher.Api.Models;
+using Starlight.Launcher.Services.Auth;
 
 namespace Starlight.Launcher.Components.Pages;
 
-public partial class Auth : Microsoft.AspNetCore.Components.ComponentBase
+public partial class Auth : Microsoft.AspNetCore.Components.ComponentBase, IDisposable
 {
+    [Inject] private LoginManager LoginManager { get; set; } = default!;
+    [Inject] private AuthApi AuthApi { get; set; } = default!;
+    [Inject] private NavigationManager Nav { get; set; } = default!;
+    [Inject] private DiscordAuthService DiscordAuth { get; set; } = default!;
+    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+
+
     private enum Mode
     {
         AccountList,
@@ -119,6 +129,36 @@ public partial class Auth : Microsoft.AspNetCore.Components.ComponentBase
     {
         if (e.Key == "Enter" && !_busy)
             await DoSignIn();
+    }
+
+    private async Task LoginWithDiscord()
+    {
+        _busy = true;
+        _signInError = null;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            await DiscordAuth.LoginAsync();
+            Nav.NavigateTo("/");
+        }
+        catch (OperationCanceledException)
+        {
+            _signInError = "Discord login has been canceled or has expired.";
+        }
+        catch (DiscordAuthException ex)
+        {
+            _signInError = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Discord login failed");
+            _signInError = "Failed to log in with Discord.";
+        }
+        finally
+        {
+            _busy = false;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     private async Task DoSignIn()

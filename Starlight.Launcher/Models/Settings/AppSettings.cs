@@ -132,6 +132,15 @@ public partial record AppSettings
 
     #endregion
 
+    #region Starlight API
+
+    /// <summary>
+    /// Basic Api URL used for auth and hub.
+    /// </summary>
+    public string StarlightAPIUrl { get; set; } = "https://starlight.network/";
+
+    #endregion
+
     #region Privacy policies
     /// <summary>
     ///Privacy policies accepted by the user, the key is the policy identifier.

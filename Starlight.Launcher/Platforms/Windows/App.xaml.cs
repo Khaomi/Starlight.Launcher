@@ -1,8 +1,13 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Platform;
 using Microsoft.UI.Windowing;
+using Microsoft.UI.Xaml;
+using Microsoft.Windows.AppLifecycle;
 using Starlight.Launcher.Services;
+using Starlight.Launcher.Services.Auth;
 using Starlight.Launcher.Services.Settings;
+using System.Diagnostics;
+using Windows.ApplicationModel.Activation;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -59,6 +64,34 @@ public partial class App : MauiWinUIApplication
                 };
             }
         });
+    }
+
+    protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
+    {
+        var instance = AppInstance.FindOrRegisterForKey("starlight-main");
+        var activated = AppInstance.GetCurrent().GetActivatedEventArgs();
+
+        if (!instance.IsCurrent)
+        {
+            instance.RedirectActivationToAsync(activated).AsTask().GetAwaiter().GetResult();
+            Process.GetCurrentProcess().Kill();
+            return;
+        }
+
+        instance.Activated += (_, e) => HandleProtocol(e);
+        HandleProtocol(activated);
+        base.OnLaunched(args);
+    }
+
+    private static void HandleProtocol(AppActivationArguments e)
+    {
+        if (e.Kind == ExtendedActivationKind.Protocol &&
+            e.Data is IProtocolActivatedEventArgs p)
+        {
+            IPlatformApplication.Current!.Services
+                .GetRequiredService<DiscordAuthService>()
+                .HandleDeepLink(p.Uri);
+        }
     }
 
     protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();

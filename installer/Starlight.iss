@@ -21,3 +21,21 @@ Name: "{autodesktop}\{#AppName}";  Filename: "{app}\{#ExeName}"
 [Run]
 Filename: "{tmp}\MicrosoftEdgeWebview2Setup.exe"; Parameters: "/silent /install"; StatusMsg: "Installing Microsoft Edge WebView2 Runtime..."
 Filename: "{app}\{#ExeName}"; Description: "Launch {#AppName}"; Flags: nowait postinstall skipifsilent
+
+[Registry]
+Root: HKCU; Subkey: "Software\Classes\starlight"; \
+    Flags: uninsdeletekey
+    ValueType: string; ValueName: ""; \
+    ValueData: "URL:Starlight Protocol"; Flags: uninsdeletekey
+
+Root: HKCU; Subkey: "Software\Classes\starlight"; \
+    ValueType: string; ValueName: "URL Protocol"; \
+    ValueData: ""
+
+Root: HKCU; Subkey: "Software\Classes\starlight\DefaultIcon"; \
+    ValueType: string; ValueName: ""; \
+    ValueData: "{app}\Starlight.Launcher.exe,0"
+
+Root: HKCU; Subkey: "Software\Classes\starlight\shell\open\command"; \
+    ValueType: string; ValueName: ""; \
+    ValueData: """{app}\Starlight.Launcher.exe"" ""%1"""
