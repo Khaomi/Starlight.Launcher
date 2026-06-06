@@ -26,6 +26,9 @@ settings-menu-theme-option-description = Select the theme for the app.
 settings-menu-navigation-bar-option = Navigation Position
 settings-menu-navigation-bar-option-description = Select the position of the navigation bar.
 
+settings-menu-discord-presence-option = Discord Presence
+settings-menu-discord-presence-option-description = Show the current server in your Discord status. (Requires restart)
+
 settings-menu-bottom-search-option = Bottom Search
 settings-menu-bottom-search-option-description = Place search bar at the bottom of the toolbar(when tags bar and search bar together).
 

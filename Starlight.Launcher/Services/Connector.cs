@@ -1,6 +1,14 @@
-using Serilog;
+using CommunityToolkit.Mvvm.ComponentModel;
+using H.NotifyIcon.Core;
+using Robust.Launcher.Api.Models;
 using Robust.Launcher.Api.Models.Data;
 using Robust.Launcher.Api.Utility;
+using Serilog;
+using Starlight.Launcher.Models.Settings;
+using Starlight.Launcher.Services.Auth;
+using Starlight.Launcher.Services.Discord;
+using Starlight.Launcher.Services.EngineManager;
+using Starlight.Launcher.Services.Settings;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Net.Http.Json;
@@ -8,14 +16,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Starlight.Launcher.Services.Auth;
-using Robust.Launcher.Api.Models;
-using Starlight.Launcher.Services.Settings;
-using CommunityToolkit.Mvvm.ComponentModel;
-using Starlight.Launcher.Services.EngineManager;
-using Starlight.Launcher.Models.Settings;
 using TerraFX.Interop.Windows;
-using H.NotifyIcon.Core;
 
 namespace Starlight.Launcher.Services;
 
@@ -31,13 +32,14 @@ public partial class Connector : ObservableObject
     private readonly SettingsService _settings;
     private readonly HttpClient _http;
     private readonly INativeTray _tray;
+    private readonly DiscordRichPresence _presence;
 
     private bool _clientExitedBadly;
     private TaskCompletionSource<PrivacyPolicyAcceptResult>? _acceptPrivacyPolicyTcs;
     private ServerPrivacyPolicyInfo? _serverPrivacyPolicyInfo;
     private bool _privacyPolicyDifferentVersion;
 
-    public Connector(Updater updater, IEngineManager engineManager, HttpClient http, LoginManager login, SettingsService settings, INativeTray tray)
+    public Connector(Updater updater, IEngineManager engineManager, HttpClient http, LoginManager login, SettingsService settings, INativeTray tray, DiscordRichPresence presence)
     {
         _updater = updater;
         _engineManager = engineManager;
@@ -45,6 +47,7 @@ public partial class Connector : ObservableObject
         _loginManager = login;
         _settings = settings;
         _tray = tray;
+        _presence = presence;
     }
 
     private ConnectionStatus _status = ConnectionStatus.None;
@@ -304,6 +307,7 @@ public partial class Connector : ObservableObject
         CancellationToken cancel = default)
     {
         Status = ConnectionStatus.StartingClient;
+        _presence.UpdatePresence(PresenceState.LaunchingGame);
 
         var clientProc = await ConnectLaunchClient(launchInfo, info, buildInfo, connectAddress, parsedAddr, contentBundle);
 
@@ -322,6 +326,7 @@ public partial class Connector : ObservableObject
                 var settings = _settings.GetSettings();
                 if (settings.CollapseInTrayAfterRun)
                     _tray.HideWindow(); // If run successfully, hide the window to tray if the setting is enabled.
+                _presence.UpdatePresence(PresenceState.Idle);
                 return;
             }
 

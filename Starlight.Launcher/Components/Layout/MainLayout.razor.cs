@@ -6,6 +6,7 @@ using MudBlazor;
 using MudBlazor.Services;
 using Starlight.Launcher.Models.Data;
 using Starlight.Launcher.Services;
+using Starlight.Launcher.Services.Discord;
 using Starlight.Launcher.Services.Localization;
 using Starlight.Launcher.Services.Settings;
 using Starlight.Launcher.Services.State;
@@ -22,6 +23,8 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowse
     [Inject] private AppState State { get; set; } = null!;
     [Inject] private IBrowserViewportService BrowserViewportService { get; set; } = null!;
     [Inject] private INativeTray Tray { get; set; } = null!;
+    [Inject] private NavigationManager Navigation { get; set; } = null!;
+    [Inject] private DiscordRichPresence Presence { get; set; } = null!;
 
     Guid IBrowserViewportObserver.Id { get; } = Guid.NewGuid();
 
@@ -51,9 +54,27 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowse
         await ApplyThemeAsync();
         _navigation = settings.Navigation;
         State.OnChange += AppCalledRepaint;
+        Navigation.LocationChanged += OnLocationChanged;
 
         if (settings.CollapseInTrayOnStart)
             Tray.HideWindow(); // If layout is initialized - window exists, so we can hide it right away if the user wants that.
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        var uri = new Uri(e.Location);
+        switch (uri.AbsolutePath)
+        {
+            case "/servers":
+                Presence.UpdatePresence(PresenceState.SearchingServers);
+                break;
+            case "/settings":
+                Presence.UpdatePresence(PresenceState.SettingUp);
+                break;
+            default:
+                Presence.UpdatePresence(PresenceState.Idle);
+                break;
+        }
     }
 
 
@@ -80,6 +101,7 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowse
     {
         await BrowserViewportService.UnsubscribeAsync(this);
         State.OnChange -= AppCalledRepaint;
+        Navigation.LocationChanged -= OnLocationChanged;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

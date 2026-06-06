@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Maui.Controls.PlatformConfiguration;
 using MudBlazor.Services;
 using Robust.Launcher.Api.Api;
 using Robust.Launcher.Api.Models.ServerStatus;
@@ -6,6 +7,7 @@ using Robust.Launcher.Api.Utility;
 using Serilog;
 using Starlight.Launcher.Services;
 using Starlight.Launcher.Services.Auth;
+using Starlight.Launcher.Services.Discord;
 using Starlight.Launcher.Services.EngineManager;
 using Starlight.Launcher.Services.Localization;
 using Starlight.Launcher.Services.ServerStatus;
@@ -59,6 +61,10 @@ public static class MauiProgram
 #endif
             builder.Services.AddSingleton<SettingsService>();
 
+#if WINDOWS
+            builder.Services.AddSingleton<DiscordRichPresence>(); // MacOS doesn't support Discord RPC =(
+#endif
+
             builder.Services.AddSingleton<TrayCoordinator>();
 
             var httpClient = HappyEyeballsHttp.CreateHttpClient();
@@ -84,6 +90,9 @@ public static class MauiProgram
 
             var app = builder.Build();
 
+#if WINDOWS
+            app.Services.GetRequiredService<DiscordRichPresence>().Initialize();
+#endif
             app.Services.GetRequiredService<HubServerFetcher>().RequestInitialUpdate();
             app.Services.GetRequiredService<LoginManager>().Initialize();
             app.Services.GetRequiredService<ContentManager>().Initialize();

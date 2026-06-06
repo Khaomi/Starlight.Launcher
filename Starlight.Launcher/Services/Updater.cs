@@ -4,6 +4,7 @@ using Robust.Launcher.Api.Models;
 using Robust.Launcher.Api.Models.ContentManagement;
 using Robust.Launcher.Api.Utility;
 using Serilog;
+using Starlight.Launcher.Services.Discord;
 using Starlight.Launcher.Services.EngineManager;
 using Starlight.Launcher.Services.Settings;
 using System.Diagnostics.CodeAnalysis;
@@ -35,15 +36,17 @@ public sealed partial class Updater
     private readonly IDispatcher _dispatcher;
     private readonly SettingsService _settings;
     private readonly ContentManager _manager;
+    private readonly DiscordRichPresence _presence;
     private bool _updating;
 
-    public Updater(IEngineManager engineManager, HttpClient http, IDispatcher dispatcher, SettingsService settings, ContentManager manager)
+    public Updater(IEngineManager engineManager, HttpClient http, IDispatcher dispatcher, SettingsService settings, ContentManager manager, DiscordRichPresence presence)
     {
         _engineManager = engineManager;
         _http = http;
         _dispatcher = dispatcher;
         _settings = settings;
         _manager = manager;
+        _presence = presence;
     }
 
     // Note: these get updated from different threads. Observe responsibly.
@@ -77,6 +80,7 @@ public sealed partial class Updater
         }
 
         _updating = true;
+        _presence.UpdatePresence(PresenceState.DownloadingContent);
         UpdateException = null;
 
         try
@@ -100,6 +104,8 @@ public sealed partial class Updater
             Progress = null;
             Speed = null;
             _updating = false;
+            if (_presence.CurrentPresenceState == PresenceState.DownloadingContent)
+                _presence.UpdatePresence(PresenceState.Idle);
         }
 
         return null;

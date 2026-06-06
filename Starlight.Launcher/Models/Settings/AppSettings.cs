@@ -54,6 +54,16 @@ public partial record AppSettings
     /// Determines should we collapse app to tray on minimize or not
     /// </summary>
     public bool CollapseInTrayOnMinimize { get; init; } = false;
+
+    /// <summary>
+    /// Determines which Discord Reach Presense will be used by default, should be a key from DiscordReachPresencesIndex.
+    /// </summary>
+    public string DiscordReachPresenceID { get; set; } = "1512750736927228005";
+
+    /// <summary>
+    /// Determines should we hide Discord Reach Presence or not. If true, presence won't be started. So this requires restart.
+    /// </summary>
+    public bool HidePresence { get; set; } = false;
     #endregion
     /// <summary>
     /// Save interval in milliseconds

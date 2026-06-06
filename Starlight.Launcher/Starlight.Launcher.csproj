@@ -60,6 +60,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="DiscordRichPresence" Version="1.6.1.70" />
         <PackageReference Include="H.NotifyIcon" Version="2.4.1" />
         <PackageReference Include="Linguini.Bundle" Version="0.11.0" />
         <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
