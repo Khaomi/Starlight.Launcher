@@ -19,12 +19,19 @@ public sealed partial class SettingsService
         }
     }
 
-    public void AddLogin(LoginInfo login)
+    public void UpdateLogin(LoginInfo login)
     {
         _loginsLock.Wait();
         try
         {
-            _logins[login.UserId] = login;
+            if (_logins.ContainsKey(login.UserId))
+            {
+                _logins[login.UserId] = login;
+            }
+            else
+            {
+                _logins.Add(login.UserId, login);
+            }
         }
         finally
         {

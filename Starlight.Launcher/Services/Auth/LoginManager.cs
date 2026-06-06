@@ -241,7 +241,7 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
 
         data.SetStatus(AccountLoginStatus.Available);
 
-        _settings.AddLogin(info);
+        _settings.UpdateLogin(info);
     }
 
     public void RemoveLogin(Guid userId)
@@ -285,6 +285,7 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
         var cast = (ActiveLoginData)account;
         cast.SetStatus(AccountLoginStatus.Available);
         account.LoginInfo.Token = token;
+        _settings.UpdateLogin(account.LoginInfo);
 
         PersistLogins();
     }
@@ -311,6 +312,8 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
                 Log.Debug("Refreshed token for {login}", data.LoginInfo);
                 data.LoginInfo.Token = newTokenHopefully.Value;
                 data.SetStatus(AccountLoginStatus.Available);
+
+                _settings.UpdateLogin(data.LoginInfo);
             }
         }
         else if (data.Status == AccountLoginStatus.Unsure)
