@@ -66,7 +66,7 @@ public partial class Settings : ComponentBase, IDisposable
             Localization.SwitchLanguage(value?.ToString() ?? string.Empty);
 
         setLocal?.Invoke(value);
-        return UpdateSetting(s => update(s, value));
+        return UpdateSetting(s => update(s, value), true);
     }
 
     private Task OnSettingChanged<T>(T value, Action<T>? setLocal, Func<AppSettings, T, AppSettings> update, bool callWindowUpdate = false)
