@@ -146,7 +146,7 @@ public sealed partial class EngineManagerDynamic : IEngineManager
     {
         var settings = _settings.GetSettings();
 #if DEVELOPMENT
-        if (settings.CVars.EngineOverrideEnabled)
+        if (settings.EngineOverrideEnabled)
         {
             // For modules we have to extract them from the zip to disk first.
             // So it's a little more involved than just giving a different zip path to the launch code.

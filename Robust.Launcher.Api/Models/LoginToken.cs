@@ -2,14 +2,8 @@ using System;
 
 namespace Robust.Launcher.Api.Models;
 
-public readonly struct LoginToken
+public sealed class LoginToken
 {
-    public string Token { get; }
-    public DateTimeOffset ExpireTime { get; }
-
-    public LoginToken(string token, DateTimeOffset expireTime)
-    {
-        Token = token;
-        ExpireTime = expireTime;
-    }
+    public string Token { get; set; } = "";
+    public DateTimeOffset ExpireTime { get; set; }
 }

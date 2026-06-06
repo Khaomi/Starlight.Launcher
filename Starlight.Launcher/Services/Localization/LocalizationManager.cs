@@ -96,7 +96,7 @@ public sealed class LocalizationManager
         {
             return _currentBundle?.GetMessage(key) ?? key;
         }
-        catch (Exception _)
+        catch
         {
             _logger?.LogWarning("Can't find localization: {0} !", key);
             return key;

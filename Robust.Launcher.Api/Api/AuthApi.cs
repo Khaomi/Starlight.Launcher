@@ -39,7 +39,7 @@ public sealed class AuthApi
             if (resp.IsSuccessStatusCode)
             {
                 var respJson = await resp.Content.AsJson<AuthenticateResponse>();
-                var token = new LoginToken(respJson.Token, respJson.ExpireTime);
+                var token = new LoginToken() {  Token = respJson.Token, ExpireTime = respJson.ExpireTime };
                 return new AuthenticateResult(new LoginInfo
                 {
                     UserId = respJson.UserId,
@@ -194,7 +194,7 @@ public sealed class AuthApi
             {
                 var response = await resp.Content.AsJson<RefreshResponse>();
 
-                return new LoginToken(response.NewToken, response.ExpireTime);
+                return new LoginToken() { Token = response.NewToken, ExpireTime = response.ExpireTime };
             }
 
             if (resp.StatusCode == HttpStatusCode.Unauthorized)

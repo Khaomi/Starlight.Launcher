@@ -310,7 +310,7 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
             else
             {
                 Log.Debug("Refreshed token for {login}", data.LoginInfo);
-                data.LoginInfo.Token = newTokenHopefully.Value;
+                data.LoginInfo.Token = newTokenHopefully;
                 data.SetStatus(AccountLoginStatus.Available);
 
                 _settings.UpdateLogin(data.LoginInfo);
