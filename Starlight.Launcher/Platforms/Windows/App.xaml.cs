@@ -3,6 +3,7 @@ using Microsoft.Maui.Platform;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.Windows.AppLifecycle;
+using Serilog;
 using Starlight.Launcher.Services;
 using Starlight.Launcher.Services.Auth;
 using Starlight.Launcher.Services.Settings;
@@ -73,7 +74,13 @@ public partial class App : MauiWinUIApplication
 
         if (!instance.IsCurrent)
         {
-            instance.RedirectActivationToAsync(activated).AsTask().GetAwaiter().GetResult();
+            var done = new ManualResetEventSlim(false);
+            _ = Task.Run(async () =>
+            {
+                try { await instance.RedirectActivationToAsync(activated); }
+                finally { done.Set(); }
+            });
+            done.Wait();
             Process.GetCurrentProcess().Kill();
             return;
         }
@@ -83,11 +90,12 @@ public partial class App : MauiWinUIApplication
         base.OnLaunched(args);
     }
 
-    private static void HandleProtocol(AppActivationArguments e)
+    private static void HandleProtocol(AppActivationArguments? e)
     {
-        if (e.Kind == ExtendedActivationKind.Protocol &&
-            e.Data is IProtocolActivatedEventArgs p)
+        Log.Information("Activation kind: {kind}", e?.Kind);
+        if (e?.Kind == ExtendedActivationKind.Protocol && e.Data is IProtocolActivatedEventArgs p)
         {
+            Log.Information("Protocol uri: {uri}", p.Uri);
             IPlatformApplication.Current!.Services
                 .GetRequiredService<DiscordAuthService>()
                 .HandleDeepLink(p.Uri);
