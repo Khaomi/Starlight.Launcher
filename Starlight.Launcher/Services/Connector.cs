@@ -781,9 +781,12 @@ public partial class Connector : ObservableObject
                     RedirectStandardOutput = true
                 });
 
-                PipeLogOutput(xattr);
+                if (xattr != null)
+                {
+                    PipeLogOutput(xattr);
 
-                await xattr.WaitForExitAsync();
+                    await xattr.WaitForExitAsync();
+                }
 
                 var startInfo = new ProcessStartInfo
                 {
