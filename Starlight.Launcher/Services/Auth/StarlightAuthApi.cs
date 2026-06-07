@@ -1,6 +1,7 @@
-using System.Net;
-using System.Net.Http.Json;
 using Starlight.Launcher.Services.Settings;
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 
 namespace Starlight.Launcher.Services.Auth;
 
@@ -15,7 +16,10 @@ public sealed class StarlightAuthApi(HttpClient http, SettingsService settings)
         string discordToken,
         CancellationToken cancel)
     {
-        var resp = await http.GetAsync(new Uri(apiUrl, $"api/discord-auth/find-user?token={Uri.EscapeDataString(discordToken)}"), cancel);
+        var request = new HttpRequestMessage(HttpMethod.Get, new Uri(apiUrl, $"api/discord-auth/find-user"));
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", discordToken);
+
+        var resp = await http.SendAsync(request, cancel);
 
         if (!resp.IsSuccessStatusCode)
         {
@@ -30,7 +34,10 @@ public sealed class StarlightAuthApi(HttpClient http, SettingsService settings)
 
     public async Task<bool> ValidateDiscordToken(string discordToken)
     {
-        var resp = await http.GetAsync(new Uri(apiUrl, $"api/discord-auth/validate?token={Uri.EscapeDataString(discordToken)}"));
+        var request = new HttpRequestMessage(HttpMethod.Get, new Uri(apiUrl, "api/discord-auth/validate"));
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", discordToken);
+
+        var resp = await http.SendAsync(request);
 
         if (!resp.IsSuccessStatusCode)
         {
