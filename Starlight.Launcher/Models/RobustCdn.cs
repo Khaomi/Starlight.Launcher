@@ -1,3 +1,5 @@
+using Robust.Launcher.Api.Utility;
+
 namespace Starlight.Launcher.Models;
 
 public sealed class RobustCdn
