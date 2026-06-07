@@ -100,6 +100,17 @@ public partial class App : MauiWinUIApplication
                 .GetRequiredService<DiscordAuthService>()
                 .HandleDeepLink(p.Uri);
         }
+        else if (e?.Kind == ExtendedActivationKind.Launch && e.Data is ILaunchActivatedEventArgs l)
+        {
+            var arg = l.Arguments?.Trim().Trim('"');
+            if (Uri.TryCreate(arg, UriKind.Absolute, out var uri) &&
+                uri.Scheme.Equals("starlight", StringComparison.OrdinalIgnoreCase))
+            {
+                IPlatformApplication.Current!.Services
+                    .GetRequiredService<DiscordAuthService>()
+                    .HandleDeepLink(uri);
+            }
+        }
     }
 
     protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
