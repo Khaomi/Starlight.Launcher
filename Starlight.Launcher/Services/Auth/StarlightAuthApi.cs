@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Json;
 using Starlight.Launcher.Services.Settings;
 
@@ -29,5 +30,21 @@ public sealed class StarlightAuthApi(HttpClient http, SettingsService settings)
 
         return resp.IsSuccessStatusCode;
     }
+
+    public async Task<StarlightRefreshResult?> RefreshTokenAsync(
+        string sessionId, string refreshToken, CancellationToken cancel = default)
+    {
+        using var resp = await http.PostAsJsonAsync(new Uri(apiUrl, "/token/refresh"), new { sessionId, refreshToken }, cancel);
+
+        if (resp.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.BadRequest)
+            return null; // expired / revoked / reuse_detected -> re-login
+
+        resp.EnsureSuccessStatusCode();
+        return await resp.Content.ReadFromJsonAsync<StarlightRefreshResult>(cancellationToken: cancel);
+    }
 }
+
+public sealed record StarlightRefreshResult(
+    string AccessToken, DateTime AccessExpiresUtc, string RefreshToken, string SessionId);
+
 public sealed record DiscordUserResponse(Guid UserId, string Username);

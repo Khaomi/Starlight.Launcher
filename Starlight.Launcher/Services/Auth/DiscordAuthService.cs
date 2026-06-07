@@ -14,12 +14,12 @@ public sealed class DiscordAuthService(StarlightAuthApi api, LoginManager loginM
 {
     private static readonly TimeSpan FlowTimeout = TimeSpan.FromMinutes(5);
 
-    private readonly ConcurrentDictionary<string, TaskCompletionSource<string>> _pending = new();
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<HandoffResult>> _pending = new();
 
     public async Task<LoggedInAccount> LoginAsync(CancellationToken cancel = default)
     {
         var state = GenerateState();
-        var tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var tcs = new TaskCompletionSource<HandoffResult>(TaskCreationOptions.RunContinuationsAsynchronously);
         _pending[state] = tcs;
 
         try
@@ -32,20 +32,26 @@ public sealed class DiscordAuthService(StarlightAuthApi api, LoginManager loginM
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancel);
             timeoutCts.CancelAfter(FlowTimeout);
 
-            string validationToken;
+            HandoffResult handoff;
             await using (timeoutCts.Token.Register(() => tcs.TrySetCanceled(timeoutCts.Token)))
             {
-                validationToken = await tcs.Task;
+                handoff = await tcs.Task;
             }
 
-            var info = await api.GetDiscordUserAsync(validationToken, cancel) ?? throw new DiscordAuthException("Failed to retrieve user information.");
+            var info = await api.GetDiscordUserAsync(handoff.Token, cancel) ?? throw new DiscordAuthException("Failed to retrieve user information.");
 
             var newLoginInfo = new LoginInfo()
             {
                 UserId = info.UserId,
                 Username = info.Username,
                 Token = null,
-                DiscordToken = new LoginToken() { Token = validationToken, ExpireTime = DateTime.UtcNow.AddHours(2) },
+                DiscordToken = new LoginToken
+                {
+                    Token = handoff.Token,
+                    ExpireTime = DateTime.UtcNow.AddDays(2),
+                },
+                DiscordRefreshToken = handoff.RefreshToken,
+                DiscordSessionId = handoff.SessionId,
             };
 
             loginManager.AddFreshLogin(newLoginInfo);
@@ -88,7 +94,7 @@ public sealed class DiscordAuthService(StarlightAuthApi api, LoginManager loginM
             return true;
         }
 
-        tcs.TrySetResult(token);
+        tcs.TrySetResult(new HandoffResult(token, query["refresh"], query["session"]));
         return true;
     }
 
@@ -105,5 +111,7 @@ public sealed class DiscordAuthService(StarlightAuthApi api, LoginManager loginM
         return Convert.ToHexString(bytes);
     }
 }
+
+public sealed record HandoffResult(string Token, string? RefreshToken, string? SessionId);
 
 public sealed class DiscordAuthException(string message) : Exception(message);

@@ -16,7 +16,7 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
     private readonly SettingsService _settings;
     private readonly IDispatcher _dispatcher;
 
-    public static readonly TimeSpan TokenRefreshInterval = TimeSpan.FromDays(7);
+    public static readonly TimeSpan TokenRefreshInterval = TimeSpan.FromDays(1);
 
     private CancellationTokenSource? _cts;
     private Task? _refreshTask;
@@ -193,6 +193,13 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
                 return;
             }
 
+            if (l.LoginInfo.Token == null && l.LoginInfo.DiscordToken == null)
+            {
+                Log.Debug("Token for {login} doesn't have any access tokens", l.LoginInfo);
+                l.SetStatus(AccountLoginStatus.Expired);
+                return;
+            }
+
             if (l.LoginInfo.Token != null && l.LoginInfo.Token.IsTimeExpired())
             {
                 Log.Debug("Token for {login} expired due to time", l.LoginInfo);
@@ -200,9 +207,10 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
                 return;
             }
 
-            if (l.LoginInfo.DiscordToken != null && l.LoginInfo.DiscordToken.IsTimeExpired())
+            if (l.LoginInfo.DiscordToken != null && l.LoginInfo.DiscordToken.IsTimeExpired()
+                && string.IsNullOrEmpty(l.LoginInfo.DiscordRefreshToken))
             {
-                Log.Debug("Discord token for {login} expired due to time", l.LoginInfo);
+                Log.Debug("Discord token for {login} expired and no refresh token", l.LoginInfo);
                 l.SetStatus(AccountLoginStatus.Expired);
                 return;
             }
@@ -233,6 +241,9 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
             if (_logins.TryGetValue(info.UserId, out var existing))
             {
                 existing.LoginInfo.Token = info.Token;
+                existing.LoginInfo.DiscordToken = info.DiscordToken;
+                existing.LoginInfo.DiscordRefreshToken = info.DiscordRefreshToken;
+                existing.LoginInfo.DiscordSessionId = info.DiscordSessionId;
                 data = existing;
             }
             else
@@ -327,22 +338,30 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
         }
         else if (data.LoginInfo.DiscordToken != null && data.LoginInfo.DiscordToken.ShouldRefresh())
         {
-            Log.Debug("Refreshing Discord token for {login}", data.LoginInfo);
-            /* TODO: Implement this on API side.
-            var newTokenHopefully = await _authApi.RefreshDiscordTokenAsync(data.LoginInfo.DiscordToken.Token);
-            if (newTokenHopefully == null)
+            Log.Debug("Refreshing Starlight token for {login}", data.LoginInfo);
+            var result = await _starlightAuthApi.RefreshTokenAsync(
+                data.LoginInfo.DiscordSessionId!, data.LoginInfo.DiscordRefreshToken!);
+
+            if (result == null)
             {
                 data.SetStatus(AccountLoginStatus.Expired);
-                Log.Debug("Discord token for {login} expired while refreshing it", data.LoginInfo);
+                Log.Debug("Starlight token for {login} expired/revoked while refreshing", data.LoginInfo);
             }
             else
             {
-                Log.Debug("Refreshed Discord token for {login}", data.LoginInfo);
-                data.LoginInfo.DiscordToken = newTokenHopefully;
+                data.LoginInfo.DiscordToken = new LoginToken
+                {
+                    Token = result.AccessToken,
+                    ExpireTime = result.AccessExpiresUtc,
+                };
+                data.LoginInfo.DiscordRefreshToken = result.RefreshToken;
+                data.LoginInfo.DiscordSessionId = result.SessionId;
+
                 data.SetStatus(AccountLoginStatus.Available);
                 _settings.UpdateLogin(data.LoginInfo);
+
+                Log.Debug("Refreshed Starlight token for {login}", data.LoginInfo);
             }
-            */
         }
         else if (data.Status == AccountLoginStatus.Unsure && data.LoginInfo.Token != null)
         {
