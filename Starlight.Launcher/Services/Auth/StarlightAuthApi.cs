@@ -17,7 +17,11 @@ public sealed class StarlightAuthApi(HttpClient http, SettingsService settings)
     {
         var resp = await http.GetAsync(new Uri(apiUrl, $"api/discord-auth/find-user?token={Uri.EscapeDataString(discordToken)}"), cancel);
 
-        resp.EnsureSuccessStatusCode();
+        if (!resp.IsSuccessStatusCode)
+        {
+            var body = await resp.Content.ReadAsStringAsync(cancel);
+            throw new DiscordAuthException($"find-user failed: {(int)resp.StatusCode} {body}");
+        }
 
         return await resp.Content.ReadFromJsonAsync<DiscordUserResponse>(
                    cancellationToken: cancel)

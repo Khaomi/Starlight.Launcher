@@ -26,11 +26,17 @@
                             <MudListItem T = "LoggedInAccount" Class = "my-1">
                                 <MudStack Row = "true" AlignItems = "AlignItems.Center" Justify = "Justify.SpaceBetween" Style = "width:100%">
                                     <MudStack Spacing = "0">
-                                        <MudText Typo = "Typo.body1">
+                                        <MudText Typo="Typo.body1">
                                             @acc.LoginInfo.Username
                                             @if (isActive)
                                             {
-                                                <MudChip T = "string" Size = "Size.Small" Color = "Color.Primary" Class = "ml-2">active</MudChip>
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Primary" Class="ml-2">active</MudChip>
+                                            }
+                                            @if (acc.LoginInfo.DiscordToken != null)
+                                            {
+                                                <MudTooltip Text="Discord linked">
+                                                    <MudIcon Icon="@Icons.Custom.Brands.Discord" Size="Size.Small" Color="Color.Info" Class="ml-1" />
+                                                </MudTooltip>
                                             }
                                         </MudText>
                                         <MudText Typo = "Typo.caption" > @StatusLabel(acc.Status) </MudText>
@@ -54,6 +60,18 @@
                                               Disabled = "@(isActive || _busy)"
                                               OnClick = "() => SelectAccount(acc)" >
                                                 Select
+                                            </MudButton>
+                                        }
+
+                                        @if (acc.Status != AccountLoginStatus.Expired
+                                             && acc.LoginInfo.Token != null
+                                             && acc.LoginInfo.DiscordToken == null)
+                                        {
+                                            <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info"
+                                                       StartIcon="@Icons.Custom.Brands.Discord"
+                                                       Disabled="_busy"
+                                                       OnClick="() => LinkDiscord(acc)">
+                                                Link Discord
                                             </MudButton>
                                         }
 

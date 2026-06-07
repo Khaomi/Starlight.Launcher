@@ -3,7 +3,6 @@ using Robust.Launcher.Api.Models;
 using Robust.Launcher.Api.Models.Data;
 using Serilog;
 using Starlight.Launcher.Api.Models;
-using Starlight.Launcher.Services.Settings;
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Web;
@@ -16,17 +15,14 @@ public sealed class DiscordAuthService(StarlightAuthApi api, LoginManager loginM
 
     private readonly ConcurrentDictionary<string, TaskCompletionSource<HandoffResult>> _pending = new();
 
-    public async Task<LoggedInAccount> LoginAsync(CancellationToken cancel = default)
+    private async Task<(HandoffResult handoff, DiscordUserResponse info)> AuthorizeAsync(CancellationToken cancel)
     {
         var state = GenerateState();
         var tcs = new TaskCompletionSource<HandoffResult>(TaskCreationOptions.RunContinuationsAsynchronously);
         _pending[state] = tcs;
-
         try
         {
-            var opened = await Browser.Default.OpenAsync(
-                api.BuildLauncherLoginUrl(state), BrowserLaunchMode.SystemPreferred);
-            if (!opened)
+            if (!await Browser.Default.OpenAsync(api.BuildLauncherLoginUrl(state), BrowserLaunchMode.SystemPreferred))
                 throw new DiscordAuthException("Unable to open the browser to log in.");
 
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancel);
@@ -34,35 +30,54 @@ public sealed class DiscordAuthService(StarlightAuthApi api, LoginManager loginM
 
             HandoffResult handoff;
             await using (timeoutCts.Token.Register(() => tcs.TrySetCanceled(timeoutCts.Token)))
-            {
                 handoff = await tcs.Task;
-            }
 
-            var info = await api.GetDiscordUserAsync(handoff.Token, cancel) ?? throw new DiscordAuthException("Failed to retrieve user information.");
-
-            var newLoginInfo = new LoginInfo()
-            {
-                UserId = info.UserId,
-                Username = info.Username,
-                Token = null,
-                DiscordToken = new LoginToken
-                {
-                    Token = handoff.Token,
-                    ExpireTime = DateTime.UtcNow.AddDays(2),
-                },
-                DiscordRefreshToken = handoff.RefreshToken,
-                DiscordSessionId = handoff.SessionId,
-            };
-
-            loginManager.AddFreshLogin(newLoginInfo);
-            loginManager.ActiveAccountId = newLoginInfo.UserId;
-
-            return loginManager.ActiveAccount!;
+            var info = await api.GetDiscordUserAsync(handoff.Token, cancel)
+                       ?? throw new DiscordAuthException("Failed to retrieve user information.");
+            return (handoff, info);
         }
         finally
         {
             _pending.TryRemove(state, out _);
         }
+    }
+
+    public async Task<LoggedInAccount> LoginAsync(CancellationToken cancel = default)
+    {
+        var (handoff, info) = await AuthorizeAsync(cancel);
+        var newLoginInfo = new LoginInfo
+        {
+            UserId = info.UserId,
+            Username = info.Username,
+            Token = null,
+            DiscordToken = new LoginToken { Token = handoff.Token, ExpireTime = DateTime.UtcNow.AddDays(2) },
+            DiscordRefreshToken = handoff.RefreshToken,
+            DiscordSessionId = handoff.SessionId,
+        };
+        loginManager.AddFreshLogin(newLoginInfo);
+        loginManager.ActiveAccountId = newLoginInfo.UserId;
+        return loginManager.ActiveAccount!;
+    }
+
+    public async Task AttachToAccountAsync(LoggedInAccount account, CancellationToken cancel = default)
+    {
+        var (handoff, info) = await AuthorizeAsync(cancel);
+
+        if (info.UserId != account.UserId)
+            throw new DiscordAuthException(
+                "This Discord account isn't linked to this player on the server yet.");
+
+        var newLoginInfo = new LoginInfo
+        {
+            UserId = info.UserId,
+            Username = info.Username,
+            Token = null,
+            DiscordToken = new LoginToken { Token = handoff.Token, ExpireTime = DateTime.UtcNow.AddDays(2) },
+            DiscordRefreshToken = handoff.RefreshToken,
+            DiscordSessionId = handoff.SessionId,
+        };
+        loginManager.AddFreshLogin(newLoginInfo);
+        loginManager.ActiveAccountId = newLoginInfo.UserId;
     }
 
     public bool HandleDeepLink(Uri uri)

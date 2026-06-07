@@ -84,7 +84,7 @@ public partial class Auth : Microsoft.AspNetCore.Components.ComponentBase, IDisp
             if (account.Status == AccountLoginStatus.Expired)
             {
                 Snackbar.Add("Your session has expired. Please log in again.", Severity.Warning);
-                BeginRelogin(account);
+                await BeginRelogin(account);
                 return;
             }
 
@@ -109,8 +109,14 @@ public partial class Auth : Microsoft.AspNetCore.Components.ComponentBase, IDisp
         _mode = Mode.SignIn;
     }
 
-    private void BeginRelogin(LoggedInAccount account)
+    private async Task BeginRelogin(LoggedInAccount account)
     {
+        if (account.LoginInfo.DiscordToken != null && account.LoginInfo.Token == null)
+        {
+            await ReloginDiscord(account);
+            return;
+        }
+
         ResetSignInForm();
         _relogUserId = account.UserId;
         _signInUsername = account.LoginInfo.Username;
@@ -124,6 +130,46 @@ public partial class Auth : Microsoft.AspNetCore.Components.ComponentBase, IDisp
         AccountLoginStatus.Unsure => "Checking...",
         _ => s.ToString()
     };
+
+    private Task LinkDiscord(LoggedInAccount account) =>
+        RunDiscordAttach(account, $"Discord linked to {account.LoginInfo.Username}.");
+
+    private Task ReloginDiscord(LoggedInAccount account) =>
+        RunDiscordAttach(account, "Discord session renewed.", navigateHome: true);
+
+    private async Task RunDiscordAttach(LoggedInAccount account, string success, bool navigateHome = false)
+    {
+        _busy = true;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            await DiscordAuth.AttachToAccountAsync(account);
+            Snackbar.Add(success, Severity.Success);
+            if (navigateHome)
+            {
+                LoginManager.ActiveAccountId = account.UserId;
+                Nav.NavigateTo("/");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            Snackbar.Add("Discord login canceled or expired.", Severity.Warning);
+        }
+        catch (DiscordAuthException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Discord attach failed");
+            Snackbar.Add("Failed to connect Discord.", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
 
     private async Task OnSignInKey(KeyboardEventArgs e)
     {
