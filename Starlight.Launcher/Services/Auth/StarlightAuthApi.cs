@@ -10,25 +10,17 @@ public sealed class StarlightAuthApi(HttpClient http, SettingsService settings)
     public string BuildLauncherLoginUrl(string state)
         => new Uri(new Uri(settings.GetSettings().StarlightAPIUrl), $"api/discord-auth/launcher-login?state={Uri.EscapeDataString(state)}").ToString();
 
-    public async Task<LoginInfo> ExchangeValidationTokenAsync(string validationToken, CancellationToken cancel)
+    public async Task<DiscordUserResponse> GetDiscordUserAsync(
+        string discordToken,
+        CancellationToken cancel)
     {
-        using var resp = await http.PostAsJsonAsync(
-            "token/validate",
-            new { token = validationToken },
-            cancel);
+        var resp = await http.GetAsync(new Uri(new Uri(settings.GetSettings().StarlightAPIUrl), $"api/discord-auth/find-user?token={Uri.EscapeDataString(discordToken)}"), cancel);
 
         resp.EnsureSuccessStatusCode();
 
-        var body = await resp.Content.ReadFromJsonAsync<ValidateResponse>(cancellationToken: cancel)
-                   ?? throw new DiscordAuthException("Empty response when exchanging token.");
-
-        return new LoginInfo
-        {
-            UserId = body.UserId,
-            Username = body.Username,
-            Token = new LoginToken() { Token = body.Token, ExpireTime = body.ExpireTime },
-        };
+        return await resp.Content.ReadFromJsonAsync<DiscordUserResponse>(
+                   cancellationToken: cancel)
+               ?? throw new DiscordAuthException("Empty response.");
     }
-
-    private sealed record ValidateResponse(Guid UserId, string Username, string Token, DateTimeOffset ExpireTime);
 }
+public sealed record DiscordUserResponse(Guid? UserId, string Username);

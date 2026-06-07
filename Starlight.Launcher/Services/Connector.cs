@@ -354,7 +354,10 @@ public partial class Connector : ObservableObject
         {
             var account = _loginManager.ActiveAccount;
 
-            cVars.Add(("ROBUST_AUTH_TOKEN", account.LoginInfo.Token.Token));
+            if (account.LoginInfo.Token != null)
+                cVars.Add(("ROBUST_AUTH_TOKEN", account.LoginInfo.Token.Token));
+            else if (account.LoginInfo.DiscordToken != null)
+                cVars.Add(("STARLIGHT_AUTH_DISCORDTOKEN", account.LoginInfo.DiscordToken.Token));
             cVars.Add(("ROBUST_AUTH_USERID", account.LoginInfo.UserId.ToString()));
             cVars.Add(("ROBUST_AUTH_PUBKEY", info.AuthInformation.PublicKey));
             cVars.Add(("ROBUST_AUTH_SERVER", settings.BuildAuthUrlSet().GetMostSuccessfulUrl()));

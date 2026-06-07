@@ -191,9 +191,16 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
                 return;
             }
 
-            if (l.LoginInfo.Token.IsTimeExpired())
+            if (l.LoginInfo.Token != null && l.LoginInfo.Token.IsTimeExpired())
             {
                 Log.Debug("Token for {login} expired due to time", l.LoginInfo);
+                l.SetStatus(AccountLoginStatus.Expired);
+                return;
+            }
+
+            if (l.LoginInfo.DiscordToken != null && l.LoginInfo.DiscordToken.IsTimeExpired())
+            {
+                Log.Debug("Discord token for {login} expired due to time", l.LoginInfo);
                 l.SetStatus(AccountLoginStatus.Expired);
                 return;
             }
@@ -298,7 +305,7 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
 
     private async Task UpdateSingleAccountStatus(ActiveLoginData data)
     {
-        if (data.LoginInfo.Token.ShouldRefresh())
+        if (data.LoginInfo.Token != null && data.LoginInfo.Token.ShouldRefresh())
         {
             Log.Debug("Refreshing token for {login}", data.LoginInfo);
             var newTokenHopefully = await _authApi.RefreshTokenAsync(data.LoginInfo.Token.Token);
@@ -316,11 +323,36 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
                 _settings.UpdateLogin(data.LoginInfo);
             }
         }
-        else if (data.Status == AccountLoginStatus.Unsure)
+        else if (data.LoginInfo.DiscordToken != null && data.LoginInfo.DiscordToken.ShouldRefresh())
+        {
+            Log.Debug("Refreshing Discord token for {login}", data.LoginInfo);
+            /* TODO: Implement this on API side.
+            var newTokenHopefully = await _authApi.RefreshDiscordTokenAsync(data.LoginInfo.DiscordToken.Token);
+            if (newTokenHopefully == null)
+            {
+                data.SetStatus(AccountLoginStatus.Expired);
+                Log.Debug("Discord token for {login} expired while refreshing it", data.LoginInfo);
+            }
+            else
+            {
+                Log.Debug("Refreshed Discord token for {login}", data.LoginInfo);
+                data.LoginInfo.DiscordToken = newTokenHopefully;
+                data.SetStatus(AccountLoginStatus.Available);
+                _settings.UpdateLogin(data.LoginInfo);
+            }
+            */
+        }
+        else if (data.Status == AccountLoginStatus.Unsure && data.LoginInfo.Token != null)
         {
             var valid = await _authApi.CheckTokenAsync(data.LoginInfo.Token.Token);
             Log.Debug("Token for {login} still valid? {valid}", data.LoginInfo, valid);
             data.SetStatus(valid ? AccountLoginStatus.Available : AccountLoginStatus.Expired);
+        }
+        else if (data.Status == AccountLoginStatus.Unsure && data.LoginInfo.DiscordToken != null)
+        {
+            //var valid = await _authApi.CheckDiscordTokenAsync(data.LoginInfo.DiscordToken.Token); TODO: Create Validate API endpoint for Discord token
+            //Log.Debug("Discord token for {login} still valid? {valid}", data.LoginInfo, valid);
+            //data.SetStatus(valid ? AccountLoginStatus.Available : AccountLoginStatus.Expired);
         }
     }
 
@@ -359,7 +391,7 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
         }
     }
 
-    private sealed class ActiveLoginData : LoggedInAccount
+    private sealed partial class ActiveLoginData : LoggedInAccount
     {
         private AccountLoginStatus _status;
 

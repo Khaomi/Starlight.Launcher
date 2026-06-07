@@ -1,5 +1,6 @@
 using Microsoft.Maui.ApplicationModel;
 using Robust.Launcher.Api.Models;
+using Robust.Launcher.Api.Models.Data;
 using Serilog;
 using Starlight.Launcher.Api.Models;
 using Starlight.Launcher.Services.Settings;
@@ -37,10 +38,23 @@ public sealed class DiscordAuthService(StarlightAuthApi api, LoginManager loginM
                 validationToken = await tcs.Task;
             }
 
-            var info = await api.ExchangeValidationTokenAsync(validationToken, cancel);
+            var info = await api.GetDiscordUserAsync(validationToken, cancel);
 
-            loginManager.AddFreshLogin(info);
-            loginManager.ActiveAccountId = info.UserId;
+            if (info == null)
+                throw new DiscordAuthException("Failed to retrieve user information.");
+
+            var userId = info.UserId ?? Guid.NewGuid(); // This user isn't linked, so we create local account and they can play on our servers.
+
+            var newLoginInfo = new LoginInfo()
+            {
+                UserId = userId,
+                Username = info.Username,
+                Token = null,
+                DiscordToken = new LoginToken() { Token = validationToken, ExpireTime = DateTime.UtcNow.AddHours(2) },
+            };
+
+            loginManager.AddFreshLogin(newLoginInfo);
+            loginManager.ActiveAccountId = newLoginInfo.UserId;
 
             return loginManager.ActiveAccount!;
         }
