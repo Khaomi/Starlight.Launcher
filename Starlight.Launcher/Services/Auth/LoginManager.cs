@@ -12,6 +12,7 @@ namespace Starlight.Launcher.Services.Auth;
 public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
 {
     private readonly AuthApi _authApi;
+    private readonly StarlightAuthApi _starlightAuthApi;
     private readonly SettingsService _settings;
     private readonly IDispatcher _dispatcher;
 
@@ -70,11 +71,12 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
         set => ActiveAccountId = value?.UserId;
     }
 
-    public LoginManager(AuthApi authApi, SettingsService settings, IDispatcher dispatcher)
+    public LoginManager(AuthApi authApi, SettingsService settings, IDispatcher dispatcher, StarlightAuthApi starlightAuthApi)
     {
         _authApi = authApi;
         _settings = settings;
         _dispatcher = dispatcher;
+        _starlightAuthApi = starlightAuthApi;
 
         Logins = new ReadOnlyObservableCollection<LoggedInAccount>(_loginsView);
 
@@ -350,9 +352,9 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
         }
         else if (data.Status == AccountLoginStatus.Unsure && data.LoginInfo.DiscordToken != null)
         {
-            //var valid = await _authApi.CheckDiscordTokenAsync(data.LoginInfo.DiscordToken.Token); TODO: Create Validate API endpoint for Discord token
-            //Log.Debug("Discord token for {login} still valid? {valid}", data.LoginInfo, valid);
-            //data.SetStatus(valid ? AccountLoginStatus.Available : AccountLoginStatus.Expired);
+            var valid = await _starlightAuthApi.ValidateDiscordToken(data.LoginInfo.DiscordToken.Token);
+            Log.Debug("Discord token for {login} still valid? {valid}", data.LoginInfo, valid);
+            data.SetStatus(valid ? AccountLoginStatus.Available : AccountLoginStatus.Expired);
         }
     }
 

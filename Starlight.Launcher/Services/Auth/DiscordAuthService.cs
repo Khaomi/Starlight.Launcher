@@ -38,16 +38,11 @@ public sealed class DiscordAuthService(StarlightAuthApi api, LoginManager loginM
                 validationToken = await tcs.Task;
             }
 
-            var info = await api.GetDiscordUserAsync(validationToken, cancel);
-
-            if (info == null)
-                throw new DiscordAuthException("Failed to retrieve user information.");
-
-            var userId = info.UserId ?? Guid.NewGuid(); // This user isn't linked, so we create local account and they can play on our servers.
+            var info = await api.GetDiscordUserAsync(validationToken, cancel) ?? throw new DiscordAuthException("Failed to retrieve user information.");
 
             var newLoginInfo = new LoginInfo()
             {
-                UserId = userId,
+                UserId = info.UserId,
                 Username = info.Username,
                 Token = null,
                 DiscordToken = new LoginToken() { Token = validationToken, ExpireTime = DateTime.UtcNow.AddHours(2) },
