@@ -332,8 +332,26 @@ public sealed partial class EngineManagerDynamic : IEngineManager
 
     public async Task<EngineModuleManifest> GetEngineModuleManifest(CancellationToken cancel = default)
     {
-        return await _settings.GetSettings().RobustModulesManifest.GetFromJsonAsync<EngineModuleManifest>(_http, cancel) ??
-            throw new InvalidDataException();
+        Exception? lastError = null;
+
+        foreach (var cdn in _settings.GetSettings().RobustCdns)
+        {
+            try
+            {
+                var manifest = await cdn.ModulesManifest
+                    .GetFromJsonAsync<EngineModuleManifest>(_http, cancel);
+
+                if (manifest != null)
+                    return manifest;
+            }
+            catch (Exception e) when (e is not OperationCanceledException)
+            {
+                lastError = e;
+                Log.Warning(e, "Failed to load module manifest from a CDN, trying next one...");
+            }
+        }
+
+        throw new InvalidDataException("Unable to load module manifest from any CDN.", lastError);
     }
 
     public async Task DoEngineCullMaybeAsync(SqliteConnection contenCon)

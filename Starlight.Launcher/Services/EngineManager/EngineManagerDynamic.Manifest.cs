@@ -1,4 +1,5 @@
 using Serilog;
+using Starlight.Launcher.Models;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 
@@ -11,18 +12,19 @@ public sealed partial class EngineManagerDynamic
     private readonly SemaphoreSlim _manifestSemaphore = new(1);
     private readonly Stopwatch _manifestStopwatch = Stopwatch.StartNew();
 
-    private Dictionary<string, VersionInfo>? _cachedRobustVersionInfo;
-    private TimeSpan _robustCacheValidUntil;
+    // One cache entry per CDN. Keyed by the CDN instance (stable while the list is static;
+    // a reconfigured list yields new instances -> fresh caches, which is correct).
+    private readonly Dictionary<RobustCdn, CdnManifestCache> _manifestCaches = new();
 
     /// <summary>
-    /// Look up information about an engine version.
+    /// Look up information about an engine version across all CDNs, in priority order.
     /// </summary>
     /// <param name="version">The version number to look up.</param>
     /// <param name="followRedirects">Follow redirections in version info.</param>
     /// <param name="cancel">Cancellation token.</param>
     /// <returns>
-    /// Information about the version, or null if it could not be found.
-    /// The returned version may be different than what was requested if redirects were followed.
+    /// Information about the version, or null if it could not be found on any CDN.
+    /// The returned version may differ from what was requested if redirects were followed.
     /// </returns>
     private async ValueTask<FoundVersionInfo?> GetVersionInfo(
         string version,
@@ -45,38 +47,58 @@ public sealed partial class EngineManagerDynamic
         bool followRedirects,
         CancellationToken cancel)
     {
-        // If we have a cached copy, and it's not expired, we check it.
-        if (_cachedRobustVersionInfo != null && _robustCacheValidUntil > _manifestStopwatch.Elapsed)
+        var cdns = _settings.GetSettings().RobustCdns;
+
+        // Pass 1: use already-valid caches, honoring CDN priority.
+        foreach (var cdn in cdns)
         {
-            // Check the version. If this fails, we immediately re-request the manifest as it may have changed.
-            // (Connecting to a freshly-updated server with a new Robust version, within the cache window.)
-            if (FindVersionInfoInCached(version, followRedirects) is { } foundVersionInfo)
-                return foundVersionInfo;
+            var cache = GetOrCreateCache(cdn);
+            if (cache.Versions != null && cache.ValidUntil > _manifestStopwatch.Elapsed
+                && FindVersionInfoInCached(cdn, cache, version, followRedirects) is { } found)
+            {
+                return found;
+            }
         }
 
-        await UpdateBuildManifest(cancel);
+        // Pass 2: not found in any valid cache. Refresh per-CDN in priority order and re-check.
+        // We refresh lazily so that as soon as a higher-priority CDN yields the version,
+        // we stop without ever touching the lower-priority ones.
+        // (This also re-requests a still-valid manifest on a total miss, which catches a
+        //  freshly-published version within the cache window — same intent as the original code.)
+        foreach (var cdn in cdns)
+        {
+            var cache = GetOrCreateCache(cdn);
+            await UpdateBuildManifest(cdn, cache, cancel);
 
-        return FindVersionInfoInCached(version, followRedirects);
+            if (FindVersionInfoInCached(cdn, cache, version, followRedirects) is { } found)
+                return found;
+        }
+
+        return null;
     }
 
-    private async Task UpdateBuildManifest(CancellationToken cancel)
+    private async Task UpdateBuildManifest(RobustCdn cdn, CdnManifestCache cache, CancellationToken cancel)
     {
         // TODO: If-Modified-Since and If-None-Match request conditions.
 
-        var settings = _settings.GetSettings();
-        Log.Debug("Loading manifest from {manifestUrl}...", settings.RobustBuildsManifest);
-        _cachedRobustVersionInfo =
-            await settings.RobustBuildsManifest.GetFromJsonAsync<Dictionary<string, VersionInfo>>(
-                _http, cancel);
+        var manifestUrl = cdn.BuildsManifest;
+        Log.Debug("Loading manifest from {ManifestUrls}...", string.Join(", ", manifestUrl.Urls));
 
-        _robustCacheValidUntil = _manifestStopwatch.Elapsed + settings.RobustManifestCacheTime;
+        cache.Versions = await manifestUrl.GetFromJsonAsync<Dictionary<string, VersionInfo>>(_http, cancel);
+
+        cache.ValidUntil = _manifestStopwatch.Elapsed + _settings.GetSettings().RobustManifestCacheTime;
     }
 
-    private FoundVersionInfo? FindVersionInfoInCached(string version, bool followRedirects)
+    private static FoundVersionInfo? FindVersionInfoInCached(
+        RobustCdn cdn,
+        CdnManifestCache cache,
+        string version,
+        bool followRedirects)
     {
-        Debug.Assert(_cachedRobustVersionInfo != null);
+        if (cache.Versions == null)
+            return null;
 
-        if (!_cachedRobustVersionInfo.TryGetValue(version, out var versionInfo))
+        if (!cache.Versions.TryGetValue(version, out var versionInfo))
             return null;
 
         if (followRedirects)
@@ -84,14 +106,31 @@ public sealed partial class EngineManagerDynamic
             while (versionInfo.RedirectVersion != null)
             {
                 version = versionInfo.RedirectVersion;
-                versionInfo = _cachedRobustVersionInfo[versionInfo.RedirectVersion];
+                versionInfo = cache.Versions[versionInfo.RedirectVersion];
             }
         }
 
-        return new FoundVersionInfo(version, versionInfo);
+        return new FoundVersionInfo(version, versionInfo, cdn);
     }
 
-    private sealed record FoundVersionInfo(string Version, VersionInfo Info);
+    private CdnManifestCache GetOrCreateCache(RobustCdn cdn)
+    {
+        if (!_manifestCaches.TryGetValue(cdn, out var cache))
+        {
+            cache = new CdnManifestCache();
+            _manifestCaches[cdn] = cache;
+        }
+
+        return cache;
+    }
+
+    private sealed class CdnManifestCache
+    {
+        public Dictionary<string, VersionInfo>? Versions;
+        public TimeSpan ValidUntil;
+    }
+
+    private sealed record FoundVersionInfo(string Version, VersionInfo Info, RobustCdn Cdn);
 
     private sealed record VersionInfo(
         bool Insecure,

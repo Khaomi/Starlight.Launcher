@@ -1,4 +1,5 @@
 ﻿using Robust.Launcher.Api.Utility;
+using System.Collections.Immutable;
 
 namespace Starlight.Launcher.Models.Settings;
 
@@ -30,13 +31,23 @@ public partial record AppSettings
     public string DirModuleInstallations => Path.Combine(DirLauncherData, "modules");
 
     // TODO: Redone to configurable option.
-    private static readonly UrlFallbackSet RobustBuildsBaseUrl = new([
-        "https://robust-builds.cdn.spacestation14.com/",
-        "https://robust-builds.fallback.cdn.spacestation14.com/"
-    ]);
+    private static readonly ImmutableArray<RobustCdn> DefaultRobustCdns =
+    [
+        // Primary CDN — checked first.
+        //new RobustCdn("https://robust-builds.cdn.spacestation14.com/"),
 
-    public UrlFallbackSet RobustBuildsManifest => RobustBuildsBaseUrl + "manifest.json";
-    public UrlFallbackSet RobustModulesManifest => RobustBuildsBaseUrl + "modules.json";
+        // Secondary CDN with its own availability fallback (mirror).
+        // Checked only if the requested version is missing from the primary CDN's manifest.
+        new RobustCdn(
+            "https://robust-builds.cdn.spacestation14.com/",
+            "https://robust-builds.fallback.cdn.spacestation14.com/"),
+];
+
+    /// <summary>
+    /// Robust build CDNs in priority order. Each entry is one CDN; a CDN may list multiple
+    /// mirror URLs treated as interchangeable for availability fallback.
+    /// </summary>
+    public ImmutableArray<RobustCdn> RobustCdns => DefaultRobustCdns;
 
     #endregion
 
