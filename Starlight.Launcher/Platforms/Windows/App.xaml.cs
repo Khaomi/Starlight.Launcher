@@ -27,6 +27,7 @@ public partial class App : MauiWinUIApplication
     public App()
     {
         InitializeComponent();
+        RegisterProtocol();
 
         Microsoft.Maui.Handlers.WindowHandler.Mapper.AppendToMapping(nameof(IWindow), (handler, view) =>
         {
@@ -67,6 +68,23 @@ public partial class App : MauiWinUIApplication
         });
     }
 
+    private static void RegisterProtocol()
+    {
+        try
+        {
+            var exe = Environment.ProcessPath!;
+            ActivationRegistrationManager.RegisterForProtocolActivation(
+                scheme: "starlight",
+                logo: $"{exe},0",
+                displayName: "Starlight Protocol",
+                exePath: exe);
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Failed to register starlight protocol");
+        }
+    }
+
     protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
         var instance = AppInstance.FindOrRegisterForKey("starlight-main");
@@ -92,7 +110,6 @@ public partial class App : MauiWinUIApplication
 
     private static void HandleProtocol(AppActivationArguments? e)
     {
-        Log.Information("Activation kind: {kind}", e?.Kind);
         if (e?.Kind == ExtendedActivationKind.Protocol && e.Data is IProtocolActivatedEventArgs p)
         {
             Log.Information("Protocol uri: {uri}", p.Uri);
@@ -100,17 +117,27 @@ public partial class App : MauiWinUIApplication
                 .GetRequiredService<DiscordAuthService>()
                 .HandleDeepLink(p.Uri);
         }
-        else if (e?.Kind == ExtendedActivationKind.Launch && e.Data is ILaunchActivatedEventArgs l)
+        else if (e?.Kind == ExtendedActivationKind.Launch)
         {
-            var arg = l.Arguments?.Trim().Trim('"');
-            if (Uri.TryCreate(arg, UriKind.Absolute, out var uri) &&
-                uri.Scheme.Equals("starlight", StringComparison.OrdinalIgnoreCase))
-            {
+            Log.Information("Launch data type: {t}", e.Data?.GetType().FullName);
+            var raw = (e.Data as ILaunchActivatedEventArgs)?.Arguments;
+            Log.Information("Launch args: {raw}", raw);
+
+            var uri = ExtractStarlightUri(raw);
+            if (uri is not null)
                 IPlatformApplication.Current!.Services
                     .GetRequiredService<DiscordAuthService>()
                     .HandleDeepLink(uri);
-            }
         }
+    }
+
+    private static Uri? ExtractStarlightUri(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var idx = raw.IndexOf("starlight://", StringComparison.OrdinalIgnoreCase);
+        if (idx < 0) return null;
+        var part = raw[idx..].Trim().Trim('"');
+        return Uri.TryCreate(part, UriKind.Absolute, out var u) ? u : null;
     }
 
     protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
