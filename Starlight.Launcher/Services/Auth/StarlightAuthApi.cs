@@ -32,6 +32,12 @@ public sealed class StarlightAuthApi(HttpClient http, SettingsService settings)
     {
         var resp = await http.GetAsync(new Uri(apiUrl, $"api/discord-auth/validate?token={Uri.EscapeDataString(discordToken)}"));
 
+        if (!resp.IsSuccessStatusCode)
+        {
+            var body = await resp.Content.ReadAsStringAsync();
+            throw new DiscordAuthException($"validate failed: {(int)resp.StatusCode} {body}");
+        }
+
         return resp.IsSuccessStatusCode;
     }
 

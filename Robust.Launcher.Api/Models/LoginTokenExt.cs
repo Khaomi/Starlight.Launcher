@@ -11,6 +11,6 @@ public static class LoginTokenExt
 
     public static bool ShouldRefresh(this LoginToken token)
     {
-        return token.ExpireTime <= DateTimeOffset.UtcNow + TimeSpan.FromDays(7);
+        return token.ExpireTime <= DateTimeOffset.UtcNow + TimeSpan.FromDays(1);
     }
 }

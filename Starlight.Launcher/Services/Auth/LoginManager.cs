@@ -189,20 +189,20 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
         {
             if (l.Status == AccountLoginStatus.Expired)
             {
-                Log.Debug("Token for {login} is already expired", l.LoginInfo);
+                Log.Warning("Token for {login} is already expired", l.LoginInfo);
                 return;
             }
 
             if (l.LoginInfo.Token == null && l.LoginInfo.DiscordToken == null)
             {
-                Log.Debug("Token for {login} doesn't have any access tokens", l.LoginInfo);
+                Log.Warning("Token for {login} doesn't have any access tokens", l.LoginInfo);
                 l.SetStatus(AccountLoginStatus.Expired);
                 return;
             }
 
             if (l.LoginInfo.Token != null && l.LoginInfo.Token.IsTimeExpired())
             {
-                Log.Debug("Token for {login} expired due to time", l.LoginInfo);
+                Log.Warning("Token for {login} expired due to time", l.LoginInfo);
                 l.SetStatus(AccountLoginStatus.Expired);
                 return;
             }
@@ -210,7 +210,7 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
             if (l.LoginInfo.DiscordToken != null && l.LoginInfo.DiscordToken.IsTimeExpired()
                 && string.IsNullOrEmpty(l.LoginInfo.DiscordRefreshToken))
             {
-                Log.Debug("Discord token for {login} expired and no refresh token", l.LoginInfo);
+                Log.Warning("Discord token for {login} expired and no refresh token", l.LoginInfo);
                 l.SetStatus(AccountLoginStatus.Expired);
                 return;
             }
@@ -224,11 +224,18 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
             }
             catch (AuthApiException e)
             {
-                Log.Warning(e, "AuthApiException while trying to refresh token for {login}", l.LoginInfo);
+                Log.Warning(e, "AuthApiException refreshing {login}", l.LoginInfo);
             }
+            catch (Exception e)
+            {
+                Log.Warning(e, "Unexpected error refreshing {login}", l.LoginInfo);
+            }
+
+            Log.Information("Status for {login} after refresh: {status}", l.LoginInfo, l.Status);
         }));
 
         PersistLogins();
+        LoginsChanged?.Invoke();
     }
 
     public void AddFreshLogin(LoginInfo info)
