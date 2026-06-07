@@ -11,6 +11,12 @@
             <span>@Localization["main-layout-servers-tab"]</span>
         </div>
     </NavLink>
+    <NavLink href="/hub" Match="NavLinkMatch.All" class="bottom-nav-item" ActiveClass="active">
+        <div class="nav-inner">
+            <MudIcon Icon="@Icons.Material.Filled.Link" Color="@(IsActive("/hub", NavLinkMatch.All) ? Color.Primary : Color.Default)" Size="Size.Medium" />
+            <span>@Localization["main-layout-servers-hub"]</span>
+        </div>
+    </NavLink>
     <NavLink href="/settings" Match="NavLinkMatch.Prefix" class="bottom-nav-item" ActiveClass="active">
         <div class="nav-inner">
             <MudIcon Icon="@Icons.Material.Filled.Settings" Color="@(IsActive("/settings", NavLinkMatch.All) ? Color.Primary : Color.Default)" Size="Size.Medium" />
