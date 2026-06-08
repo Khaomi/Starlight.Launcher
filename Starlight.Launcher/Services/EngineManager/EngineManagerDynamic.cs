@@ -1,12 +1,14 @@
+using System.IO.MemoryMappedFiles;
+using System.Text;
+using System.Text.RegularExpressions;
 using Dapper;
 using Microsoft.Data.Sqlite;
 using NSec.Cryptography;
+using Robust.Launcher.Api.Models;
+using Robust.Launcher.Api.Models.Data;
 using Robust.Launcher.Api.Utility;
 using Serilog;
-using Robust.Launcher.Api.Models.Data;
-using System.IO.MemoryMappedFiles;
-using System.Text.RegularExpressions;
-using Robust.Launcher.Api.Models;
+using Starlight.Launcher.Models.Settings;
 using Starlight.Launcher.Services.Settings;
 
 namespace Starlight.Launcher.Services.EngineManager;
@@ -83,10 +85,7 @@ public sealed partial class EngineManagerDynamic : IEngineManager
         }
 #endif
 
-        var foundVersion = await GetVersionInfo(engineVersion, cancel: cancel);
-        if (foundVersion == null)
-            throw new UpdateException("Unable to find engine version in manifest!");
-
+        var foundVersion = await GetVersionInfo(engineVersion, cancel: cancel) ?? throw new UpdateException("Unable to find engine version in manifest!");
         if (foundVersion.Info.Insecure)
             throw new UpdateException("Specified engine version is insecure!");
 
@@ -103,12 +102,7 @@ public sealed partial class EngineManagerDynamic : IEngineManager
 
         Log.Information("Installing engine version {version}...", foundVersion.Version);
 
-        var bestRid = RidUtility.FindBestRid(foundVersion.Info.Platforms.Keys);
-        if (bestRid == null)
-        {
-            throw new NoEngineForPlatformException("No engine version available for our platform!");
-        }
-
+        var bestRid = RidUtility.FindBestRid(foundVersion.Info.Platforms.Keys) ?? throw new NoEngineForPlatformException("No engine version available for our platform!");
         Log.Debug("Selecting RID {rid}", bestRid);
 
         var buildInfo = foundVersion.Info.Platforms[bestRid];
@@ -135,6 +129,61 @@ public sealed partial class EngineManagerDynamic : IEngineManager
 
         _settings.AddInstalledEngine(new InstalledEngineVersion(foundVersion.Version, buildInfo.Signature));
         return new EngineInstallationResult(foundVersion.Version, true);
+    }
+
+    /// <summary>
+    /// Verify a downloaded file against a signature using the public key of any
+    /// configured CDN. Content is trusted if it is validly signed by ANY trusted
+    /// CDN key — every CDN in the config is equally trusted, and a manifest's
+    /// absolute download URL doesn't tell us which CDN it resolved to.
+    /// </summary>
+    private bool VerifyAgainstAnyCdn(FileStream stream, string signature)
+    {
+        foreach (var cdn in AppSettings.RobustCdns)
+        {
+            stream.Seek(0, SeekOrigin.Begin);
+            if (VerifySignature(stream, signature, cdn.PublicKey))
+                return true;
+        }
+
+        return false;
+    }
+
+    private unsafe bool VerifySignature(FileStream stream, string signature, string publicKeyPem)
+    {
+        if (stream.Length > int.MaxValue)
+            throw new InvalidOperationException("Unable to handle files larger than 2 GiB");
+
+        // Use memory-mapped file here so we don't have to read the whole thing in at once.
+        using var memoryMapped = MemoryMappedFile.CreateFromFile(
+            stream,
+            null,
+            0,
+            MemoryMappedFileAccess.Read,
+            HandleInheritability.None,
+            leaveOpen: true);
+
+        using var accessor = memoryMapped.CreateViewAccessor(0, stream.Length, MemoryMappedFileAccess.Read);
+        byte* ptr = null;
+        accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
+
+        try
+        {
+            var span = new ReadOnlySpan<byte>(ptr, (int)stream.Length);
+
+            var pubKey = PublicKey.Import(
+                SignatureAlgorithm.Ed25519,
+                Encoding.UTF8.GetBytes(publicKeyPem),
+                KeyBlobFormat.PkixPublicKeyText);
+
+            var sigBytes = Convert.FromHexString(signature);
+
+            return SignatureAlgorithm.Ed25519.Verify(pubKey, span, sigBytes);
+        }
+        finally
+        {
+            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
+        }
     }
 
     public async Task<bool> DownloadModuleIfNecessary(
@@ -177,10 +226,7 @@ public sealed partial class EngineManagerDynamic : IEngineManager
 
         Log.Information("Installing {ModuleName} {ModuleVersion}", moduleName, moduleVersion);
 
-        var bestRid = RidUtility.FindBestRid(versionData.Platforms.Keys);
-        if (bestRid == null)
-            throw new NoModuleForPlatformException("No module version available for our platform!");
-
+        var bestRid = RidUtility.FindBestRid(versionData.Platforms.Keys) ?? throw new NoModuleForPlatformException("No module version available for our platform!");
         Log.Debug("Selecting RID {Rid}", bestRid);
 
         var platformData = versionData.Platforms[bestRid];
@@ -204,7 +250,7 @@ public sealed partial class EngineManagerDynamic : IEngineManager
             // Verify signature.
             tempFile.Seek(0, SeekOrigin.Begin);
 
-            if (!VerifyModuleSignature(tempFile, platformData.Sig))
+            if (!VerifyAgainstAnyCdn(tempFile, platformData.Sig))
             {
 #if DEBUG
                 if (settings.DisableSigning)
@@ -266,16 +312,13 @@ public sealed partial class EngineManagerDynamic : IEngineManager
         moduleVersionDiskPath = Path.Combine(moduleDiskPath, version);
     }
 
-    private static async Task ClearModuleDir(string modDiskPath, string modVersionDiskPath)
-    {
-        await Task.Run(() =>
-        {
-            // Avoid disk IO hang.
-            Helpers.EnsureDirectoryExists(modDiskPath);
-            Helpers.EnsureDirectoryExists(modVersionDiskPath);
-            Helpers.ClearDirectory(modVersionDiskPath);
-        }, CancellationToken.None);
-    }
+    private static async Task ClearModuleDir(string modDiskPath, string modVersionDiskPath) => await Task.Run(() =>
+                                                                                                    {
+                                                                                                        // Avoid disk IO hang.
+                                                                                                        Helpers.EnsureDirectoryExists(modDiskPath);
+                                                                                                        Helpers.EnsureDirectoryExists(modVersionDiskPath);
+                                                                                                        Helpers.ClearDirectory(modVersionDiskPath);
+                                                                                                    }, CancellationToken.None);
 
     private static void ExtractModule(string moduleName, string moduleVersionDiskPath, FileStream tempFile)
     {
@@ -293,48 +336,62 @@ public sealed partial class EngineManagerDynamic : IEngineManager
         }
     }
 
-    private unsafe bool VerifyModuleSignature(FileStream stream, string signature)
+    /// <summary>
+    /// Resolve the public key the loader should use to verify the given engine
+    /// version. Picks the CDN key that actually validates the installed engine zip,
+    /// writes it out, and returns the path for the loader to read.
+    /// </summary>
+    public string GetEnginePublicKeyPath(string engineVersion)
     {
-        if (stream.Length > int.MaxValue)
-            throw new InvalidOperationException("Unable to handle files larger than 2 GiB");
+        var cdns = AppSettings.RobustCdns;
+        var settings = _settings.GetSettings();
 
-        // Use memory-mapped file here so we don't have to read the whole thing in at once.
-        using var memoryMapped = MemoryMappedFile.CreateFromFile(
-            stream,
-            null,
-            0,
-            MemoryMappedFileAccess.Read,
-            HandleInheritability.None,
-            leaveOpen: true);
-
-        using var accessor = memoryMapped.CreateViewAccessor(0, stream.Length, MemoryMappedFileAccess.Read);
-        byte* ptr = null;
-        accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
-
-        try
+#if DEVELOPMENT
+        if (settings.EngineOverrideEnabled)
         {
-            var span = new ReadOnlySpan<byte>(ptr, (int)stream.Length);
-
-            var pubKey = PublicKey.Import(
-                SignatureAlgorithm.Ed25519,
-                File.ReadAllBytes(_settings.GetSettings().PathPublicKey),
-                KeyBlobFormat.PkixPublicKeyText);
-
-            var sigBytes = Convert.FromHexString(signature);
-
-            return SignatureAlgorithm.Ed25519.Verify(pubKey, span, sigBytes);
+            // Override builds aren't signed; loader runs with signing disabled and ignores the key.
+            return WriteLoaderKey(cdns[0].PublicKey);
         }
-        finally
+#endif
+
+        var signature = GetEngineSignature(engineVersion);
+        var enginePath = GetEnginePath(engineVersion);
+
+        using var stream = File.OpenRead(enginePath);
+
+        foreach (var cdn in cdns)
         {
-            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
+            stream.Seek(0, SeekOrigin.Begin);
+            if (VerifySignature(stream, signature, cdn.PublicKey))
+                return WriteLoaderKey(cdn.PublicKey);
         }
+
+#if DEBUG
+        if (settings.DisableSigning)
+        {
+            Log.Warning(
+                "No configured CDN key validated engine {Version}, but signing is disabled; passing first CDN key.",
+                engineVersion);
+            return WriteLoaderKey(cdns[0].PublicKey);
+        }
+#endif
+
+        throw new UpdateException($"No configured CDN public key validates installed engine {engineVersion}!");
+    }
+
+    private string WriteLoaderKey(string publicKeyPem)
+    {
+        var settings = _settings.GetSettings();
+        Helpers.EnsureDirectoryExists(settings.DirLauncherData);
+        File.WriteAllText(settings.PathLoaderSigningKey, publicKeyPem);
+        return settings.PathLoaderSigningKey;
     }
 
     public async Task<EngineModuleManifest> GetEngineModuleManifest(CancellationToken cancel = default)
     {
         Exception? lastError = null;
 
-        foreach (var cdn in _settings.GetSettings().RobustCdns)
+        foreach (var cdn in AppSettings.RobustCdns)
         {
             try
             {
@@ -448,10 +505,7 @@ public sealed partial class EngineManagerDynamic : IEngineManager
             foundRids.Add(match.Groups[1].Value);
         }
 
-        var rid = RidUtility.FindBestRid(foundRids);
-        if (rid == null)
-            throw new UpdateException($"Unable to find overriden {name} for current platform");
-
+        var rid = RidUtility.FindBestRid(foundRids) ?? throw new UpdateException($"Unable to find overriden {name} for current platform");
         var path = Path.Combine(dir, $"{name}_{rid}.zip");
         Log.Warning("Using override for {Name}: {Path}", name, path);
         return path;

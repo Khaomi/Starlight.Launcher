@@ -88,11 +88,6 @@
 		<Content Include="Resources\AppIcon\icon.ico">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
-		
-		<None Remove="signing_key" />
-		<Content Include="signing_key">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
 	</ItemGroup>
 
 	<ItemGroup>

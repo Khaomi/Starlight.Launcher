@@ -1,5 +1,6 @@
 using Serilog;
 using Starlight.Launcher.Models;
+using Starlight.Launcher.Models.Settings;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 
@@ -47,7 +48,7 @@ public sealed partial class EngineManagerDynamic
         bool followRedirects,
         CancellationToken cancel)
     {
-        var cdns = _settings.GetSettings().RobustCdns;
+        var cdns = AppSettings.RobustCdns;
 
         // Pass 1: use already-valid caches, honoring CDN priority.
         foreach (var cdn in cdns)

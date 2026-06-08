@@ -20,9 +20,6 @@ public partial record AppSettings
     // otherwise the loader won't find the version the Updater just wrote.
     public string PathContentDb => Path.Combine(DirLauncherData, "content.db");
 
-    // Public key used to verify engine signatures (loader-side, currently unused / passing disabled below).
-    public string PathPublicKey => Path.Combine(DirLauncherInstall, "signing_key");
-
     // Client log outputs.
     public string PathClientMacLog => Path.Combine(DirLauncherData, "client.mac.log");
     public string PathClientStdoutLog => Path.Combine(DirLauncherData, "client.stdout.log");
@@ -30,9 +27,22 @@ public partial record AppSettings
     public string DirEngineInstallations => Path.Combine(DirLauncherData, "engines");
     public string DirModuleInstallations => Path.Combine(DirLauncherData, "modules");
 
+    public string PathLoaderSigningKey => Path.Combine(DirLauncherData, "loader_signing_key");
+
+    private const string PrimaryCdnPublicKey = "";
+
+    private const string SecondaryCdnPublicKey = """
+        -----BEGIN PUBLIC KEY-----
+        MCowBQYDK2VwAyEApQ9mAhMLbmhQqRH7itgNo75S5rCSMsMXvVRmMv1d9NQ=
+        -----END PUBLIC KEY-----
+        """;
+
+    /// <summary>
+    /// Robust build CDNs in priority order. Each entry is one CDN; a CDN may list multiple
+    /// mirror URLs treated as interchangeable for availability fallback.
+    /// </summary>
     // TODO: Redone to configurable option.
-    private static readonly ImmutableArray<RobustCdn> DefaultRobustCdns =
-    [
+    public static ImmutableArray<RobustCdn> RobustCdns { get; } = [
         // Primary CDN — checked first.
         //new RobustCdn("https://robust-builds.cdn.spacestation14.com/"),
 
@@ -40,20 +50,14 @@ public partial record AppSettings
         // Checked only if the requested version is missing from the primary CDN's manifest.
         new RobustCdn(
             "https://robust-builds.cdn.spacestation14.com/",
-            "https://robust-builds.fallback.cdn.spacestation14.com/"),
-];
-
-    /// <summary>
-    /// Robust build CDNs in priority order. Each entry is one CDN; a CDN may list multiple
-    /// mirror URLs treated as interchangeable for availability fallback.
-    /// </summary>
-    public ImmutableArray<RobustCdn> RobustCdns => DefaultRobustCdns;
+            "https://robust-builds.fallback.cdn.spacestation14.com/") { PublicKey = SecondaryCdnPublicKey },
+    ];
 
     #endregion
 
     #region Auth
 
-    private static readonly List<string> DefaultAuthServerUrls =
+    private static readonly List<string> _defaultAuthServerUrls =
     [
         "https://auth.spacestation14.com/",
         "https://auth.fallback.spacestation14.com/"
@@ -62,7 +66,7 @@ public partial record AppSettings
     /// <summary>
     /// Auth servers in priority order. User-editable, any count.
     /// </summary>
-    public List<string> AuthServerUrls { get; init; } = [.. DefaultAuthServerUrls];
+    public List<string> AuthServerUrls { get; init; } = [.. _defaultAuthServerUrls];
 
     public const string FallbackUsername = "JoeGenero";
 
@@ -71,7 +75,7 @@ public partial record AppSettings
     /// </summary>
     public UrlFallbackSet BuildAuthUrlSet()
     {
-        var urls = AuthServerUrls is { Count: > 0 } list ? list : DefaultAuthServerUrls;
+        var urls = AuthServerUrls is { Count: > 0 } list ? list : _defaultAuthServerUrls;
         return new UrlFallbackSet([.. urls]);
     }
 

@@ -13,6 +13,7 @@ public interface IEngineManager
 {
     string GetEnginePath(string engineVersion);
     string GetEngineSignature(string engineVersion);
+    string GetEnginePublicKeyPath(string engineVersion);
 
     Task<EngineModuleManifest> GetEngineModuleManifest(CancellationToken cancel = default);
 
@@ -46,10 +47,9 @@ public interface IEngineManager
             .Where(kv => engineVersionObj >= kv.Version)
             .MaxBy(kv => kv.Version);
 
-        if (selectedVersion == null)
-            throw new UpdateException("Unable to find suitable module version in manifest!");
-
-        return selectedVersion.Key;
+        return selectedVersion == null
+            ? throw new UpdateException("Unable to find suitable module version in manifest!")
+            : selectedVersion.Key;
     }
 }
 

@@ -33,11 +33,7 @@ public partial class Connector : ObservableObject
     private readonly HttpClient _http;
     private readonly INativeTray _tray;
     private readonly DiscordRichPresence _presence;
-
-    private bool _clientExitedBadly;
     private TaskCompletionSource<PrivacyPolicyAcceptResult>? _acceptPrivacyPolicyTcs;
-    private ServerPrivacyPolicyInfo? _serverPrivacyPolicyInfo;
-    private bool _privacyPolicyDifferentVersion;
 
     public Connector(Updater updater, IEngineManager engineManager, HttpClient http, LoginManager login, SettingsService settings, INativeTray tray, DiscordRichPresence presence)
     {
@@ -50,28 +46,25 @@ public partial class Connector : ObservableObject
         _presence = presence;
     }
 
-    private ConnectionStatus _status = ConnectionStatus.None;
     public ConnectionStatus Status
     {
-        get => _status;
-        private set => SetProperty(ref _status, value);
-    }
-
+        get;
+        private set => SetProperty(ref field, value);
+    } = ConnectionStatus.None;
 
     public bool ClientExitedBadly
     {
-        get => _clientExitedBadly;
-        private set => SetProperty(ref _clientExitedBadly, value);
+        get;
+        private set => SetProperty(ref field, value);
     }
 
-    public ServerPrivacyPolicyInfo? PrivacyPolicyInfo => _serverPrivacyPolicyInfo;
+    public ServerPrivacyPolicyInfo? PrivacyPolicyInfo { get; private set; }
 
     public bool PrivacyPolicyDifferentVersion
     {
-        get => _privacyPolicyDifferentVersion;
-        private set => SetProperty(ref _privacyPolicyDifferentVersion, value);
+        get;
+        private set => SetProperty(ref field, value);
     }
-
 
     public async void Connect(string address, CancellationToken cancel = default)
     {
@@ -173,7 +166,7 @@ public partial class Connector : ObservableObject
 
         // Ask user for privacy policy acceptance by waiting here.
         Log.Debug("Prompting user for privacy policy acceptance: {Identifer} version {Version}", identifier, version);
-        _serverPrivacyPolicyInfo = info.PrivacyPolicy;
+        PrivacyPolicyInfo = info.PrivacyPolicy;
         _acceptPrivacyPolicyTcs = new TaskCompletionSource<PrivacyPolicyAcceptResult>();
 
         Status = ConnectionStatus.AwaitingPrivacyPolicyAcceptance;
@@ -207,7 +200,7 @@ public partial class Connector : ObservableObject
 
     private void Cleanup()
     {
-        _serverPrivacyPolicyInfo = null;
+        PrivacyPolicyInfo = null;
         _acceptPrivacyPolicyTcs = null;
         PrivacyPolicyDifferentVersion = default;
     }
@@ -215,7 +208,6 @@ public partial class Connector : ObservableObject
     private async Task LaunchContentBundleInternal(FileResult file, CancellationToken cancel)
     {
         Status = ConnectionStatus.Updating;
-
 
         ContentLaunchInfo installation;
         await using (var zipStream = await file.OpenReadAsync())
@@ -322,11 +314,15 @@ public partial class Connector : ObservableObject
             if (!clientProc.HasExited)
             {
                 Status = ConnectionStatus.ClientRunning;
-                await waitClient;
+
                 var settings = _settings.GetSettings();
                 if (settings.CollapseInTrayAfterRun)
-                    _tray.HideWindow(); // If run successfully, hide the window to tray if the setting is enabled.
+                    _tray.HideWindow();
+
                 _presence.UpdatePresence(PresenceState.Idle);
+
+                await waitClient;
+
                 return;
             }
 
@@ -463,12 +459,7 @@ public partial class Connector : ObservableObject
     private async Task<ContentLaunchInfo> RunUpdateAsync(ServerBuildInformation info, CancellationToken cancel)
     {
         var installation = await _updater.RunUpdateForLaunchAsync(info, cancel);
-        if (installation == null)
-        {
-            throw new ConnectException(ConnectionStatus.UpdateError);
-        }
-
-        return installation;
+        return installation ?? throw new ConnectException(ConnectionStatus.UpdateError);
     }
 
     private async Task<ContentLaunchInfo> InstallContentBundleAsync(
@@ -478,12 +469,7 @@ public partial class Connector : ObservableObject
         CancellationToken cancel)
     {
         var installation = await _updater.InstallContentBundleForLaunchAsync(archive, zipHash, metadata, cancel);
-        if (installation == null)
-        {
-            throw new ConnectException(ConnectionStatus.UpdateError);
-        }
-
-        return installation;
+        return installation ?? throw new ConnectException(ConnectionStatus.UpdateError);
     }
 
     private async Task<(ServerInfo, Uri, Uri)> GetServerInfoAsync(string address, CancellationToken cancel)
@@ -543,10 +529,10 @@ public partial class Connector : ObservableObject
         List<(string, string)> env)
     {
         var settings = _settings.GetSettings();
-        var pubKey = settings.PathPublicKey;
         var engineVersion = launchInfo.ModuleInfo.Single(x => x.Module == "Robust").Version;
         var binPath = _engineManager.GetEnginePath(engineVersion);
         var sig = _engineManager.GetEngineSignature(engineVersion);
+        var pubKey = _engineManager.GetEnginePublicKeyPath(engineVersion);
 
         var startInfo = await GetLoaderStartInfo();
 
@@ -597,7 +583,7 @@ public partial class Connector : ObservableObject
         if (launchInfo.ServerGC)
             EnvVar("DOTNET_gcServer", "1");
 
-        ConfigureMultiWindow(launchInfo, startInfo);
+        //ConfigureMultiWindow(launchInfo, startInfo); Needs to be implemented
 
         // DON'T ENABLE THIS THE LOADER USES THE LAUNCHER .NET VERSION ALWAYS SO ROLLFORWARD SHOULDN'T BE SPECIFIED.
         // DON'T KEEP FORGETTING THAT ABOVE LINE LIKE I DID.
@@ -656,10 +642,12 @@ public partial class Connector : ObservableObject
         }
     }
 
+    /*
     private static void ConfigureMultiWindow(ContentLaunchInfo launchInfo, ProcessStartInfo startInfo)
     {
         // Implemented in private repo for Steam.
     }
+    */
 
     private static async void PipeOutput(Process process, Stream targetStdout, Stream targetStderr)
     {
@@ -716,12 +704,12 @@ public partial class Connector : ObservableObject
         string basePath;
 
 #if FULL_RELEASE
-            const bool release = true;
+        const bool Release = true;
 #else
-        const bool release = false;
+        const bool Release = false;
 #endif
 
-        if (release)
+        if (Release)
         {
             basePath = settings.DirLauncherInstall;
             if (OperatingSystem.IsMacOS())
@@ -732,14 +720,14 @@ public partial class Connector : ObservableObject
         else
         {
 #if RELEASE
-            const string buildConfiguration = "Release";
+            const string BuildConfiguration = "Release";
 #else
-            const string buildConfiguration = "Debug";
+            const string BuildConfiguration = "Debug";
 #endif
             basePath = Path.GetFullPath(Path.Combine(
                 settings.DirLauncherInstall,
                 "..", "..", "..", "..", "..",
-                "Robust.Loader", "bin", buildConfiguration, "net10.0"));
+                "Robust.Loader", "bin", BuildConfiguration, "net10.0"));
         }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
@@ -760,7 +748,7 @@ public partial class Connector : ObservableObject
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
-            if (release)
+            if (Release)
             {
                 var appPath = Path.GetFullPath(Path.Combine(basePath, "Space Station 14.app"));
                 Log.Debug("Using app bundle: {appPath}", appPath);
@@ -846,16 +834,10 @@ public partial class Connector : ObservableObject
     {
         public ConnectionStatus Status { get; }
 
-        public ConnectException(ConnectionStatus status)
-        {
-            Status = status;
-        }
+        public ConnectException(ConnectionStatus status) => Status = status;
 
         public ConnectException(ConnectionStatus status, Exception inner)
-            : base($"Failed to connect: {status}", inner)
-        {
-            Status = status;
-        }
+            : base($"Failed to connect: {status}", inner) => Status = status;
     }
 }
 
