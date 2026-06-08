@@ -8,7 +8,7 @@
     </DialogContent>
     <DialogActions>
         <MudButton onclick="Cancel" Color="Color.Secondary">Cancel</MudButton>
-        <MudButton OnClick="Close" Color="Color.Primary">OK</MudButton>
+        <MudButton OnClick="Success" Color="Color.Primary">OK</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -16,8 +16,13 @@
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
 
     public event Action? OnCancel;
+    public event Action? OnSuccess;
 
-    private void Close() => MudDialog.Close();
+    private void Success()
+    {
+        OnSuccess?.Invoke();
+        MudDialog.Close();
+    }
 
     private void Cancel()
     {

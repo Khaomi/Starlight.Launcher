@@ -142,6 +142,12 @@ public partial record AppSettings
     #endregion
 
     #region Privacy policies
+
+    /// <summary>
+    /// Determines if user accepted policy when entering development tab. 
+    /// </summary>
+    public bool DevPolicyAccepted { get; set; } = false;
+
     /// <summary>
     ///Privacy policies accepted by the user, the key is the policy identifier.
     /// </summary>

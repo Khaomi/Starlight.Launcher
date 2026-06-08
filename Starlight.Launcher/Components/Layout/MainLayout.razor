@@ -7,29 +7,29 @@
 
 <MudLayout>
     <MudAppBar Elevation="1">
-        @if (_navigation == ElementPosition.Bottom || _isSmallScreen)
+        @if (_elementPosition == ElementPosition.Bottom || _isSmallScreen)
         {
             <MudText Typo="Typo.h5" Class="ml-3">STARLIGHT</MudText>
             <MudSpacer />
             <MudIconButton />
-            <MudTooltip Text="@Localization["main-layout-auth-tab"]">
+            <MudTooltip Text="@_localization["main-layout-auth-tab"]">
                 <MudIconButton Href="/auth" Icon="@Icons.Material.Filled.People" Size="Size.Medium" />
             </MudTooltip>
         }
-        else if (_navigation == ElementPosition.Top)
+        else if (_elementPosition == ElementPosition.Top)
         {
             <HorizontalNavBar />
         }
     </MudAppBar>
 
-    @if ((_navigation == ElementPosition.Left || _navigation == ElementPosition.Right) && !_isSmallScreen)
+    @if ((_elementPosition == ElementPosition.Left || _elementPosition == ElementPosition.Right) && !_isSmallScreen)
     {
-        <MudDrawer Anchor="_navigation == ElementPosition.Left ? Anchor.Left : Anchor.Right" Elevation="1" ClipMode="DrawerClipMode.Never" Open="true" Variant="@DrawerVariant.Responsive">
+        <MudDrawer Anchor="_elementPosition == ElementPosition.Left ? Anchor.Left : Anchor.Right" Elevation="1" ClipMode="DrawerClipMode.Never" Open="true" Variant="@DrawerVariant.Responsive">
             <VerticalNavBar />
         </MudDrawer>
     }
 
-    <MudMainContent Class="@(_navigation is ElementPosition.Bottom or ElementPosition.Top || _isSmallScreen ? "has-bottom-nav" : "")">
+    <MudMainContent Class="@(_elementPosition is ElementPosition.Bottom or ElementPosition.Top || _isSmallScreen ? "has-bottom-nav" : "")">
         <ErrorBoundary @ref="_errorBoundary">
             <ChildContent>
                 @Body
@@ -42,18 +42,18 @@
         </ErrorBoundary>
     </MudMainContent>
 
-    @if (_navigation is ElementPosition.Bottom or ElementPosition.Top || _isSmallScreen)
+    @if (_elementPosition is ElementPosition.Bottom or ElementPosition.Top || _isSmallScreen)
     {
         <MudAppBar Bottom="true" Elevation="3">
-            @if (_navigation == ElementPosition.Top)
+            @if (_elementPosition == ElementPosition.Top)
             {
-                <MudTooltip Text="@Localization["main-layout-auth-tab"]">
+                <MudTooltip Text="@_localization["main-layout-auth-tab"]">
                     <MudIconButton Href="/auth" Icon="@Icons.Material.Filled.People" Size="Size.Medium" />
                 </MudTooltip>
                 <MudSpacer />
                 <MudText Typo="Typo.h5" Class="mr-3">STARLIGHT</MudText>
             }
-            else if (_navigation == ElementPosition.Bottom)
+            else if (_elementPosition == ElementPosition.Bottom)
             {
                 <HorizontalNavBar />
             }

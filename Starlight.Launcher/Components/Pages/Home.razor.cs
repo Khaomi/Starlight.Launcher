@@ -7,7 +7,6 @@ using Starlight.Launcher.Services;
 using Starlight.Launcher.Services.Localization;
 using Starlight.Launcher.Services.ServerStatus;
 using Starlight.Launcher.Services.Settings;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Starlight.Launcher.Components.Pages;
 
@@ -96,7 +95,7 @@ public partial class Home : ComponentBase, IDisposable
 
     private async Task LoadReplay()
     {
-        var file = await _fileDialog.PickReplayAsync();
+        var file = await _fileDialog.PickFileAsync();
         if (file is null)
             return;
 

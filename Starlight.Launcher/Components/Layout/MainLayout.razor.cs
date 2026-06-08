@@ -17,14 +17,14 @@ namespace Starlight.Launcher.Components.Layout;
 
 public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowserViewportObserver
 {
-    [Inject] private IJSRuntime JS { get; set; } = null!;
-    [Inject] private SettingsService Settings { get; set; } = null!;
-    [Inject] private LocalizationManager Localization { get; set; } = null!;
-    [Inject] private AppState State { get; set; } = null!;
-    [Inject] private IBrowserViewportService BrowserViewportService { get; set; } = null!;
-    [Inject] private INativeTray Tray { get; set; } = null!;
-    [Inject] private NavigationManager Navigation { get; set; } = null!;
-    [Inject] private DiscordRichPresence Presence { get; set; } = null!;
+    [Inject] private IJSRuntime _jS { get; set; } = null!;
+    [Inject] private SettingsService _settings { get; set; } = null!;
+    [Inject] private LocalizationManager _localization { get; set; } = null!;
+    [Inject] private AppState _state { get; set; } = null!;
+    [Inject] private IBrowserViewportService _browserViewportService { get; set; } = null!;
+    [Inject] private INativeTray _tray { get; set; } = null!;
+    [Inject] private NavigationManager _navigation { get; set; } = null!;
+    [Inject] private DiscordRichPresence _presence { get; set; } = null!;
 
     Guid IBrowserViewportObserver.Id { get; } = Guid.NewGuid();
 
@@ -47,23 +47,20 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowse
     };
 
     private ErrorBoundary? _errorBoundary;
-    private ElementPosition _navigation;
+    private ElementPosition _elementPosition;
 
-    protected override void OnParametersSet()
-    {
-        _errorBoundary?.Recover();
-    }
+    protected override void OnParametersSet() => _errorBoundary?.Recover();
 
     protected override async Task OnInitializedAsync()
     {
-        var settings = await Settings.GetSettingsAsync();
+        var settings = await _settings.GetSettingsAsync();
         await ApplyThemeAsync();
-        _navigation = settings.Navigation;
-        State.OnChange += AppCalledRepaint;
-        Navigation.LocationChanged += OnLocationChanged;
+        _elementPosition = settings.Navigation;
+        _state.OnChange += AppCalledRepaint;
+        _navigation.LocationChanged += OnLocationChanged;
 
         if (settings.CollapseInTrayOnStart)
-            Tray.HideWindow(); // If layout is initialized - window exists, so we can hide it right away if the user wants that.
+            _tray.HideWindow(); // If layout is initialized - window exists, so we can hide it right away if the user wants that.
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
@@ -72,49 +69,46 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowse
         switch (uri.AbsolutePath)
         {
             case "/servers":
-                Presence.UpdatePresence(PresenceState.SearchingServers);
+                _presence.UpdatePresence(PresenceState.SearchingServers);
                 break;
             case "/settings":
-                Presence.UpdatePresence(PresenceState.SettingUp);
+                _presence.UpdatePresence(PresenceState.SettingUp);
                 break;
             default:
-                Presence.UpdatePresence(PresenceState.Idle);
+                _presence.UpdatePresence(PresenceState.Idle);
                 break;
         }
     }
 
-
     private async Task ApplyThemeAsync()
     {
-        var settings = await Settings.GetSettingsAsync();
-        var prefersDark = await JS.InvokeAsync<bool>("appTheme.prefersDark");
+        var settings = await _settings.GetSettingsAsync();
+        var prefersDark = await _jS.InvokeAsync<bool>("appTheme.prefersDark");
         var themeName = ToDataTheme(settings.Theme, prefersDark);
-        await JS.InvokeVoidAsync("appTheme.set", themeName);
+        await _jS.InvokeVoidAsync("appTheme.set", themeName);
     }
 
-    private void AppCalledRepaint()
-    {
-        _ = InvokeAsync(async () =>
-        {
-            var settings = await Settings.GetSettingsAsync();
-            await ApplyThemeAsync();
-            _navigation = settings.Navigation;
-            StateHasChanged();
-        });
-    }
+    private void AppCalledRepaint() => _ = InvokeAsync((async () =>
+                                            {
+                                                var settings = await _settings.GetSettingsAsync();
+                                                await ApplyThemeAsync();
+                                                _elementPosition = settings.Navigation;
+                                                StateHasChanged();
+                                            }));
 
     public async ValueTask DisposeAsync()
     {
-        await BrowserViewportService.UnsubscribeAsync(this);
-        State.OnChange -= AppCalledRepaint;
-        Navigation.LocationChanged -= OnLocationChanged;
+        GC.SuppressFinalize(this);
+        await _browserViewportService.UnsubscribeAsync(this);
+        _state.OnChange -= AppCalledRepaint;
+        _navigation.LocationChanged -= OnLocationChanged;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            await BrowserViewportService.SubscribeAsync(this, fireImmediately: true);
+            await _browserViewportService.SubscribeAsync(this, fireImmediately: true);
         }
 
         await base.OnAfterRenderAsync(firstRender);

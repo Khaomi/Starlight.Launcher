@@ -1,32 +1,43 @@
 using Foundation;
 using UIKit;
 using UniformTypeIdentifiers;
-using Robust.Launcher.Api.Models.Data;
 
 namespace Starlight.Launcher.Services;
 
 public sealed class MacFileDialogService : IFileDialogService
 {
-    public Task<FileResult?> PickReplayAsync(CancellationToken cancel = default)
+    public Task<FileResult?> PickFileAsync(string filter, CancellationToken cancel = default)
+        => PickAsync(BuildFileTypes(), asCopy: true, cancel);
+
+    public Task<FileResult?> PickFolderAsync(CancellationToken cancel = default)
+        => PickAsync(new[] { UTTypes.Folder }, asCopy: false, cancel);
+
+    private static Task<FileResult?> PickAsync(UTType[] types, bool asCopy, CancellationToken cancel)
     {
         var tcs = new TaskCompletionSource<FileResult?>();
 
         UIApplication.SharedApplication.InvokeOnMainThread(() =>
         {
-            try
-            {
-                ShowPicker(tcs, cancel);
-            }
-            catch (Exception ex)
-            {
-                tcs.TrySetException(ex);
-            }
+            try { ShowPicker(tcs, types, asCopy, cancel); }
+            catch (Exception ex) { tcs.TrySetException(ex); }
         });
 
         return tcs.Task;
     }
 
-    private static void ShowPicker(TaskCompletionSource<FileResult?> tcs, CancellationToken cancel)
+    private static UTType[] BuildFileTypes()
+    {
+        var types = new List<UTType> { UTTypes.Zip };
+        if (UTType.CreateFromExtension("rt") is { } rt)
+            types.Add(rt);
+        return types.ToArray();
+    }
+
+    private static void ShowPicker(
+        TaskCompletionSource<FileResult?> tcs,
+        UTType[] types,
+        bool asCopy,
+        CancellationToken cancel)
     {
         var presenter = GetTopViewController();
         if (presenter is null)
@@ -35,17 +46,13 @@ public sealed class MacFileDialogService : IFileDialogService
             return;
         }
 
-        var types = new List<UTType> { UTTypes.Zip };
-        if (UTType.CreateFromExtension("rt") is { } rt)
-            types.Add(rt);
-
-        var picker = new UIDocumentPickerViewController(types.ToArray(), asCopy: true)
+        var picker = new UIDocumentPickerViewController(types, asCopy: asCopy)
         {
             AllowsMultipleSelection = false,
             ShouldShowFileExtensions = true,
         };
 
-        var del = new PickerDelegate(tcs);
+        var del = new PickerDelegate(tcs, scoped: !asCopy);
         picker.Delegate = del;
 
         var reg = cancel.Register(() => UIApplication.SharedApplication.InvokeOnMainThread(() =>
@@ -81,15 +88,26 @@ public sealed class MacFileDialogService : IFileDialogService
     private sealed class PickerDelegate : UIDocumentPickerDelegate
     {
         private readonly TaskCompletionSource<FileResult?> _tcs;
+        private readonly bool _scoped;
 
-        public PickerDelegate(TaskCompletionSource<FileResult?> tcs) => _tcs = tcs;
+        public PickerDelegate(TaskCompletionSource<FileResult?> tcs, bool scoped)
+        {
+            _tcs = tcs;
+            _scoped = scoped;
+        }
 
         public override void DidPickDocument(UIDocumentPickerViewController controller, NSUrl[] urls)
         {
-            if (urls.FirstOrDefault()?.Path is not { Length: > 0 } path)
+            if (urls.FirstOrDefault() is not { } url || url.Path is not { Length: > 0 } path)
             {
                 _tcs.TrySetResult(null);
                 return;
+            }
+
+            if (_scoped)
+            {
+                url.StartAccessingSecurityScopedResource();
+                url.StopAccessingSecurityScopedResource();
             }
 
             _tcs.TrySetResult(new FileResult(path));

@@ -2,6 +2,7 @@
 using MudBlazor;
 using Starlight.Launcher.Components.Atoms.Settings;
 using Starlight.Launcher.Models.Settings;
+using Starlight.Launcher.Services;
 using Starlight.Launcher.Services.Localization;
 using Starlight.Launcher.Services.Settings;
 using Starlight.Launcher.Services.State;
@@ -11,25 +12,27 @@ namespace Starlight.Launcher.Components.Pages;
 
 public partial class Settings : ComponentBase, IDisposable
 {
-    [Inject] private SettingsService Service { get; set; } = null!;
-    [Inject] private LocalizationManager Localization { get; set; } = null!;
-    [Inject] private AppState State { get; set; } = null!;
-    [Inject] private IDialogService Dialog { get; set; } = null!;
-    private List<string> AvailableLanguages = [];
+    [Inject] private SettingsService _service { get; set; } = null!;
+    [Inject] private LocalizationManager _localization { get; set; } = null!;
+    [Inject] private SettingsService _settings { get; set; } = null!;
+    [Inject] private AppState _state { get; set; } = null!;
+    [Inject] private IDialogService _dialog { get; set; } = null!;
+    [Inject] private IFileDialogService _fileDialog { get; set; } = null!;
+    private List<string> _availableLanguages = [];
 
-    private MudTabs tabs = null!;
+    private MudTabs _tabs = null!;
 
-    private MudTabPanel settingsTab = null!;
+    private MudTabPanel _settingsTab = null!;
 
-    private AppSettings? appSettingsCache = null;
-    private DateTime LastCacheUpdate;
-    private readonly TimeSpan CacheUpdateInterval = TimeSpan.FromSeconds(2);
+    private AppSettings? _appSettingsCache = null;
+    private DateTime _lastCacheUpdate;
+    private readonly TimeSpan _cacheUpdateInterval = TimeSpan.FromSeconds(2);
 
     protected override async Task OnInitializedAsync()
     {
-        var settings = await Service.GetSettingsAsync();
-        AvailableLanguages = Localization.EnumarateAllLoadedLanguages().Select(x => new CultureInfo(x).Name).ToList();
-        State.OnChange += OnStateChanged;
+        var settings = await _service.GetSettingsAsync();
+        _availableLanguages = _localization.EnumarateAllLoadedLanguages().Select(x => new CultureInfo(x).Name).ToList();
+        _state.OnChange += OnStateChanged;
         await base.OnInitializedAsync();
     }
 
@@ -48,13 +51,15 @@ public partial class Settings : ComponentBase, IDisposable
                 BackdropClick = false,
             };
 
-            var dialog = await Dialog.ShowAsync<AlertDialog>("Development tab alert", options);
-            if (dialog.Dialog is AlertDialog alert)
+            var settings = await _settings.GetSettingsAsync();
+            if (!settings.DevPolicyAccepted)
             {
-                alert.OnCancel += async () =>
+                var dialog = await _dialog.ShowAsync<AlertDialog>("Development tab alert", options);
+                if (dialog.Dialog is AlertDialog alert)
                 {
-                    await tabs.ActivatePanelAsync(settingsTab);
-                };
+                    alert.OnSuccess += async () => await _settings.WriteSettingsAsync(await _settings.GetSettingsAsync() with { DevPolicyAccepted = true });
+                    alert.OnCancel += async () => await _tabs.ActivatePanelAsync(_settingsTab);
+                }
             }
         }
     }
@@ -62,8 +67,8 @@ public partial class Settings : ComponentBase, IDisposable
     private Task OnLanguageChanged(string? value, Action<string?>? setLocal,
         Func<AppSettings, string?, AppSettings> update)
     {
-        if (value is not null && AvailableLanguages.Contains(value))
-            Localization.SwitchLanguage(value?.ToString() ?? string.Empty);
+        if (value is not null && _availableLanguages.Contains(value))
+            _localization.SwitchLanguage(value?.ToString() ?? string.Empty);
 
         setLocal?.Invoke(value);
         return UpdateSetting(s => update(s, value), true);
@@ -77,26 +82,26 @@ public partial class Settings : ComponentBase, IDisposable
 
     private async Task UpdateSetting(Func<AppSettings, AppSettings> update, bool callWindowUpdate = false)
     {
-        var settings = await Service.GetSettingsAsync();
+        var settings = await _service.GetSettingsAsync();
         var newSettings = update(settings);
-        await Service.WriteSettingsAsync(newSettings);
+        await _service.WriteSettingsAsync(newSettings);
         if (callWindowUpdate)
-            State.CallUpdate();
+            _state.CallUpdate();
     }
 
     private async Task<T> FetchSettings<T>(Func<AppSettings, T> func)
     {
         AppSettings settings;
-        if (appSettingsCache != null &&
-            DateTime.Now - LastCacheUpdate < CacheUpdateInterval)
+        if (_appSettingsCache != null &&
+            DateTime.Now - _lastCacheUpdate < _cacheUpdateInterval)
         {
-            settings = appSettingsCache;
+            settings = _appSettingsCache;
         }
         else
         {
-            settings = await Service.GetSettingsAsync();
-            appSettingsCache = settings;
-            LastCacheUpdate = DateTime.Now;
+            settings = await _service.GetSettingsAsync();
+            _appSettingsCache = settings;
+            _lastCacheUpdate = DateTime.Now;
         }
 
         var result = func(settings);
@@ -115,7 +120,7 @@ public partial class Settings : ComponentBase, IDisposable
 
     public void Dispose()
     {
-        State.OnChange -= OnStateChanged;
+        _state.OnChange -= OnStateChanged;
         GC.SuppressFinalize(this);
     }
 }
