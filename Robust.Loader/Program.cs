@@ -123,10 +123,7 @@ internal class Program
         return true;
     }
 
-    private Assembly? LoadContextOnResolving(AssemblyLoadContext arg1, AssemblyName arg2)
-    {
-        return TryOpenAssembly(arg2.Name!, out var assembly) ? assembly : null;
-    }
+    private Assembly? LoadContextOnResolving(AssemblyLoadContext arg1, AssemblyName arg2) => TryOpenAssembly(arg2.Name!, out var assembly) ? assembly : null;
 
     private bool TryOpenAssembly(string name, [NotNullWhen(true)] out Assembly? assembly)
     {

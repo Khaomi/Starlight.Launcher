@@ -17,10 +17,7 @@ public sealed class TrayCoordinator
 {
     private readonly INativeTray _tray;
 
-    public TrayCoordinator(INativeTray tray)
-    {
-        _tray = tray;
-    }
+    public TrayCoordinator(INativeTray tray) => _tray = tray;
 
     public void Initialize()
     {

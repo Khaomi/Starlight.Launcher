@@ -88,48 +88,46 @@ public static class Helpers
     }
 
     public static async Task DownloadToStream(this HttpClient client, string uri, Stream stream,
-        DownloadProgressCallback? progress = null, CancellationToken cancel = default)
-    {
+        DownloadProgressCallback? progress = null, CancellationToken cancel = default) =>
         await Task.Run(async () =>
-        {
-            using var response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cancel);
-            response.EnsureSuccessStatusCode();
-
-            await using var contentStream = await response.Content.ReadAsStreamAsync(cancel);
-            // await using var fileStream = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite, 4096, useAsync: true);
-            var totalLength = response.Content.Headers.ContentLength;
-            if (totalLength.HasValue)
             {
-                progress?.Invoke(0, totalLength.Value);
-            }
+                using var response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cancel);
+                response.EnsureSuccessStatusCode();
 
-            var totalRead = 0L;
-            var reads = 0L;
-            const int bufferLength = 4096;
-            var buffer = ArrayPool<byte>.Shared.Rent(bufferLength);
-            var isMoreToRead = true;
-
-            do
-            {
-                var read = await contentStream.ReadAsync(buffer.AsMemory(0, bufferLength), cancel);
-                if (read == 0)
+                await using var contentStream = await response.Content.ReadAsStreamAsync(cancel);
+                // await using var fileStream = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite, 4096, useAsync: true);
+                var totalLength = response.Content.Headers.ContentLength;
+                if (totalLength.HasValue)
                 {
-                    isMoreToRead = false;
+                    progress?.Invoke(0, totalLength.Value);
                 }
-                else
-                {
-                    await stream.WriteAsync(buffer.AsMemory(0, read), cancel);
 
-                    reads += 1;
-                    totalRead += read;
-                    if (totalLength.HasValue && reads % 20 == 0)
+                var totalRead = 0L;
+                var reads = 0L;
+                const int BufferLength = 4096;
+                var buffer = ArrayPool<byte>.Shared.Rent(BufferLength);
+                var isMoreToRead = true;
+
+                do
+                {
+                    var read = await contentStream.ReadAsync(buffer.AsMemory(0, BufferLength), cancel);
+                    if (read == 0)
                     {
-                        progress?.Invoke(totalRead, totalLength.Value);
+                        isMoreToRead = false;
                     }
-                }
-            } while (isMoreToRead);
-        }, cancel);
-    }
+                    else
+                    {
+                        await stream.WriteAsync(buffer.AsMemory(0, read), cancel);
+
+                        reads += 1;
+                        totalRead += read;
+                        if (totalLength.HasValue && reads % 20 == 0)
+                        {
+                            progress?.Invoke(totalRead, totalLength.Value);
+                        }
+                    }
+                } while (isMoreToRead);
+            }, cancel);
 
     public static void ChmodPlusX(string path)
     {

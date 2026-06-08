@@ -5,7 +5,7 @@ namespace Starlight.Launcher.Utility;
 
 public static class HttpUtility
 {
-    private static readonly StringWithQualityHeaderValue ZStdHeader = new StringWithQualityHeaderValue("zstd", 1);
+    private static readonly StringWithQualityHeaderValue _zStdHeader = new("zstd", 1);
 
     public static async Task<HttpResponseMessage> SendZStdAsync(
         this HttpClient client,
@@ -13,7 +13,7 @@ public static class HttpUtility
         HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead,
         CancellationToken cancel = default)
     {
-        message.Headers.AcceptEncoding.Add(ZStdHeader);
+        message.Headers.AcceptEncoding.Add(_zStdHeader);
 
         var response = await client.SendAsync(message, completionOption, cancel);
 
@@ -31,9 +31,6 @@ public static class HttpUtility
         {
         }
 
-        protected override Stream GetDecompressedStream(Stream originalStream)
-        {
-            return new ZStdDecompressStream(originalStream);
-        }
+        protected override Stream GetDecompressedStream(Stream originalStream) => new ZStdDecompressStream(originalStream);
     }
 }

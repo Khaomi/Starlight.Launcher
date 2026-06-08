@@ -9,10 +9,7 @@ public abstract class LoggedInAccount : ObservableObject
     public string Username => LoginInfo.Username;
     public Guid UserId => LoginInfo.UserId;
 
-    protected LoggedInAccount(LoginInfo loginInfo)
-    {
-        LoginInfo = loginInfo;
-    }
+    protected LoggedInAccount(LoginInfo loginInfo) => LoginInfo = loginInfo;
 
     public LoginInfo LoginInfo { get; }
 

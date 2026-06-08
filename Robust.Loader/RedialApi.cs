@@ -1,9 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Text;
-using System.Linq;
 using Robust.LoaderApi;
 
 namespace SS14.Loader;
@@ -11,7 +8,7 @@ namespace SS14.Loader;
 internal sealed class RedialApi : IRedialApi
 {
     // We have to reset these env vars to avoid leaking through state on redial.
-    private static readonly string[] EnvVarsToClear = [
+    private static readonly string[] _envVarsToClear = [
         // Robust config
         "ROBUST_AUTH_TOKEN",
         "ROBUST_AUTH_USERID",
@@ -38,10 +35,7 @@ internal sealed class RedialApi : IRedialApi
 
     private readonly string _launcher;
 
-    public RedialApi(string launcher)
-    {
-        _launcher = launcher;
-    }
+    public RedialApi(string launcher) => _launcher = launcher;
 
     public void Redial(Uri uri, string text = "")
     {
@@ -61,7 +55,7 @@ internal sealed class RedialApi : IRedialApi
             }
         };
 
-        foreach (var envVar in EnvVarsToClear)
+        foreach (var envVar in _envVarsToClear)
         {
             startInfo.EnvironmentVariables.Remove(envVar);
         }

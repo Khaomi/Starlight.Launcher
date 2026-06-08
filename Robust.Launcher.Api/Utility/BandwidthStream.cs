@@ -30,7 +30,7 @@ public sealed class BandwidthStream : Stream
 
     private void TrackBandwidth(long value)
     {
-        const int bucketMask = TotalBuckets - 1;
+        const int BucketMask = TotalBuckets - 1;
 
         var bucketIdx = CurBucketIdx();
 
@@ -42,7 +42,7 @@ public sealed class BandwidthStream : Stream
             {
                 for (var i = _bucketIndex; i < bucketIdx; i++)
                 {
-                    _buckets[i & bucketMask] = 0;
+                    _buckets[i & BucketMask] = 0;
                 }
             }
             else
@@ -55,7 +55,7 @@ public sealed class BandwidthStream : Stream
         }
 
         // Write value.
-        _buckets[bucketIdx & bucketMask] += value;
+        _buckets[bucketIdx & BucketMask] += value;
     }
 
     private long CurBucketIdx()
@@ -76,15 +76,9 @@ public sealed class BandwidthStream : Stream
         return sum >> BucketDivisor;
     }
 
-    public override void Flush()
-    {
-        _baseStream.Flush();
-    }
+    public override void Flush() => _baseStream.Flush();
 
-    public override Task FlushAsync(CancellationToken cancellationToken)
-    {
-        return _baseStream.FlushAsync(cancellationToken);
-    }
+    public override Task FlushAsync(CancellationToken cancellationToken) => _baseStream.FlushAsync(cancellationToken);
 
     protected override void Dispose(bool disposing)
     {
@@ -92,10 +86,7 @@ public sealed class BandwidthStream : Stream
             _baseStream.Dispose();
     }
 
-    public override ValueTask DisposeAsync()
-    {
-        return _baseStream.DisposeAsync();
-    }
+    public override ValueTask DisposeAsync() => _baseStream.DisposeAsync();
 
     public override int Read(byte[] buffer, int offset, int count)
     {
@@ -111,15 +102,9 @@ public sealed class BandwidthStream : Stream
         return read;
     }
 
-    public override long Seek(long offset, SeekOrigin origin)
-    {
-        return _baseStream.Seek(offset, origin);
-    }
+    public override long Seek(long offset, SeekOrigin origin) => _baseStream.Seek(offset, origin);
 
-    public override void SetLength(long value)
-    {
-        _baseStream.SetLength(value);
-    }
+    public override void SetLength(long value) => _baseStream.SetLength(value);
 
     public override void Write(byte[] buffer, int offset, int count)
     {

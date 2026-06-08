@@ -159,7 +159,7 @@ public static class HappyEyeballsHttp
         for (var i = 0; i < commonLength; i++)
         {
             result[i * 2] = ipv6[i];
-            result[1 + i * 2] = ipv4[i];
+            result[1 + (i * 2)] = ipv4[i];
         }
 
         if (ipv4.Length > ipv6.Length)

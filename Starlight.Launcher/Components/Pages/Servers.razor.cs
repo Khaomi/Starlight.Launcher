@@ -11,43 +11,42 @@ namespace Starlight.Launcher.Components.Pages;
 
 public partial class Servers : ComponentBase, IDisposable
 {
-    [Inject] SettingsService Settings { get; set; } = null!;
-    [Inject] HubServerFetcher Fetcher { get; set; } = null!;
-    [Inject] LocalizationManager Localization { get; set; } = null!;
-    private ServerListFilters Filters = new();
+    [Inject] private SettingsService _settings { get; set; } = default!;
+    [Inject] private HubServerFetcher _fetcher { get; set; } = default!;
+    [Inject] private LocalizationManager _localization { get; set; } = default!;
+    private ServerListFilters _filters = new();
     private readonly CancellationTokenSource _disposeCts = new();
 
-    private IReadOnlyList<ServerStatusData> _allServers = Array.Empty<ServerStatusData>();
-    private List<ServerStatusData> _filteredServers = new();
-    private IReadOnlyList<string> _availableRPTags = Array.Empty<string>();
-    private IReadOnlyList<string> _availableLangTags = Array.Empty<string>();
-    private IReadOnlyList<string> _availableRegionTags = Array.Empty<string>();
+    private IReadOnlyList<ServerStatusData> _allServers = [];
+    private List<ServerStatusData> _filteredServers = [];
+    private IReadOnlyList<string> _availableRPTags = [];
+    private IReadOnlyList<string> _availableLangTags = [];
+    private IReadOnlyList<string> _availableRegionTags = [];
     private int _totalCount;
 
     private CancellationTokenSource? _searchDebounceCts;
 
-    private IReadOnlySet<string> _favoriteAddresses =
-        new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    private IReadOnlySet<string> _favoriteAddresses = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-    private bool BottomSearch { get; set; }
-    private ElementPosition SearchBarPosition { get; set; }
+    private bool _bottomSearch { get; set; }
+    private ElementPosition _searchBarPosition { get; set; }
 
-    private ElementPosition TagsBarPosition { get; set; }
+    private ElementPosition _tagsBarPosition { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        var settings = await Settings.GetSettingsAsync();
-        BottomSearch = settings.ServerListToolbarBottomSearch;
-        SearchBarPosition = settings.ServerListToolBarSearchPosition;
-        TagsBarPosition = settings.ServerListToolBarBottomTagsPosition;
-        Fetcher.ServersChanged += OnServersChanged;
-        Fetcher.StatusChanged += OnStatusChanged;
-        Filters = settings.CachedFilters;
-        Filters.TagsExpanded = settings.ServerListToolBarTagsBarOpen;
-        Filters.Changed += OnFiltersChanged;
+        var settings = await _settings.GetSettingsAsync();
+        _bottomSearch = settings.ServerListToolbarBottomSearch;
+        _searchBarPosition = settings.ServerListToolBarSearchPosition;
+        _tagsBarPosition = settings.ServerListToolBarBottomTagsPosition;
+        _fetcher.ServersChanged += OnServersChanged;
+        _fetcher.StatusChanged += OnStatusChanged;
+        _filters = settings.CachedFilters;
+        _filters.TagsExpanded = settings.ServerListToolBarTagsBarOpen;
+        _filters.Changed += OnFiltersChanged;
 
-        _favoriteAddresses = Settings.GetFavoriteAddressesSnapshot();
-        Settings.FavoritesChanged += OnFavoritesChanged;
+        _favoriteAddresses = _settings.GetFavoriteAddressesSnapshot();
+        _settings.FavoritesChanged += OnFavoritesChanged;
 
         RebuildFromFetcher();
     }
@@ -58,7 +57,7 @@ public partial class Servers : ComponentBase, IDisposable
         {
             await InvokeAsync(() =>
             {
-                _favoriteAddresses = Settings.GetFavoriteAddressesSnapshot();
+                _favoriteAddresses = _settings.GetFavoriteAddressesSnapshot();
                 StateHasChanged();
             });
         }
@@ -80,7 +79,7 @@ public partial class Servers : ComponentBase, IDisposable
 
     private void RebuildFromFetcher()
     {
-        _allServers = Fetcher.AllServers;
+        _allServers = _fetcher.AllServers;
         _totalCount = _allServers.Count;
         ExtractTags(_allServers, out _availableRPTags, out _availableLangTags, out _availableRegionTags);
         ApplyFilters();
@@ -122,44 +121,44 @@ public partial class Servers : ComponentBase, IDisposable
     {
         IEnumerable<ServerStatusData> query = _allServers;
 
-        if (!string.IsNullOrWhiteSpace(Filters.SearchQuery))
+        if (!string.IsNullOrWhiteSpace(_filters.SearchQuery))
         {
-            var q = Filters.SearchQuery.Trim();
+            var q = _filters.SearchQuery.Trim();
             query = query.Where(s =>
                 (s.Name?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
                 s.Address.Contains(q, StringComparison.OrdinalIgnoreCase));
         }
 
-        if (Filters.SelectedRP.Count > 0)
+        if (_filters.SelectedRP.Count > 0)
         {
             query = query.Where(s =>
             {
                 var rpTag = ParseRPTag(GetTags(s).FirstOrDefault(t => t.StartsWith("rp")) ?? "");
-                return Filters.SelectedRP.Contains(rpTag);
+                return _filters.SelectedRP.Contains(rpTag);
             });
         }
 
-        if (Filters.SelectedRegion.Count > 0)
+        if (_filters.SelectedRegion.Count > 0)
         {
-            query = query.Where(s => GetRegion(s) != null && Filters.SelectedRegion.Contains(ParseRegionTag(GetRegion(s)!)));
+            query = query.Where(s => GetRegion(s) != null && _filters.SelectedRegion.Contains(ParseRegionTag(GetRegion(s)!)));
         }
 
-        if (Filters.SelectedLang.Count > 0)
+        if (_filters.SelectedLang.Count > 0)
         {
-            query = query.Where(s => GetLanguage(s) != null && Filters.SelectedLang.Contains(ParseLangTag(GetLanguage(s)!)));
+            query = query.Where(s => GetLanguage(s) != null && _filters.SelectedLang.Contains(ParseLangTag(GetLanguage(s)!)));
         }
 
-        if (Filters.HideAdult)
+        if (_filters.HideAdult)
             query = query.Where(s => GetTags(s) is { } tags && !(tags.Contains("18+") || tags.Contains("+18")));
-        else if (Filters.OnlyAdult)
+        else if (_filters.OnlyAdult)
             query = query.Where(s => GetTags(s) is { } tags && (tags.Contains("18+") || tags.Contains("+18")));
 
-        if (Filters.HideEmpty)
+        if (_filters.HideEmpty)
             query = query.Where(s => GetPlayers(s) > 0);
-        if (Filters.HideFull)
+        if (_filters.HideFull)
             query = query.Where(s => GetPlayers(s) < GetMaxPlayers(s));
 
-        query = Filters.SortBy switch
+        query = _filters.SortBy switch
         {
             ServerSortMode.Players => query.OrderByDescending(GetPlayers),
             ServerSortMode.Name => query.OrderBy(s => s.Name ?? s.Address, StringComparer.OrdinalIgnoreCase),
@@ -169,44 +168,42 @@ public partial class Servers : ComponentBase, IDisposable
 
         _filteredServers = [.. query];
 
-        Settings.CacheFilters(Filters).GetAwaiter().GetResult();
+        _settings.CacheFilters(_filters).GetAwaiter().GetResult();
     }
 
-    private void HandleRefresh() => Fetcher.RequestRefresh();
+    private void HandleRefresh() => _fetcher.RequestRefresh();
 
     private void ClearFilters()
     {
-        Filters.SearchQuery = "";
-        Filters.SelectedRP.Clear();
-        Filters.SelectedLang.Clear();
-        Filters.SelectedRegion.Clear();
-        Filters.HideEmpty = false;
-        Filters.HideFull = false;
+        _filters.SearchQuery = "";
+        _filters.SelectedRP.Clear();
+        _filters.SelectedLang.Clear();
+        _filters.SelectedRegion.Clear();
+        _filters.HideEmpty = false;
+        _filters.HideFull = false;
         ApplyFilters();
     }
 
     private async Task HandleFavorite(ServerStatusData server)
     {
-        var favorites = Settings.GetFavorites();
+        var favorites = _settings.GetFavorites();
         var alreadyExist = favorites.FirstOrDefault(x => x.Address == server.Address);
 
         if ((alreadyExist == null || alreadyExist == default) && server.HubAddress != null)
         {
             favorites.Add(new FavoriteServer(server.Name, server.Address, server.HubAddress));
-            await Settings.WriteFavoritesAsync(favorites);
+            await _settings.WriteFavoritesAsync(favorites);
         }
         else if (alreadyExist != null)
         {
             favorites.Remove(alreadyExist);
-            await Settings.WriteFavoritesAsync(favorites);
+            await _settings.WriteFavoritesAsync(favorites);
         }
     }
 
-    private void HandleInfoNeeded(ServerStatusData server)
-    {
+    private void HandleInfoNeeded(ServerStatusData server) =>
         // Lazy-load
-        ((IServerSource)Fetcher).UpdateInfoFor(server);
-    }
+        ((IServerSource)_fetcher).UpdateInfoFor(server);
 
     private static void ExtractTags(IEnumerable<ServerStatusData> servers, out IReadOnlyList<string> rpTags, out IReadOnlyList<string> langTags, out IReadOnlyList<string> regionTags)
     {
@@ -222,7 +219,7 @@ public partial class Servers : ComponentBase, IDisposable
 
     public static string ParseRPTag(string tag)
     {
-        foreach (var kvp in RPTagTypes)
+        foreach (var kvp in _rPTagTypes)
         {
             if (kvp.Value.Contains(tag, StringComparer.OrdinalIgnoreCase))
                 return kvp.Key;
@@ -235,7 +232,7 @@ public partial class Servers : ComponentBase, IDisposable
     {
         if (tag.StartsWith("lang:", StringComparison.OrdinalIgnoreCase))
         {
-            var cultureId = tag.Substring(5);
+            var cultureId = tag[5..];
             var culture = CultureInfo.GetCultureInfo(cultureId);
             return culture.TwoLetterISOLanguageName == culture.Name
                 ? culture.EnglishName
@@ -248,8 +245,8 @@ public partial class Servers : ComponentBase, IDisposable
     {
         if (tag.StartsWith("region:", StringComparison.OrdinalIgnoreCase))
         {
-            var regionId = tag.Substring(7);
-            if (RegionTransformations.TryGetValue(regionId, out var regionName))
+            var regionId = tag[7..];
+            if (_regionTransformations.TryGetValue(regionId, out var regionName))
                 return regionName;
 
             try
@@ -267,16 +264,15 @@ public partial class Servers : ComponentBase, IDisposable
         return tag;
     }
 
-    private static Dictionary<string, List<string>> RPTagTypes = new()
+    private static readonly Dictionary<string, List<string>> _rPTagTypes = new()
     {
-        ["NRP"] = new List<string> { "rp:none", "rp:nrp", "rp" },
-        ["LRP"] = new List<string> { "rp:low", "rp:lrp" },
-        ["MRP"] = new List<string> { "rp:medium", "rp:mrp", "rp:med" },
-        ["HRP"] = new List<string> { "rp:high", "rp:hrp" }
-
+        ["NRP"] = ["rp:none", "rp:nrp", "rp"],
+        ["LRP"] = ["rp:low", "rp:lrp"],
+        ["MRP"] = ["rp:medium", "rp:mrp", "rp:med"],
+        ["HRP"] = ["rp:high", "rp:hrp"]
     };
 
-    private static Dictionary<string, string> RegionTransformations = new()
+    private static readonly Dictionary<string, string> _regionTransformations = new()
     {
         ["af_c"] = "Africa Central",
         ["af_n"] = "Africa North",
@@ -311,10 +307,11 @@ public partial class Servers : ComponentBase, IDisposable
 
     public void Dispose()
     {
-        Fetcher.ServersChanged -= OnServersChanged;
-        Fetcher.StatusChanged -= OnStatusChanged;
-        Filters.Changed -= OnFiltersChanged;
-        Settings.FavoritesChanged -= OnFavoritesChanged;
+        GC.SuppressFinalize(this);
+        _fetcher.ServersChanged -= OnServersChanged;
+        _fetcher.StatusChanged -= OnStatusChanged;
+        _filters.Changed -= OnFiltersChanged;
+        _settings.FavoritesChanged -= OnFavoritesChanged;
         _disposeCts.Cancel();
         _disposeCts.Dispose();
         _searchDebounceCts?.Dispose();

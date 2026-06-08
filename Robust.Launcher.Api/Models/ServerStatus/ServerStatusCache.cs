@@ -88,6 +88,7 @@ public sealed class ServerStatusCache : IServerSource
             {
                 _logger.LogWarning("Server {Server} has invalid URI {Uri}", data.Name, data.Address);
                 data.Status = ServerStatusCode.Offline;
+                data.NotifyChanged();
                 return;
             }
 
@@ -95,15 +96,23 @@ public sealed class ServerStatusCache : IServerSource
             data.Status = ServerStatusCode.FetchingStatus;
 
             ServerApi.ServerStatus status;
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             try
             {
-                // await Task.Delay(Random.Shared.Next(150, 5000), cancel);
-
                 using (var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(cancel))
                 {
                     linkedToken.CancelAfter(TimeSpan.FromSeconds(5));
 
-                    status = await http.GetFromJsonAsync<ServerApi.ServerStatus>(statusAddr, linkedToken.Token)
+                    using var response = await http.GetAsync(
+                        statusAddr,
+                        HttpCompletionOption.ResponseHeadersRead,
+                        linkedToken.Token);
+
+                    sw.Stop();
+                    response.EnsureSuccessStatusCode();
+
+                    status = await response.Content
+                                 .ReadFromJsonAsync<ServerApi.ServerStatus>(linkedToken.Token)
                              ?? throw new InvalidDataException();
                 }
 
@@ -112,15 +121,20 @@ public sealed class ServerStatusCache : IServerSource
             catch (Exception e) when (e is JsonException or HttpRequestException or InvalidDataException or IOException
                                           or SocketException)
             {
+                data.Ping = null;
                 data.Status = ServerStatusCode.Offline;
+                data.NotifyChanged();
                 return;
             }
 
+            data.Ping = sw.Elapsed;
             ApplyStatus(data, status);
         }
         catch (OperationCanceledException)
         {
+            data.Ping = null;
             data.Status = ServerStatusCode.Offline;
+            data.NotifyChanged();
         }
     }
 
@@ -131,20 +145,12 @@ public sealed class ServerStatusCache : IServerSource
         data.PlayerCount = Math.Max(0, status.PlayerCount);
         data.SoftMaxPlayerCount = Math.Max(0, status.SoftMaxPlayerCount);
 
-        switch (status.RunLevel)
+        data.RoundStatus = status.RunLevel switch
         {
-            case ServerApi.GameRunLevel.InRound:
-                data.RoundStatus = GameRoundStatus.InRound;
-                break;
-            case ServerApi.GameRunLevel.PostRound:
-            case ServerApi.GameRunLevel.PreRoundLobby:
-                data.RoundStatus = GameRoundStatus.InLobby;
-                break;
-            default:
-                data.RoundStatus = GameRoundStatus.Unknown;
-                break;
-        }
-
+            ServerApi.GameRunLevel.InRound => GameRoundStatus.InRound,
+            ServerApi.GameRunLevel.PostRound or ServerApi.GameRunLevel.PreRoundLobby => GameRoundStatus.InLobby,
+            _ => GameRoundStatus.Unknown,
+        };
         if (status.RoundStartTime != null)
         {
             data.RoundStartTime = DateTime.Parse(status.RoundStartTime, null, System.Globalization.DateTimeStyles.RoundtripKind);
@@ -248,72 +254,71 @@ public sealed class ServerStatusCache : IServerSource
         _cachedData.Clear();
     }
 
-    void IServerSource.UpdateInfoFor(ServerStatusData statusData)
-    {
+    void IServerSource.UpdateInfoFor(ServerStatusData statusData) =>
         _ = UpdateInfoForCore(statusData, async cancel =>
-        {
-            var uriBuilder = new UriBuilder(
-                UriHelper.GetServerInfoAddress(statusData.Address));
-
-            uriBuilder.Query = "can_skip_build=1";
-
-            var url = uriBuilder.ToString();
-
-            try
             {
-                _logger.LogDebug(
-                    "Updating server info. Address: {Address}, Url: {Url}",
-                    statusData.Address,
-                    url);
-
-                var result = await _http.GetFromJsonAsync<ServerInfo>(
-                    url,
-                    cancel);
-
-                if (result is null)
+                var uriBuilder = new UriBuilder(
+                    UriHelper.GetServerInfoAddress(statusData.Address))
                 {
-                    _logger.LogWarning(
-                        "Server info response was null. Address: {Address}",
-                        statusData.Address);
-                }
-                else
+                    Query = "can_skip_build=1"
+                };
+
+                var url = uriBuilder.ToString();
+
+                try
                 {
                     _logger.LogDebug(
-                        "Server info updated successfully. Address: {Address}",
-                        statusData.Address);
+                        "Updating server info. Address: {Address}, Url: {Url}",
+                        statusData.Address,
+                        url);
+
+                    var result = await _http.GetFromJsonAsync<ServerInfo>(
+                        url,
+                        cancel);
+
+                    if (result is null)
+                    {
+                        _logger.LogWarning(
+                            "Server info response was null. Address: {Address}",
+                            statusData.Address);
+                    }
+                    else
+                    {
+                        _logger.LogDebug(
+                            "Server info updated successfully. Address: {Address}",
+                            statusData.Address);
+                    }
+
+                    return result;
                 }
+                catch (OperationCanceledException)
+                {
+                    _logger.LogInformation(
+                        "Server info update cancelled. Address: {Address}",
+                        statusData.Address);
 
-                return result;
-            }
-            catch (OperationCanceledException)
-            {
-                _logger.LogInformation(
-                    "Server info update cancelled. Address: {Address}",
-                    statusData.Address);
+                    throw;
+                }
+                catch (HttpRequestException ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "HTTP error while updating server info. Address: {Address}, Url: {Url}",
+                        statusData.Address,
+                        url);
 
-                throw;
-            }
-            catch (HttpRequestException ex)
-            {
-                _logger.LogError(
-                    ex,
-                    "HTTP error while updating server info. Address: {Address}, Url: {Url}",
-                    statusData.Address,
-                    url);
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Unexpected error while updating server info. Address: {Address}",
+                        statusData.Address);
 
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(
-                    ex,
-                    "Unexpected error while updating server info. Address: {Address}",
-                    statusData.Address);
-
-                throw;
-            }
-        });
-    }
+                    throw;
+                }
+            });
 
     private sealed class CacheReg
     {
@@ -322,9 +327,6 @@ public sealed class ServerStatusCache : IServerSource
         public CancellationTokenSource? Cancellation;
         public bool DidInitialStatusUpdate;
 
-        public CacheReg(ServerStatusData data)
-        {
-            Data = data;
-        }
+        public CacheReg(ServerStatusData data) => Data = data;
     }
 }

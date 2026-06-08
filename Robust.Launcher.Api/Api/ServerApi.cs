@@ -68,20 +68,11 @@ public static class ServerApi
         public const string RolePlayHigh = "high";
         // @formatter:on
 
-        public static bool TryRegion(string tag, [NotNullWhen(true)] out string? region)
-        {
-            return TryTagPrefix(tag, TagRegion, out region);
-        }
+        public static bool TryRegion(string tag, [NotNullWhen(true)] out string? region) => TryTagPrefix(tag, TagRegion, out region);
 
-        public static bool TryLanguage(string tag, [NotNullWhen(true)] out string? language)
-        {
-            return TryTagPrefix(tag, TagLanguage, out language);
-        }
+        public static bool TryLanguage(string tag, [NotNullWhen(true)] out string? language) => TryTagPrefix(tag, TagLanguage, out language);
 
-        public static bool TryRolePlay(string tag, [NotNullWhen(true)] out string? rolePlay)
-        {
-            return TryTagPrefix(tag, TagRolePlay, out rolePlay);
-        }
+        public static bool TryRolePlay(string tag, [NotNullWhen(true)] out string? rolePlay) => TryTagPrefix(tag, TagRolePlay, out rolePlay);
 
         public static bool TryTagPrefix(string tag, string prefix, [NotNullWhen(true)] out string? value)
         {

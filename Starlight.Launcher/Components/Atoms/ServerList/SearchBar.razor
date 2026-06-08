@@ -6,7 +6,7 @@
         <MudTextField T="string"
                       Value="Filters.SearchQuery"
                       ValueChanged="OnSearchChanged"
-                      Placeholder="@Localization["servers-list-search-bar-placeholder"]"
+                      Placeholder="@_localization["servers-list-search-bar-placeholder"]"
                       Variant="Variant.Outlined"
                       Margin="Margin.Dense"
                       Adornment="Adornment.Start"
@@ -22,34 +22,34 @@
                    Margin="Margin.Dense"
                    Dense="true"
                    Class="server-toolbar__sort server-toolbar__pill">
-            <MudSelectItem Value="ServerSortMode.Players">@Localization["servers-list-search-bar-players"]</MudSelectItem>
-            <MudSelectItem Value="ServerSortMode.Name">@Localization["servers-list-search-bar-name"]</MudSelectItem>
-            <MudSelectItem Value="ServerSortMode.Ping">@Localization["servers-list-search-bar-ping"]</MudSelectItem>
+            <MudSelectItem Value="ServerSortMode.Players">@_localization["servers-list-search-bar-players"]</MudSelectItem>
+            <MudSelectItem Value="ServerSortMode.Name">@_localization["servers-list-search-bar-name"]</MudSelectItem>
+            <MudSelectItem Value="ServerSortMode.Ping">@_localization["servers-list-search-bar-ping"]</MudSelectItem>
         </MudSelect>
 
         <div class="server-toolbar__chips">
             <button type="button"
                     class="server-toolbar__chip @(Filters.HideEmpty ? "is-active" : "")"
                     @onclick="ToggleHideEmpty">
-                @Localization["server-list-hide-empty"]
+                @_localization["server-list-hide-empty"]
             </button>
 
             <button type="button"
                     class="server-toolbar__chip @(Filters.HideFull ? "is-active" : "")"
                     @onclick="ToggleHideFull">
-                @Localization["server-list-hide-full"]
+                @_localization["server-list-hide-full"]
             </button>
 
             <button type="button"
                     class="server-toolbar__chip @(Filters.HideAdult ? "is-active" : "")"
                     @onclick="ToggleHideAdult">
-                @Localization["server-list-hide-adult"]
+                @_localization["server-list-hide-adult"]
             </button>
 
             <button type="button"
                     class="server-toolbar__chip server-toolbar__chip--danger @(Filters.OnlyAdult ? "is-active" : "")"
                     @onclick="ToggleOnlyAdult">
-                @Localization["server-list-only-adult"]
+                @_localization["server-list-only-adult"]
             </button>
         </div>
 
@@ -75,7 +75,7 @@
         @if (TagsExpandButton)
         {
             <MudIconButton Icon="@(Filters.TagsExpanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.Tune)"
-                           Color="@(HasActiveTagFilters ? Color.Primary : Color.Default)"
+                           Color="@(_hasActiveTagFilters ? Color.Primary : Color.Default)"
                            Variant="Variant.Text"
                            Size="Size.Small"
                            OnClick="ToggleTagsExpanded"
@@ -86,9 +86,9 @@
                        Color="Color.Default"
                        Variant="Variant.Text"
                        Size="Size.Small"
-                       Disabled="@IsRefreshing"
+                       Disabled="@_isRefreshing"
                        OnClick="OnRefresh"
-                       Class="@("server-toolbar__icon-btn " + (IsRefreshing ? "mud-spinner" : ""))" />
+                       Class="@("server-toolbar__icon-btn " + (_isRefreshing ? "mud-spinner" : ""))" />
     </div>
 
 </div>

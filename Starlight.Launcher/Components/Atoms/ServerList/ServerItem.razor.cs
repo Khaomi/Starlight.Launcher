@@ -7,23 +7,25 @@ using Starlight.Launcher.Services.Localization;
 
 namespace Starlight.Launcher.Components.Atoms.ServerList;
 
-public partial class ServerItem : ComponentBase
+public partial class ServerItem : ComponentBase, IDisposable
 {
-    [Inject] private LocalizationManager Localization { get; set; } = null!;
-    [Inject] private IDialogService DialogService { get; set; } = default!;
-    [Parameter, EditorRequired] public ServerStatusData Data { get; set; } = null!;
+    [Inject] private LocalizationManager _localization { get; set; } = default!;
+    [Inject] private IDialogService _dialogService { get; set; } = default!;
+    [Parameter, EditorRequired] public ServerStatusData Data { get; set; } = default!;
     [Parameter] public EventCallback<ServerStatusData> OnInfoNeeded { get; set; }
     [Parameter] public EventCallback<ServerStatusData> OnFavorites { get; set; }
     [Parameter] public bool IsInFavorites { get; set; } = false;
-    [Inject] private ILogger<ServerItem> _logger { get; set; } = null!;
+    [Inject] private ILogger<ServerItem> _logger { get; set; } = default!;
 
     private CancellationTokenSource? _infoCts;
 
-    private bool Expanded = false;
-    private string RowClass => "server-row server-row--clickable";
+    private System.Timers.Timer? _roundTimer;
 
-    private List<string>? DisplayTags => Data.Tags?
-        .Select(t => ParseTag(t))
+    private bool _expanded = false;
+    private string _rowClass => "server-row server-row--clickable";
+
+    private List<string>? _displayTags => Data.Tags?
+        .Select(ParseTag)
         .Where(t => !string.IsNullOrEmpty(t))
         .Take(3)
         .ToList();
@@ -42,6 +44,19 @@ public partial class ServerItem : ComponentBase
     protected override void OnInitialized()
     {
         Data.Changed += OnDataChanged;
+
+        _roundTimer = new System.Timers.Timer(1000) { AutoReset = true };
+        _roundTimer.Elapsed += OnRoundTick;
+        _roundTimer.Start();
+    }
+
+    private async void OnRoundTick(object? sender, System.Timers.ElapsedEventArgs e)
+    {
+        if (Data.RoundStartTime is null)
+            return;
+
+        try { await InvokeAsync(StateHasChanged); }
+        catch (ObjectDisposedException) { }
     }
 
     protected override void OnAfterRender(bool firstRender)
@@ -75,13 +90,10 @@ public partial class ServerItem : ComponentBase
     {
         if (string.IsNullOrEmpty(Data.Description) && Data.StatusInfo is ServerStatusInfoCode.Fetched and not ServerStatusInfoCode.Error)
             _ = RequestInfoDebouncedAsync((_infoCts ?? new CancellationTokenSource()).Token);
-        Expanded = !Expanded;
+        _expanded = !_expanded;
     }
 
-    private async Task HandleFavorites()
-    {
-        await OnFavorites.InvokeAsync(Data);
-    }
+    private async Task HandleFavorites() => await OnFavorites.InvokeAsync(Data);
 
     private async Task OnInfoClick(string Url)
     {
@@ -111,8 +123,43 @@ public partial class ServerItem : ComponentBase
             FullWidth = true
         };
 
-        await DialogService.ShowAsync<ConnectingDialog>("Connecting", parameters, options);
+        await _dialogService.ShowAsync<ConnectingDialog>("Connecting", parameters, options);
     }
+
+    private int? _pingMs => Data.Ping is { } p ? (int)Math.Round(p.TotalMilliseconds) : null;
+
+    private string _pingClass => _pingMs switch
+    {
+        null => "server-row__ping--unknown",
+        <= 100 => "server-row__ping--good",
+        <= 250 => "server-row__ping--ok",
+        _ => "server-row__ping--bad",
+    };
+
+    private string? _roundTime
+    {
+        get
+        {
+            if (Data.RoundStartTime is not { } startRaw)
+                return null;
+
+            var start = startRaw.Kind == DateTimeKind.Utc ? startRaw : startRaw.ToUniversalTime();
+            var elapsed = DateTime.UtcNow - start;
+            if (elapsed < TimeSpan.Zero)
+                elapsed = TimeSpan.Zero;
+
+            return elapsed.TotalHours >= 1
+                ? $"{(int)elapsed.TotalHours}:{elapsed.Minutes:D2}:{elapsed.Seconds:D2}"
+                : $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}";
+        }
+    }
+
+    private string? _roundStatusText => Data.RoundStatus switch
+    {
+        GameRoundStatus.InLobby => _localization["servers-list-item-round-lobby"],
+        GameRoundStatus.InRound => _localization["servers-list-item-round-in-round"],
+        _ => null,
+    };
 
     private string? ParseIcon(string? icon)
     {
@@ -142,6 +189,8 @@ public partial class ServerItem : ComponentBase
 
     public void Dispose()
     {
+        _roundTimer?.Stop();
+        _roundTimer?.Dispose();
         _infoCts?.Cancel();
         _infoCts?.Dispose();
         Data.Changed -= OnDataChanged;

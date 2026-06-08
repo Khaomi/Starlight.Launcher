@@ -11,22 +11,16 @@ namespace Starlight.Launcher.Utility;
 
 public static class ZStd
 {
-    public static int CompressBound(int length)
-    {
-        return (int)ZSTD_compressBound((nuint)length);
-    }
+    public static int CompressBound(int length) => (int)ZSTD_compressBound((nuint)length);
 }
 
-public sealed unsafe class ZStdCCtx : IDisposable
+public sealed unsafe partial class ZStdCCtx : IDisposable
 {
     public ZSTD_CCtx* Context { get; private set; }
 
-    private bool Disposed => Context == null;
+    private bool _disposed => Context == null;
 
-    public ZStdCCtx()
-    {
-        Context = ZSTD_createCCtx();
-    }
+    public ZStdCCtx() => Context = ZSTD_createCCtx();
 
     public void SetParameter(ZSTD_cParameter parameter, int value)
     {
@@ -60,7 +54,7 @@ public sealed unsafe class ZStdCCtx : IDisposable
 
     public void Dispose()
     {
-        if (Disposed)
+        if (_disposed)
             return;
 
         ZSTD_freeCCtx(Context);
@@ -68,23 +62,16 @@ public sealed unsafe class ZStdCCtx : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private void CheckDisposed()
-    {
-        if (Disposed)
-            throw new ObjectDisposedException(nameof(ZStdCCtx));
-    }
+    private void CheckDisposed() => ObjectDisposedException.ThrowIf(_disposed, nameof(ZStdCCtx));
 }
 
-public sealed unsafe class ZStdDCtx : IDisposable
+public sealed unsafe partial class ZStdDCtx : IDisposable
 {
     public ZSTD_DCtx* Context { get; private set; }
 
-    private bool Disposed => Context == null;
+    private bool _disposed => Context == null;
 
-    public ZStdDCtx()
-    {
-        Context = ZSTD_createDCtx();
-    }
+    public ZStdDCtx() => Context = ZSTD_createDCtx();
 
     public void SetParameter(ZSTD_dParameter parameter, int value)
     {
@@ -114,7 +101,7 @@ public sealed unsafe class ZStdDCtx : IDisposable
 
     public void Dispose()
     {
-        if (Disposed)
+        if (_disposed)
             return;
 
         ZSTD_freeDCtx(Context);
@@ -122,13 +109,8 @@ public sealed unsafe class ZStdDCtx : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private void CheckDisposed()
-    {
-        if (Disposed)
-            throw new ObjectDisposedException(nameof(ZStdDCtx));
-    }
+    private void CheckDisposed() => ObjectDisposedException.ThrowIf(_disposed, nameof(ZStdDCtx));
 }
-
 
 [Serializable]
 public class ZStdException : Exception
@@ -145,10 +127,7 @@ public class ZStdException : Exception
     {
     }
 
-    public static unsafe ZStdException FromCode(nuint code)
-    {
-        return new ZStdException(Marshal.PtrToStringUTF8((IntPtr)ZSTD_getErrorName(code))!);
-    }
+    public static unsafe ZStdException FromCode(nuint code) => new(Marshal.PtrToStringUTF8((IntPtr)ZSTD_getErrorName(code))!);
 
     public static void ThrowIfError(nuint code)
     {
@@ -198,10 +177,7 @@ public sealed class ZStdDecompressStream : Stream
         _baseStream.Flush();
     }
 
-    public override int Read(byte[] buffer, int offset, int count)
-    {
-        return Read(buffer.AsSpan(offset, count));
-    }
+    public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
 
     public override int ReadByte()
     {
@@ -285,20 +261,11 @@ public sealed class ZStdDecompressStream : Stream
         }
     }
 
-    public override long Seek(long offset, SeekOrigin origin)
-    {
-        throw new NotSupportedException();
-    }
+    public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
 
-    public override void SetLength(long value)
-    {
-        throw new NotSupportedException();
-    }
+    public override void SetLength(long value) => throw new NotSupportedException();
 
-    public override void Write(byte[] buffer, int offset, int count)
-    {
-        throw new NotSupportedException();
-    }
+    public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
     public override bool CanRead => true;
     public override bool CanSeek => false;
@@ -335,15 +302,9 @@ public sealed class ZStdCompressStream : Stream
         _buffer = ArrayPool<byte>.Shared.Rent((int)ZSTD_CStreamOutSize());
     }
 
-    public override void Flush()
-    {
-        FlushInternal(ZSTD_EndDirective.ZSTD_e_flush);
-    }
+    public override void Flush() => FlushInternal(ZSTD_EndDirective.ZSTD_e_flush);
 
-    public void FlushEnd()
-    {
-        FlushInternal(ZSTD_EndDirective.ZSTD_e_end);
-    }
+    public void FlushEnd() => FlushInternal(ZSTD_EndDirective.ZSTD_e_end);
 
     private unsafe void FlushInternal(ZSTD_EndDirective directive)
     {
@@ -374,25 +335,13 @@ public sealed class ZStdCompressStream : Stream
         _baseStream.Flush();
     }
 
-    public override int Read(byte[] buffer, int offset, int count)
-    {
-        throw new NotSupportedException();
-    }
+    public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
-    public override long Seek(long offset, SeekOrigin origin)
-    {
-        throw new NotSupportedException();
-    }
+    public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
 
-    public override void SetLength(long value)
-    {
-        throw new NotSupportedException();
-    }
+    public override void SetLength(long value) => throw new NotSupportedException();
 
-    public override void Write(byte[] buffer, int offset, int count)
-    {
-        Write(buffer.AsSpan(offset, count));
-    }
+    public override void Write(byte[] buffer, int offset, int count) => Write(buffer.AsSpan(offset, count));
 
     public override unsafe void Write(ReadOnlySpan<byte> buffer)
     {
@@ -458,9 +407,5 @@ public sealed class ZStdCompressStream : Stream
         }
     }
 
-    private void ThrowIfDisposed()
-    {
-        if (_disposed)
-            throw new ObjectDisposedException(nameof(ZStdCompressStream));
-    }
+    private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, nameof(ZStdCompressStream));
 }

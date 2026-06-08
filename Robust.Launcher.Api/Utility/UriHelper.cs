@@ -23,15 +23,7 @@ public static class UriHelper
     ///     defaulting to <c>ss14://</c> if no scheme is specified.
     /// </summary>
     [Pure]
-    public static Uri ParseSs14Uri(string address)
-    {
-        if (!TryParseSs14Uri(address, out var uri))
-        {
-            throw new FormatException("Not a valid SS14 URI");
-        }
-
-        return uri;
-    }
+    public static Uri ParseSs14Uri(string address) => !TryParseSs14Uri(address, out var uri) ? throw new FormatException("Not a valid SS14 URI") : uri;
 
     [Pure]
     public static bool TryParseSs14Uri(string address, [NotNullWhen(true)] out Uri? uri)
@@ -41,20 +33,7 @@ public static class UriHelper
             address = "ss14://" + address;
         }
 
-        if (!Uri.TryCreate(address, UriKind.Absolute, out uri))
-        {
-            return false;
-        }
-
-        if (uri.Scheme != SchemeSs14 && uri.Scheme != SchemeSs14s)
-        {
-            return false;
-        }
-
-        if (string.IsNullOrWhiteSpace(uri.Host))
-            return false;
-
-        return true;
+        return Uri.TryCreate(address, UriKind.Absolute, out uri) && uri.Scheme is SchemeSs14 or SchemeSs14s && !string.IsNullOrWhiteSpace(uri.Host);
     }
 
     /// <summary>
@@ -94,55 +73,37 @@ public static class UriHelper
     ///     Gets the <c>/status</c> HTTP address for a server address.
     /// </summary>
     [Pure]
-    public static Uri GetServerStatusAddress(string serverAddress)
-    {
-        return GetServerStatusAddress(ParseSs14Uri(serverAddress));
-    }
+    public static Uri GetServerStatusAddress(string serverAddress) => GetServerStatusAddress(ParseSs14Uri(serverAddress));
 
     /// <summary>
     ///     Gets the <c>/status</c> HTTP address for an ss14 uri.
     /// </summary>
     [Pure]
-    public static Uri GetServerStatusAddress(Uri serverAddress)
-    {
-        return new Uri(GetServerApiAddress(serverAddress), "status");
-    }
+    public static Uri GetServerStatusAddress(Uri serverAddress) => new(GetServerApiAddress(serverAddress), "status");
 
     /// <summary>
     ///     Gets the <c>/info</c> HTTP address for a server address.
     /// </summary>
     [Pure]
-    public static Uri GetServerInfoAddress(string serverAddress)
-    {
-        return GetServerInfoAddress(ParseSs14Uri(serverAddress));
-    }
+    public static Uri GetServerInfoAddress(string serverAddress) => GetServerInfoAddress(ParseSs14Uri(serverAddress));
 
     /// <summary>
     ///     Gets the <c>/info</c> HTTP address for an ss14 uri.
     /// </summary>
     [Pure]
-    public static Uri GetServerInfoAddress(Uri serverAddress)
-    {
-        return new Uri(GetServerApiAddress(serverAddress), "info");
-    }
+    public static Uri GetServerInfoAddress(Uri serverAddress) => new(GetServerApiAddress(serverAddress), "info");
 
     /// <summary>
     ///     Gets the <c>/client.zip</c> HTTP address for a server address.
     ///     This is not necessarily the actual client ZIP address.
     /// </summary>
     [Pure]
-    public static Uri GetServerSelfhostedClientZipAddress(string serverAddress)
-    {
-        return GetServerSelfhostedClientZipAddress(ParseSs14Uri(serverAddress));
-    }
+    public static Uri GetServerSelfhostedClientZipAddress(string serverAddress) => GetServerSelfhostedClientZipAddress(ParseSs14Uri(serverAddress));
 
     /// <summary>
     ///     Gets the <c>/client.zip</c> HTTP address for an ss14 uri.
     ///     This is not necessarily the actual client ZIP address.
     /// </summary>
     [Pure]
-    public static Uri GetServerSelfhostedClientZipAddress(Uri serverAddress)
-    {
-        return new Uri(GetServerApiAddress(serverAddress), "client.zip");
-    }
+    public static Uri GetServerSelfhostedClientZipAddress(Uri serverAddress) => new(GetServerApiAddress(serverAddress), "client.zip");
 }

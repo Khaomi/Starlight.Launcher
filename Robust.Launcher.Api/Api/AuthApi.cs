@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -16,8 +17,8 @@ namespace Robust.Launcher.Api.Api;
 
 public sealed class AuthApi
 {
-    private static readonly UrlFallbackSetStats StatsHubInfra = new(2);
-    public static readonly UrlFallbackSet AuthUrl = new(["https://auth.spacestation14.com/", "https://auth.fallback.spacestation14.com/"], StatsHubInfra);
+    private static readonly UrlFallbackSetStats _statsHubInfra = new(2);
+    public static readonly UrlFallbackSet AuthUrl = new(["https://auth.spacestation14.com/", "https://auth.fallback.spacestation14.com/"], _statsHubInfra);
 
     private readonly HttpClient _httpClient;
     private readonly ILogger<AuthApi> _logger;
@@ -56,17 +57,19 @@ public sealed class AuthApi
             }
 
             _logger.LogError("Server returned unexpected HTTP status code: {responseCode}", resp.StatusCode);
+#if DEBUG
             _logger.LogDebug("Response for error:\n{response}\n{content}", resp, await resp.Content.ReadAsStringAsync());
+#endif
             // Unknown error? uh oh.
             return new AuthenticateResult(
-                new[] { "Server returned unknown error" },
+                ["Server returned unknown error"],
                 AuthenticateDenyResponseCode.UnknownError);
         }
         catch (JsonException e)
         {
             _logger.LogError(e, "JsonException in AuthenticateAsync");
             return new AuthenticateResult(
-                new[] { "Server sent invalid response" },
+                ["Server sent invalid response"],
                 AuthenticateDenyResponseCode.UnknownError);
         }
         catch (HttpRequestException httpE)
@@ -74,7 +77,7 @@ public sealed class AuthApi
             _logger.LogError(httpE, "HttpRequestException in AuthenticateAsync");
             HttpSelfTest.StartSelfTest();
             return new AuthenticateResult(
-                new[] { $"Connection error to authentication server: {httpE.Message}" },
+                [$"Connection error to authentication server: {httpE.Message}"],
                 AuthenticateDenyResponseCode.UnknownError);
         }
     }
@@ -103,20 +106,22 @@ public sealed class AuthApi
             }
 
             _logger.LogError("Server returned unexpected HTTP status code: {responseCode}", resp.StatusCode);
+#if DEBUG
             _logger.LogDebug("Response for error:\n{response}\n{content}", resp, await resp.Content.ReadAsStringAsync());
+#endif
             // Unknown error? uh oh.
-            return new RegisterResult(new[] { "Server returned unknown error" });
+            return new RegisterResult(["Server returned unknown error"]);
         }
         catch (JsonException e)
         {
             _logger.LogError(e, "JsonException in RegisterAsync");
-            return new RegisterResult(new[] { "Server sent invalid response" });
+            return new RegisterResult(["Server sent invalid response"]);
         }
         catch (HttpRequestException httpE)
         {
             _logger.LogError(httpE, "HttpRequestException in RegisterAsync");
             HttpSelfTest.StartSelfTest();
-            return new RegisterResult(new[] { $"Connection error to authentication server: {httpE.Message}" });
+            return new RegisterResult([$"Connection error to authentication server: {httpE.Message}"]);
         }
     }
 
@@ -138,8 +143,10 @@ public sealed class AuthApi
 
             // Unknown error? uh oh.
             _logger.LogError("Server returned unexpected HTTP status code: {responseCode}", resp.StatusCode);
+#if DEBUG
             _logger.LogDebug("Response for error:\n{response}\n{content}", resp, await resp.Content.ReadAsStringAsync());
-            return new[] { "Server returned unknown error" };
+#endif
+            return ["Server returned unknown error"];
         }
         catch (HttpRequestException httpE)
         {
@@ -165,14 +172,16 @@ public sealed class AuthApi
 
             // Unknown error? uh oh.
             _logger.LogError("Server returned unexpected HTTP status code: {responseCode}", resp.StatusCode);
+#if DEBUG
             _logger.LogDebug("Response for error:\n{response}\n{content}", resp, await resp.Content.ReadAsStringAsync());
-            return new[] { "Server returned unknown error" };
+#endif
+            return ["Server returned unknown error"];
         }
         catch (HttpRequestException httpE)
         {
             _logger.LogError(httpE, "HttpRequestException in ResendConfirmationAsync");
             HttpSelfTest.StartSelfTest();
-            return new[] { $"Connection error to authentication server: {httpE.Message}" };
+            return [$"Connection error to authentication server: {httpE.Message}"];
         }
     }
 
@@ -206,7 +215,9 @@ public sealed class AuthApi
 
             // Unknown error? uh oh.
             _logger.LogError("Server returned unexpected HTTP status code: {responseCode}", resp.StatusCode);
+#if DEBUG
             _logger.LogDebug("Response for error:\n{response}\n{content}", resp, await resp.Content.ReadAsStringAsync());
+#endif
 
             throw new AuthApiException($"Server returned unexpected HTTP status code: {resp.StatusCode}");
         }
@@ -240,7 +251,9 @@ public sealed class AuthApi
 
             // Unknown error? uh oh.
             _logger.LogError("Server returned unexpected HTTP status code: {responseCode}", resp.StatusCode);
+#if DEBUG
             _logger.LogDebug("Response for error:\n{response}\n{content}", resp, await resp.Content.ReadAsStringAsync());
+#endif
         }
         catch (HttpRequestException httpE)
         {
@@ -347,58 +360,53 @@ public sealed class AuthApi
 public readonly struct AuthenticateResult
 {
     private readonly LoginInfo? _loginInfo;
-    private readonly string[]? _errors;
+
     public AuthApi.AuthenticateDenyResponseCode Code { get; }
 
     public AuthenticateResult(LoginInfo loginInfo)
     {
         _loginInfo = loginInfo;
-        _errors = null;
+        Errors = null;
         Code = default;
     }
 
     public AuthenticateResult(string[] errors, AuthApi.AuthenticateDenyResponseCode code)
     {
         _loginInfo = null;
-        _errors = errors;
+        Errors = errors;
         Code = code;
     }
 
     public bool IsSuccess => _loginInfo != null;
 
-    public LoginInfo LoginInfo => _loginInfo
-                                  ?? throw new InvalidOperationException(
-                                      "This AuthenticateResult is not a success.");
+    public LoginInfo LoginInfo => _loginInfo ?? throw new InvalidOperationException("This AuthenticateResult is not a success.");
 
-    public string[] Errors => _errors
-                              ?? throw new InvalidOperationException("This AuthenticateResult is not a failure.");
+    [AllowNull]
+    public string[] Errors => field ?? throw new InvalidOperationException("This AuthenticateResult is not a failure.");
 }
 
 public readonly struct RegisterResult
 {
     private readonly RegisterResponseStatus? _status;
-    private readonly string[]? _errors;
 
     public RegisterResult(RegisterResponseStatus status)
     {
         _status = status;
-        _errors = null;
+        Errors = null;
     }
 
     public RegisterResult(string[] errors)
     {
         _status = null;
-        _errors = errors;
+        Errors = errors;
     }
 
     public bool IsSuccess => _status != null;
 
-    public RegisterResponseStatus Status => _status
-                                            ?? throw new InvalidOperationException(
-                                                "This RegisterResult is not a success.");
+    public RegisterResponseStatus Status => _status ?? throw new InvalidOperationException("This RegisterResult is not a success.");
 
-    public string[] Errors => _errors
-                              ?? throw new InvalidOperationException("This RegisterResult is not a failure.");
+    [AllowNull]
+    public string[] Errors => field ?? throw new InvalidOperationException("This RegisterResult is not a failure.");
 }
 
 public enum RegisterResponseStatus

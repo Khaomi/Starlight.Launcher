@@ -65,10 +65,5 @@ public sealed partial class SettingsService
 
         ScheduleSaveInternal(ref _favoritesSaveCts, () => SaveJsonAsync(_favoritesPath, _favoritesLock, _favorites), "favorites");
     }
-    private void RebuildFavoritesIndex()
-    {
-        _favoriteAddresses = new HashSet<string>(
-            _favorites.Select(f => f.Address),
-            StringComparer.OrdinalIgnoreCase);
-    }
+    private void RebuildFavoritesIndex() => _favoriteAddresses = new HashSet<string>(_favorites.Select(f => f.Address), StringComparer.OrdinalIgnoreCase);
 }

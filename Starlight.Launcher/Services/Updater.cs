@@ -25,7 +25,7 @@ public sealed partial class Updater
     // How many bytes a compression attempt needs to save to be considered "worth it".
     private const int CompressionSavingsThreshold = 10;
 
-    private static readonly IDeserializer ResourceManifestDeserializer =
+    private static readonly IDeserializer _resourceManifestDeserializer =
         new DeserializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
             .IgnoreUnmatchedProperties()
@@ -56,28 +56,14 @@ public sealed partial class Updater
 
     public Exception? UpdateException;
 
-    public async Task<ContentLaunchInfo?> RunUpdateForLaunchAsync(
-        ServerBuildInformation buildInformation,
-        CancellationToken cancel = default)
-    {
-        return await GuardUpdateAsync(() => RunUpdate(buildInformation, cancel));
-    }
+    public async Task<ContentLaunchInfo?> RunUpdateForLaunchAsync(ServerBuildInformation buildInformation, CancellationToken cancel = default) => await GuardUpdateAsync(() => RunUpdate(buildInformation, cancel));
 
-    public async Task<ContentLaunchInfo?> InstallContentBundleForLaunchAsync(
-        ZipArchive archive,
-        byte[] zipHash,
-        ContentBundleMetadata metadata,
-        CancellationToken cancel = default)
-    {
-        return await GuardUpdateAsync(() => InstallContentBundle(archive, zipHash, metadata, cancel));
-    }
+    public async Task<ContentLaunchInfo?> InstallContentBundleForLaunchAsync(ZipArchive archive, byte[] zipHash, ContentBundleMetadata metadata, CancellationToken cancel = default) => await GuardUpdateAsync(() => InstallContentBundle(archive, zipHash, metadata, cancel));
 
     private async Task<T?> GuardUpdateAsync<T>(Func<Task<T>> func) where T : class
     {
         if (_updating)
-        {
             throw new InvalidOperationException("Update already in progress.");
-        }
 
         _updating = true;
         _presence.UpdatePresence(PresenceState.DownloadingContent);
@@ -130,7 +116,7 @@ public sealed partial class Updater
 
         Log.Debug("Checking to cull old content versions...");
 
-        await Task.Run(() => { CullOldContentVersions(con); }, CancellationToken.None);
+        await Task.Run(() => CullOldContentVersions(con), CancellationToken.None);
 
         return await InstallEnginesForVersion(con, moduleManifest, versionRowId, cancel);
     }
@@ -304,7 +290,6 @@ public sealed partial class Updater
         return new ContentLaunchInfo(versionRowId, modules);
     }
 
-
     private void CullOldContentVersions(SqliteConnection con)
     {
         using var tx = con.BeginTransaction();
@@ -441,7 +426,6 @@ public sealed partial class Updater
                 "DESC",
                 new { buildInfo.ForkId, buildInfo.Version, buildInfo.EngineVersion });
         }
-
 
         if (found == null)
         {
@@ -668,11 +652,7 @@ public sealed partial class Updater
         return versionId;
     }
 
-    private static void TouchVersion(SqliteConnection con, long versionId)
-    {
-        con.Execute("UPDATE ContentVersion SET LastUsed = datetime('now') WHERE Id = @Version",
-            new { Version = versionId });
-    }
+    private static void TouchVersion(SqliteConnection con, long versionId) => con.Execute("UPDATE ContentVersion SET LastUsed = datetime('now') WHERE Id = @Version", new { Version = versionId });
 
     /// <returns>The manifest hash</returns>
     [SuppressMessage("ReSharper", "MethodHasAsyncOverload")]
@@ -826,10 +806,7 @@ public sealed partial class Updater
         return Blake2B.HashStream(manifestStream, 32);
     }
 
-    private async Task CullEngineVersionsMaybe(SqliteConnection contentConnection)
-    {
-        await _engineManager.DoEngineCullMaybeAsync(contentConnection);
-    }
+    private async Task CullEngineVersionsMaybe(SqliteConnection contentConnection) => await _engineManager.DoEngineCullMaybeAsync(contentConnection);
 
     private async Task<string> InstallEngineVersionIfMissing(string engineVer, CancellationToken cancel)
     {
@@ -840,13 +817,7 @@ public sealed partial class Updater
         return changedVersion;
     }
 
-    private void DownloadProgressCallback(long downloaded, long total)
-    {
-        _dispatcher.Dispatch(() =>
-        {
-            Progress = (downloaded, total, ProgressUnit.Bytes);
-        });
-    }
+    private void DownloadProgressCallback(long downloaded, long total) => _dispatcher.Dispatch(() => Progress = (downloaded, total, ProgressUnit.Bytes));
 
     internal static byte[] HashFileSha256(Stream stream)
     {
@@ -860,7 +831,7 @@ public sealed partial class Updater
             return null;
 
         using var streamReader = new StreamReader(resourceManifest);
-        var manifestData = ResourceManifestDeserializer.Deserialize<ResourceManifestData?>(streamReader);
+        var manifestData = _resourceManifestDeserializer.Deserialize<ResourceManifestData?>(streamReader);
         return manifestData;
     }
 

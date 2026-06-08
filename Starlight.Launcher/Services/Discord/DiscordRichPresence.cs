@@ -10,7 +10,7 @@ public sealed partial class DiscordRichPresence : IDisposable
 
     public PresenceState CurrentPresenceState { get; internal set; } = PresenceState.Idle;
 
-    private string CurrentServerName = "";
+    private string _currentServerName = "";
 
     private readonly DateTime _startedAt = DateTime.UtcNow;
 
@@ -32,16 +32,10 @@ public sealed partial class DiscordRichPresence : IDisposable
             Log.Information("Connected to discord with user {0}", e.User.Username);
         };
 
-        _client.OnError += (s, e) =>
-        {
-            Log.Error("Discord RPC error: {Message}", e.Message);
-        };
+        _client.OnError += (s, e) => Log.Error("Discord RPC error: {Message}", e.Message);
     }
 
-    public void Dispose()
-    {
-        _client?.Dispose(); // Clean up the client when we're done with it
-    }
+    public void Dispose() => _client?.Dispose(); // Clean up the client when we're done with it
 
     public void Initialize()
     {
@@ -64,7 +58,7 @@ public sealed partial class DiscordRichPresence : IDisposable
             return;
         var presence = new RichPresence
         {
-            Details = serverName == null ? string.IsNullOrEmpty(CurrentServerName) ? "" : $"Playing {CurrentServerName}" : $"Playing {serverName}",
+            Details = serverName == null ? string.IsNullOrEmpty(_currentServerName) ? "" : $"Playing {_currentServerName}" : $"Playing {serverName}",
             State = state switch
             {
                 PresenceState.Idle => "Idling",
@@ -85,7 +79,7 @@ public sealed partial class DiscordRichPresence : IDisposable
             }
         };
         CurrentPresenceState = state;
-        CurrentServerName = serverName ?? CurrentServerName;
+        _currentServerName = serverName ?? _currentServerName;
         _lastUpdate = DateTime.UtcNow;
         _client.SetPresence(presence);
     }

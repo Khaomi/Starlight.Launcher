@@ -12,13 +12,13 @@ namespace Starlight.Launcher.Components.Pages;
 
 public partial class Home : ComponentBase, IDisposable
 {
-    [Inject] SettingsService _settings { get; set; } = null!;
-    [Inject] HubServerFetcher _fetcher { get; set; } = null!;
-    [Inject] ServerStatusCache _statusCache { get; set; } = null!;
-    [Inject] Connector _connector { get; set; } = null!;
-    [Inject] IDialogService _dialogService { get; set; } = null!;
-    [Inject] IFileDialogService _fileDialog { get; set; } = null!;
-    [Inject] LocalizationManager _localization { get; set; } = null!;
+    [Inject] private SettingsService _settings { get; set; } = default!;
+    [Inject] private HubServerFetcher _fetcher { get; set; } = default!;
+    [Inject] private ServerStatusCache _statusCache { get; set; } = default!;
+    [Inject] private Connector _connector { get; set; } = default!;
+    [Inject] private IDialogService _dialogService { get; set; } = default!;
+    [Inject] private IFileDialogService _fileDialog { get; set; } = default!;
+    [Inject] private LocalizationManager _localization { get; set; } = default!;
 
     private List<ServerStatusData> _favoriteServers { get; set; } = null!;
 

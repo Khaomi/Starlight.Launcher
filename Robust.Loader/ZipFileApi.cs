@@ -62,8 +62,5 @@ internal sealed class ZipFileApi : IFileApi, IDisposable
         }
     }
 
-    public void Dispose()
-    {
-        _archive.Dispose();
-    }
+    public void Dispose() => _archive.Dispose();
 }

@@ -17,7 +17,6 @@ public sealed partial class SettingsService : IAsyncDisposable
     private CancellationTokenSource? _enginesSaveCts;
     private CancellationTokenSource? _modulesSaveCts;
 
-
     private AppSettings _settings;
     private readonly SemaphoreSlim _settingsLock = new(1, 1);
     private readonly string _filePath;
@@ -50,7 +49,7 @@ public sealed partial class SettingsService : IAsyncDisposable
 
     public event Action? ModulesChanged;
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
+    private static readonly JsonSerializerOptions _jsonOptions = new()
     {
         WriteIndented = true
     };
@@ -107,7 +106,7 @@ public sealed partial class SettingsService : IAsyncDisposable
         await slim.WaitAsync();
         try
         {
-            var json = JsonSerializer.Serialize(obj, JsonOptions);
+            var json = JsonSerializer.Serialize(obj, _jsonOptions);
             await WriteFileSafeAsync(json, Path.GetDirectoryName(path)!, path);
 #if DEBUG
             _logger.LogDebug("{0} saved", path);

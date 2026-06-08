@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 namespace Starlight.Launcher.Services.ServerStatus;
 
-public sealed class HubServerFetcher(HubApi hub, SettingsService settings, ServerStatusCache cache) : IServerSource, IDisposable
+public sealed partial class HubServerFetcher(HubApi hub, SettingsService settings, ServerStatusCache cache) : IServerSource, IDisposable
 {
     #region Injections
 
@@ -23,8 +23,6 @@ public sealed class HubServerFetcher(HubApi hub, SettingsService settings, Serve
     private volatile bool _disposed;
 
     private readonly List<ServerStatusData> _allServers = [];
-    private IReadOnlyList<ServerStatusData> _allServersSnapshot = [];
-
     private const int MaxConcurrentPerHub = 2;
 
     #endregion
@@ -32,7 +30,7 @@ public sealed class HubServerFetcher(HubApi hub, SettingsService settings, Serve
     #region Public Data Access
 
     public RefreshListStatus Status { get; private set; } = RefreshListStatus.NotUpdated;
-    public IReadOnlyList<ServerStatusData> AllServers => _allServersSnapshot;
+    public IReadOnlyList<ServerStatusData> AllServers { get; private set; } = [];
 
     #endregion
 
@@ -113,7 +111,6 @@ public sealed class HubServerFetcher(HubApi hub, SettingsService settings, Serve
             _allServers.Clear();
         SetStatus(RefreshListStatus.UpdatingMaster);
 
-
         var entries = new Dictionary<string, HubServerListEntry>(StringComparer.OrdinalIgnoreCase);
         var allSucceeded = true;
         var skippedDueToBackoff = 0;
@@ -179,7 +176,7 @@ public sealed class HubServerFetcher(HubApi hub, SettingsService settings, Serve
                 ServerStatusCache.ApplyStatus(s, kv.Value.StatusData);
                 return s;
             }));
-            _allServersSnapshot = _allServers.ToArray();
+            AllServers = _allServers.ToArray();
         }
 
         ServersChanged?.Invoke();

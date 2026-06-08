@@ -32,10 +32,7 @@ public sealed class MacTray : NSObject, INativeTray
 #pragma warning restore CS0067
     public bool IsWindowVisible { get; private set; } = true;
 
-    static MacTray()
-    {
-        dlopen("/System/Library/Frameworks/AppKit.framework/AppKit", RTLD_NOW);
-    }
+    static MacTray() => dlopen("/System/Library/Frameworks/AppKit.framework/AppKit", RTLD_NOW);
 
     public void Initialize(TrayOptions o, IReadOnlyList<TrayMenuItem> menu)
     {

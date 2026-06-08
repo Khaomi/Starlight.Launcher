@@ -1,10 +1,6 @@
-﻿namespace Starlight.Launcher
+﻿namespace Starlight.Launcher;
+
+public partial class MainPage : ContentPage
 {
-    public partial class MainPage : ContentPage
-    {
-        public MainPage()
-        {
-            InitializeComponent();
-        }
-    }
+    public MainPage() => InitializeComponent();
 }

@@ -115,19 +115,16 @@ public sealed class LocalizationManager
         return _currentBundle?.GetMessage(key, args: argsDict) ?? key;
     }
 
-    private static IFluentType ToFluentType(object? o)
+    private static IFluentType ToFluentType(object? o) => o switch
     {
-        return o switch
-        {
-            string s => new FluentString(s),
-            float f => (FluentNumber)f,
-            double d => (FluentNumber)d,
-            int i => (FluentNumber)i,
-            long l => (FluentNumber)l,
-            null => FluentNone.None,
-            _ => new FluentString(o.ToString())
-        };
-    }
+        string s => new FluentString(s),
+        float f => (FluentNumber)f,
+        double d => (FluentNumber)d,
+        int i => (FluentNumber)i,
+        long l => (FluentNumber)l,
+        null => FluentNone.None,
+        _ => new FluentString(o.ToString())
+    };
 
     private async Task AddLanguage(FluentBundle bundle, CultureInfo culture)
     {

@@ -7,7 +7,7 @@ namespace Starlight.Launcher.Components.Atoms.ServerList;
 
 public partial class SearchBar : ComponentBase
 {
-    [Inject] LocalizationManager Localization { get; set; } = null!;
+    [Inject] private LocalizationManager _localization { get; set; } = default!;
     [Parameter, EditorRequired] public ServerListFilters Filters { get; set; } = null!;
     [Parameter] public int TotalCount { get; set; }
     [Parameter] public int FilteredCount { get; set; }
@@ -15,7 +15,7 @@ public partial class SearchBar : ComponentBase
     [Parameter] public EventCallback OnRefresh { get; set; }
     [Parameter] public bool TagsExpandButton { get; set; } = true;
 
-    private bool HasActiveTagFilters =>
+    private bool _hasActiveTagFilters =>
         Filters.SelectedRP.Count > 0 ||
         Filters.SelectedLang.Count > 0 ||
         Filters.SelectedRegion.Count > 0;
@@ -26,7 +26,7 @@ public partial class SearchBar : ComponentBase
         Filters.NotifyChanged();
     }
 
-    private bool IsRefreshing => Status == RefreshListStatus.UpdatingMaster;
+    private bool _isRefreshing => Status == RefreshListStatus.UpdatingMaster;
 
     private void OnSearchChanged(string value)
     {

@@ -6,7 +6,7 @@ namespace Starlight.Launcher.Components.Atoms.ServerList;
 
 public partial class TagsBar : ComponentBase
 {
-    [Inject] LocalizationManager Localization { get; set; } = null!;
+    [Inject] private LocalizationManager _localization { get; set; } = default!;
     [Parameter, EditorRequired] public ServerListFilters Filters { get; set; } = null!;
     [Parameter] public IReadOnlyList<string> AvailableRPTags { get; set; } = Array.Empty<string>();
     [Parameter] public IReadOnlyList<string> AvailableLangTags { get; set; } = Array.Empty<string>();
@@ -37,7 +37,7 @@ public partial class TagsBar : ComponentBase
         Filters.NotifyChanged();
     }
 
-    private bool HasActiveTagFilters =>
+    private bool _hasActiveTagFilters =>
         Filters.SelectedRP.Count > 0 ||
         Filters.SelectedLang.Count > 0 ||
         Filters.SelectedRegion.Count > 0;

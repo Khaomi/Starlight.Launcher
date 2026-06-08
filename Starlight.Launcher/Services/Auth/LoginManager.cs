@@ -176,8 +176,8 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
     {
         Log.Debug("Refreshing all tokens.");
 
-        const int delayStart = 2;
-        const int delayValue = 200;
+        const int DelayStart = 2;
+        const int DelayValue = 200;
 
         ActiveLoginData[] snapshot;
         lock (_loginsLock)
@@ -215,8 +215,8 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
                 return;
             }
 
-            if (i > delayStart)
-                await Task.Delay(delayValue * (i - delayStart));
+            if (i > DelayStart)
+                await Task.Delay(DelayValue * (i - DelayStart));
 
             try
             {
@@ -318,10 +318,7 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
     }
 
     /// <exception cref="AuthApiException">Thrown if an API error occured.</exception>
-    public Task UpdateSingleAccountStatus(LoggedInAccount account)
-    {
-        return UpdateSingleAccountStatus((ActiveLoginData)account);
-    }
+    public Task UpdateSingleAccountStatus(LoggedInAccount account) => UpdateSingleAccountStatus((ActiveLoginData)account);
 
     private async Task UpdateSingleAccountStatus(ActiveLoginData data)
     {

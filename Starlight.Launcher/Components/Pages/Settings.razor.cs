@@ -12,12 +12,12 @@ namespace Starlight.Launcher.Components.Pages;
 
 public partial class Settings : ComponentBase, IDisposable
 {
-    [Inject] private SettingsService _service { get; set; } = null!;
-    [Inject] private LocalizationManager _localization { get; set; } = null!;
-    [Inject] private SettingsService _settings { get; set; } = null!;
-    [Inject] private AppState _state { get; set; } = null!;
-    [Inject] private IDialogService _dialog { get; set; } = null!;
-    [Inject] private IFileDialogService _fileDialog { get; set; } = null!;
+    [Inject] private SettingsService _service { get; set; } = default!;
+    [Inject] private LocalizationManager _localization { get; set; } = default!;
+    [Inject] private SettingsService _settings { get; set; } = default!;
+    [Inject] private AppState _state { get; set; } = default!;
+    [Inject] private IDialogService _dialog { get; set; } = default!;
+    [Inject] private IFileDialogService _fileDialog { get; set; } = default!;
     private List<string> _availableLanguages = [];
 
     private MudTabs _tabs = null!;

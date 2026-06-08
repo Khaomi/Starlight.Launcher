@@ -9,15 +9,9 @@ public struct HashKey(byte[] data) : IEquatable<HashKey>
 {
     public byte[] Data = data;
 
-    public readonly bool Equals(HashKey other)
-    {
-        return Data.AsSpan().SequenceEqual(other.Data);
-    }
+    public readonly bool Equals(HashKey other) => Data.AsSpan().SequenceEqual(other.Data);
 
-    public readonly override bool Equals(object? obj)
-    {
-        return obj is HashKey other && Equals(other);
-    }
+    public readonly override bool Equals(object? obj) => obj is HashKey other && Equals(other);
 
     public readonly override int GetHashCode()
     {
@@ -26,13 +20,7 @@ public struct HashKey(byte[] data) : IEquatable<HashKey>
         return hc.ToHashCode();
     }
 
-    public static bool operator ==(HashKey left, HashKey right)
-    {
-        return left.Equals(right);
-    }
+    public static bool operator ==(HashKey left, HashKey right) => left.Equals(right);
 
-    public static bool operator !=(HashKey left, HashKey right)
-    {
-        return !left.Equals(right);
-    }
+    public static bool operator !=(HashKey left, HashKey right) => !left.Equals(right);
 }

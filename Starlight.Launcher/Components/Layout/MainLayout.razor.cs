@@ -17,14 +17,14 @@ namespace Starlight.Launcher.Components.Layout;
 
 public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowserViewportObserver
 {
-    [Inject] private IJSRuntime _jS { get; set; } = null!;
-    [Inject] private SettingsService _settings { get; set; } = null!;
-    [Inject] private LocalizationManager _localization { get; set; } = null!;
-    [Inject] private AppState _state { get; set; } = null!;
-    [Inject] private IBrowserViewportService _browserViewportService { get; set; } = null!;
-    [Inject] private INativeTray _tray { get; set; } = null!;
-    [Inject] private NavigationManager _navigation { get; set; } = null!;
-    [Inject] private DiscordRichPresence _presence { get; set; } = null!;
+    [Inject] private IJSRuntime _jS { get; set; } = default!;
+    [Inject] private SettingsService _settings { get; set; } = default!;
+    [Inject] private LocalizationManager _localization { get; set; } = default!;
+    [Inject] private AppState _state { get; set; } = default!;
+    [Inject] private IBrowserViewportService _browserViewportService { get; set; } = default!;
+    [Inject] private INativeTray _tray { get; set; } = default!;
+    [Inject] private NavigationManager _navigation { get; set; } = default!;
+    [Inject] private DiscordRichPresence _presence { get; set; } = default!;
 
     Guid IBrowserViewportObserver.Id { get; } = Guid.NewGuid();
 

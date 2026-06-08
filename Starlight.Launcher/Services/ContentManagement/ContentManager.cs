@@ -1,17 +1,11 @@
 using Dapper;
 using Microsoft.Data.Sqlite;
 using Robust.Launcher.Api.Models.ContentManagement;
-using Robust.Launcher.Api.Models.Data;
-using Robust.Launcher.Api.Utility;
 using Serilog;
 using Starlight.Launcher.Services.Settings;
 using Starlight.Launcher.Utility;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.IO.Compression;
-using System.Threading.Tasks;
 
 namespace Starlight.Launcher.Services;
 
@@ -19,10 +13,7 @@ public sealed class ContentManager
 {
     private readonly SettingsService _settings;
 
-    public ContentManager(SettingsService settings)
-    {
-        _settings = settings;
-    }
+    public ContentManager(SettingsService settings) => _settings = settings;
 
     public void Initialize()
     {
@@ -47,37 +38,35 @@ public sealed class ContentManager
     /// </summary>
     /// <returns><see langword="false"/> if a client is running and blocking the purge.</returns>
     public async Task<bool> ClearAll()
-    {
-        return await Task.Run(() =>
-        {
-            try
+        => await Task.Run(() =>
             {
-                using var con = GetSqliteConnection();
-
-                using var transact = con.BeginTransaction(deferred: true);
-
-                if (GetRunningClientVersions(con).Count > 0)
+                try
                 {
-                    // In case GetRunningClientVersions cleaned anything up.
+                    using var con = GetSqliteConnection();
+
+                    using var transact = con.BeginTransaction(deferred: true);
+
+                    if (GetRunningClientVersions(con).Count > 0)
+                    {
+                        // In case GetRunningClientVersions cleaned anything up.
+                        transact.Commit();
+                        return false;
+                    }
+
+                    con.Execute("DELETE FROM InterruptedDownload");
+                    con.Execute("DELETE FROM ContentVersion");
+                    con.Execute("DELETE FROM Content");
                     transact.Commit();
-                    return false;
+
+                    con.Execute("VACUUM");
+                    return true;
                 }
-
-                con.Execute("DELETE FROM InterruptedDownload");
-                con.Execute("DELETE FROM ContentVersion");
-                con.Execute("DELETE FROM Content");
-                transact.Commit();
-
-                con.Execute("VACUUM");
-                return true;
-            }
-            catch (Exception e)
-            {
-                Log.Error(e, "Error while truncating content DB!");
-                return true;
-            }
-        });
-    }
+                catch (Exception e)
+                {
+                    Log.Error(e, "Error while truncating content DB!");
+                    return true;
+                }
+            });
 
     /// <summary>
     /// Open a blob in a manifest version for reading.
@@ -99,20 +88,13 @@ public sealed class ContentManager
 
         var blob = new SqliteBlob(con, "Content", "Data", manifestRowId, readOnly: true);
 
-        switch (manifestCompression)
+        return manifestCompression switch
         {
-            case ContentCompressionScheme.None:
-                return blob;
-
-            case ContentCompressionScheme.Deflate:
-                return new DeflateStream(blob, CompressionMode.Decompress);
-
-            case ContentCompressionScheme.ZStd:
-                return new ZStdDecompressStream(blob);
-
-            default:
-                throw new InvalidDataException("Unknown compression scheme in ContentDB!");
-        }
+            ContentCompressionScheme.None => blob,
+            ContentCompressionScheme.Deflate => new DeflateStream(blob, CompressionMode.Decompress),
+            ContentCompressionScheme.ZStd => new ZStdDecompressStream(blob),
+            _ => throw new InvalidDataException("Unknown compression scheme in ContentDB!"),
+        };
     }
 
     public SqliteConnection GetSqliteConnection()
@@ -122,8 +104,7 @@ public sealed class ContentManager
         return con;
     }
 
-    private string GetContentDbConnectionString()
-    {
+    private string GetContentDbConnectionString() =>
         // Disable pooling: interactions with the content DB are relatively infrequent
         // This means that ALL connections get closed in most cases (between committing download and starting client)
         // Which in turn means that the WAL file gets truncated.
@@ -133,8 +114,7 @@ public sealed class ContentManager
         //
         // (also it means that hitting the "clear server content" button in settings IMMEDIATELY truncates the DB file
         // instead of waiting for the launcher to exit, at least if the client isn't running so it can checkpoint)
-        return $"Data Source={_settings.GetSettings().PathContentDb};Mode=ReadWriteCreate;Pooling=False;Foreign Keys=True";
-    }
+        $"Data Source={_settings.GetSettings().PathContentDb};Mode=ReadWriteCreate;Pooling=False;Foreign Keys=True";
 
     /// <summary>
     /// Get a list of content version IDs that are in use by running clients.

@@ -61,20 +61,14 @@ public sealed class UrlFallbackSet
         return await msg.Content.ReadAsStringAsync(cancel).ConfigureAwait(false);
     }
 
-    public async Task<HttpResponseMessage> GetAsync(HttpClient httpClient, CancellationToken cancel = default)
-    {
-        return await SendAsync(httpClient, url => new HttpRequestMessage(HttpMethod.Get, url), cancel)
+    public async Task<HttpResponseMessage> GetAsync(HttpClient httpClient, CancellationToken cancel = default) => await SendAsync(httpClient, url => new HttpRequestMessage(HttpMethod.Get, url), cancel)
             .ConfigureAwait(false);
-    }
 
     public async Task<HttpResponseMessage> PostAsync(HttpClient httpClient, HttpContent content,
-        CancellationToken cancel = default)
-    {
-        return await SendAsync(httpClient, url => new HttpRequestMessage(HttpMethod.Post, url)
+        CancellationToken cancel = default) => await SendAsync(httpClient, url => new HttpRequestMessage(HttpMethod.Post, url)
         {
             Content = content
         }, cancel);
-    }
 
     public async Task<HttpResponseMessage> SendAsync(
         HttpClient httpClient,
@@ -120,20 +114,11 @@ public sealed class UrlFallbackSet
         return Urls[maxUrl];
     }
 
-    public static UrlFallbackSet operator +(UrlFallbackSet set, string s)
-    {
-        return new UrlFallbackSet([.. set.Urls.Select(x => x + s)], set.Stats);
-    }
+    public static UrlFallbackSet operator +(UrlFallbackSet set, string s) => new([.. set.Urls.Select(x => x + s)], set.Stats);
 
-    public static UrlFallbackSet FromSingle(Uri url)
-    {
-        return FromSingle(url.ToString());
-    }
+    public static UrlFallbackSet FromSingle(Uri url) => FromSingle(url.ToString());
 
-    public static UrlFallbackSet FromSingle(string url)
-    {
-        return new UrlFallbackSet([url]);
-    }
+    public static UrlFallbackSet FromSingle(string url) => new([url]);
 }
 
 public sealed class UrlFallbackSetStats
@@ -143,24 +128,15 @@ public sealed class UrlFallbackSetStats
     public long[] RequestCount { get; init; } = [];
 
     [JsonConstructor]
-    public UrlFallbackSetStats(long[] requestCount)
-    {
-        RequestCount = requestCount;
-    }
+    public UrlFallbackSetStats(long[] requestCount) => RequestCount = requestCount;
 
-    public UrlFallbackSetStats(int countUrls)
-    {
-        RequestCount = new long[countUrls];
-    }
+    public UrlFallbackSetStats(int countUrls) => RequestCount = new long[countUrls];
 
     public UrlFallbackSetStats()
     {
     }
 
-    public void AddSuccessfulRequest(int idx)
-    {
-        Interlocked.Increment(ref RequestCount[idx]);
-    }
+    public void AddSuccessfulRequest(int idx) => Interlocked.Increment(ref RequestCount[idx]);
 }
 
 public static class UrlFallbackSetHttpClientExtensions

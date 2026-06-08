@@ -5,5 +5,5 @@ namespace Starlight.Launcher.Components.Atoms;
 
 public sealed partial class VerticalNavBar : ComponentBase
 {
-    [Inject] private LocalizationManager Localization { get; set; } = null!;
+    [Inject] private LocalizationManager _localization { get; set; } = default!;
 }

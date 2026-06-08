@@ -193,7 +193,6 @@ public sealed partial class Updater
 
         // Alright well we support the protocol. Now to start the HTTP request!
 
-
         // Write request body.
         var requestBody = new byte[toDownload.Count * 4];
         var reqI = 0;

@@ -7,83 +7,83 @@
 @implements IDisposable
 
 <div class="server-page">
-    @if (Fetcher.Status == RefreshListStatus.NotUpdated || Fetcher.Status == RefreshListStatus.UpdatingMaster)
+    @if (_fetcher.Status == RefreshListStatus.NotUpdated || _fetcher.Status == RefreshListStatus.UpdatingMaster)
     {
         <div class="server-page__state">
             <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Medium" />
-            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization["servers-menu-loading"]</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">@_localization["servers-menu-loading"]</MudText>
         </div>
     }
-    else if (Fetcher.Status == RefreshListStatus.Error && _totalCount == 0)
+    else if (_fetcher.Status == RefreshListStatus.Error && _totalCount == 0)
     {
         <div class="server-page__state">
             <MudIcon Icon="@Icons.Material.Filled.CloudOff" Size="Size.Large" Color="Color.Error" />
-            <MudText Typo="Typo.subtitle1">@Localization["servers-menu-fetch-failed"]</MudText>
+            <MudText Typo="Typo.subtitle1">@_localization["servers-menu-fetch-failed"]</MudText>
             <MudButton Variant="Variant.Filled" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Refresh"
                        OnClick="HandleRefresh">
-                @Localization["servers-menu-try-again"]
+                @_localization["servers-menu-try-again"]
             </MudButton>
         </div>
     }
     else
     {
-        @if (SearchBarPosition == ElementPosition.Left || TagsBarPosition == ElementPosition.Left)
+        @if (_searchBarPosition == ElementPosition.Left || _tagsBarPosition == ElementPosition.Left)
         {
             <MudDrawer Anchor="Anchor.Left" ClipMode="DrawerClipMode.Always" Elevation="1" Open="true" Variant="@DrawerVariant.Responsive">
-                @if (!BottomSearch && SearchBarPosition == ElementPosition.Left)
+                @if (!_bottomSearch && _searchBarPosition == ElementPosition.Left)
                 {
-                    <SearchBar Filters="Filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" TagsExpandButton="TagsBarPosition is ElementPosition.Top or ElementPosition.Bottom" />
+                    <SearchBar Filters="_filters" Status="_fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" TagsExpandButton="_tagsBarPosition is ElementPosition.Top or ElementPosition.Bottom" />
                 }
-                @if (TagsBarPosition == ElementPosition.Left)
+                @if (_tagsBarPosition == ElementPosition.Left)
                 {
-                    <TagsBar HasSearchAbove="!BottomSearch && SearchBarPosition == ElementPosition.Left" HasSearchBelow="BottomSearch && SearchBarPosition == ElementPosition.Left" Filters="Filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
+                    <TagsBar HasSearchAbove="!_bottomSearch && _searchBarPosition == ElementPosition.Left" HasSearchBelow="_bottomSearch && _searchBarPosition == ElementPosition.Left" Filters="_filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
                 }
-                @if (BottomSearch && SearchBarPosition == ElementPosition.Left)
+                @if (_bottomSearch && _searchBarPosition == ElementPosition.Left)
                 {
-                    <SearchBar Filters="Filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" TagsExpandButton="TagsBarPosition is ElementPosition.Top or ElementPosition.Bottom" />
+                    <SearchBar Filters="_filters" Status="_fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" TagsExpandButton="_tagsBarPosition is ElementPosition.Top or ElementPosition.Bottom" />
                 }
             </MudDrawer>
         }
-        @if (SearchBarPosition == ElementPosition.Right || TagsBarPosition == ElementPosition.Right)
+        @if (_searchBarPosition == ElementPosition.Right || _tagsBarPosition == ElementPosition.Right)
         {
             <MudDrawer Anchor="Anchor.Right" ClipMode="DrawerClipMode.Always" Elevation="1" Open="true" Variant="@DrawerVariant.Responsive">
-                @if (!BottomSearch && SearchBarPosition == ElementPosition.Right)
+                @if (!_bottomSearch && _searchBarPosition == ElementPosition.Right)
                 {
-                    <SearchBar Filters="Filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" TagsExpandButton="TagsBarPosition is ElementPosition.Top or ElementPosition.Bottom" />
+                    <SearchBar Filters="_filters" Status="_fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" TagsExpandButton="_tagsBarPosition is ElementPosition.Top or ElementPosition.Bottom" />
                 }
-                @if (TagsBarPosition == ElementPosition.Right)
+                @if (_tagsBarPosition == ElementPosition.Right)
                 {
-                    <TagsBar HasSearchAbove="!BottomSearch && SearchBarPosition == ElementPosition.Right" HasSearchBelow="BottomSearch && SearchBarPosition == ElementPosition.Right" Filters="Filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
+                    <TagsBar HasSearchAbove="!_bottomSearch && _searchBarPosition == ElementPosition.Right" HasSearchBelow="_bottomSearch && _searchBarPosition == ElementPosition.Right" Filters="_filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
                 }
-                @if (BottomSearch && SearchBarPosition == ElementPosition.Right)
+                @if (_bottomSearch && _searchBarPosition == ElementPosition.Right)
                 {
-                    <SearchBar Filters="Filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" TagsExpandButton="TagsBarPosition is ElementPosition.Top or ElementPosition.Bottom" />
+                    <SearchBar Filters="_filters" Status="_fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" TagsExpandButton="_tagsBarPosition is ElementPosition.Top or ElementPosition.Bottom" />
                 }
             </MudDrawer>
         }
-        @if (SearchBarPosition == ElementPosition.Top || TagsBarPosition == ElementPosition.Top)
+        @if (_searchBarPosition == ElementPosition.Top || _tagsBarPosition == ElementPosition.Top)
         {
             <MudPaper Elevation="0" Square="true" Class="server-toolbar">
-                @if (!BottomSearch && SearchBarPosition == ElementPosition.Top)
+                @if (!_bottomSearch && _searchBarPosition == ElementPosition.Top)
                 {
-                    <SearchBar Filters="Filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" TagsExpandButton="TagsBarPosition is ElementPosition.Top or ElementPosition.Bottom" />
+                    <SearchBar Filters="_filters" Status="_fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" TagsExpandButton="_tagsBarPosition is ElementPosition.Top or ElementPosition.Bottom" />
                 }
-                @if (TagsBarPosition == ElementPosition.Top)
+                @if (_tagsBarPosition == ElementPosition.Top)
                 {
-                    <TagsBar HasSearchAbove="!BottomSearch && SearchBarPosition == ElementPosition.Top" HasSearchBelow="BottomSearch && SearchBarPosition == ElementPosition.Top" Filters="Filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
+                    <TagsBar HasSearchAbove="!_bottomSearch && _searchBarPosition == ElementPosition.Top" HasSearchBelow="_bottomSearch && _searchBarPosition == ElementPosition.Top" Filters="_filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
                 }
-                @if (BottomSearch && SearchBarPosition == ElementPosition.Top)
+                @if (_bottomSearch && _searchBarPosition == ElementPosition.Top)
                 {
-                    <SearchBar Filters="Filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" TagsExpandButton="TagsBarPosition is ElementPosition.Top or ElementPosition.Bottom" />
+                    <SearchBar Filters="_filters" Status="_fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" TagsExpandButton="_tagsBarPosition is ElementPosition.Top or ElementPosition.Bottom" />
                 }
             </MudPaper>
         }
-        @if (Fetcher.Status == RefreshListStatus.PartialError)
+        @if (_fetcher.Status == RefreshListStatus.PartialError)
         {
             <MudAlert Severity="Severity.Warning" Square="true" Dense="true"
                       ShowCloseIcon="false" Class="server-page__alert">
-                @Localization["servers-menu-cant-reach-hubs"]
+                @_localization["servers-menu-cant-reach-hubs"]
             </MudAlert>
         }
         if (_filteredServers.Count == 0)
@@ -91,12 +91,12 @@
             <div class="server-page__state">
                 <MudIcon Icon="@Icons.Material.Filled.SearchOff" Size="Size.Large" Color="Color.Default" />
                 <MudText Typo="Typo.body2" Color="Color.Secondary">
-                    @(_totalCount == 0 ? @Localization["servers-menu-no-online-servers"] : @Localization["servers-menu-no-matched-servers"])
+                    @(_totalCount == 0 ? _localization["servers-menu-no-online-servers"] : _localization["servers-menu-no-matched-servers"])
                 </MudText>
                 @if (_totalCount > 0)
                 {
                     <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="ClearFilters">
-                        @Localization["servers-menu-clear-filters"]
+                        @_localization["servers-menu-clear-filters"]
                     </MudButton>
                 }
             </div>
@@ -113,20 +113,20 @@
                 </MudVirtualize>
             </div>
         }
-        @if (SearchBarPosition == ElementPosition.Bottom || TagsBarPosition == ElementPosition.Bottom)
+        @if (_searchBarPosition == ElementPosition.Bottom || _tagsBarPosition == ElementPosition.Bottom)
         {
             <MudPaper Elevation="0" Square="true" Class="server-toolbar">
-                @if (!BottomSearch && SearchBarPosition == ElementPosition.Bottom)
+                @if (!_bottomSearch && _searchBarPosition == ElementPosition.Bottom)
                 {
-                    <SearchBar Filters="Filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" TagsExpandButton="TagsBarPosition is ElementPosition.Top or ElementPosition.Bottom" />
+                    <SearchBar Filters="_filters" Status="_fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" TagsExpandButton="_tagsBarPosition is ElementPosition.Top or ElementPosition.Bottom" />
                 }
-                @if (TagsBarPosition == ElementPosition.Bottom)
+                @if (_tagsBarPosition == ElementPosition.Bottom)
                 {
-                    <TagsBar HasSearchAbove="!BottomSearch && SearchBarPosition == ElementPosition.Bottom" HasSearchBelow="BottomSearch && SearchBarPosition == ElementPosition.Bottom" IsBottom="true" Filters="Filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
+                    <TagsBar HasSearchAbove="!_bottomSearch && _searchBarPosition == ElementPosition.Bottom" HasSearchBelow="_bottomSearch && _searchBarPosition == ElementPosition.Bottom" IsBottom="true" Filters="_filters" AvailableRPTags="_availableRPTags" AvailableLangTags="_availableLangTags" AvailableRegionTags="_availableRegionTags" />
                 }
-                @if (BottomSearch && SearchBarPosition == ElementPosition.Bottom)
+                @if (_bottomSearch && _searchBarPosition == ElementPosition.Bottom)
                 {
-                    <SearchBar Filters="Filters" Status="Fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" TagsExpandButton="TagsBarPosition is ElementPosition.Top or ElementPosition.Bottom" />
+                    <SearchBar Filters="_filters" Status="_fetcher.Status" TotalCount="_totalCount" FilteredCount="_filteredServers.Count" OnRefresh="HandleRefresh" TagsExpandButton="_tagsBarPosition is ElementPosition.Top or ElementPosition.Bottom" />
                 }
             </MudPaper>
         }

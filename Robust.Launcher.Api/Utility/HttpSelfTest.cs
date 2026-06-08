@@ -22,9 +22,9 @@ namespace Robust.Launcher.Api.Utility;
 
 internal static class HttpSelfTest
 {
-    private static int _httpSelfTestInitiated = 0;
+    private static int s_httpSelfTestInitiated = 0;
 
-    private static readonly string[] SelfTestUrls =
+    private static readonly string[] _selfTestUrls =
     {
         "http://central.spacestation14.io/launcher_version.txt",
         "https://central.spacestation14.io/launcher_version.txt",
@@ -36,13 +36,13 @@ internal static class HttpSelfTest
 
     public static void StartSelfTest()
     {
-        if (Interlocked.Increment(ref _httpSelfTestInitiated) > 1)
+        if (Interlocked.Increment(ref s_httpSelfTestInitiated) > 1)
             return;
 
         Log.Error("--- INITIATING HTTP SELF-TEST ---");
 
         var i = 0;
-        foreach (var url in SelfTestUrls)
+        foreach (var url in _selfTestUrls)
         {
             RunTests(i, url);
 
@@ -179,10 +179,7 @@ internal static class HttpSelfTest
             _log = log;
         }
 
-        public override void Flush()
-        {
-            _baseStream.Flush();
-        }
+        public override void Flush() => _baseStream.Flush();
 
         public override int Read(byte[] buffer, int offset, int count)
         {
@@ -191,15 +188,9 @@ internal static class HttpSelfTest
             return read;
         }
 
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            return _baseStream.Seek(offset, origin);
-        }
+        public override long Seek(long offset, SeekOrigin origin) => _baseStream.Seek(offset, origin);
 
-        public override void SetLength(long value)
-        {
-            _baseStream.SetLength(value);
-        }
+        public override void SetLength(long value) => _baseStream.SetLength(value);
 
         public override void Write(byte[] buffer, int offset, int count)
         {
@@ -231,11 +222,11 @@ internal static class HttpSelfTest
             var dirIndicator = direction == Direction.Read ? 'I' : 'O';
             _log($@"{dirIndicator} {elapsed:hh\:mm\:ss\.fffffff}");
 
-            const int chunkSize = 32;
+            const int ChunkSize = 32;
             var sb = new StringBuilder();
-            for (var chunkOffset = 0; chunkOffset < data.Length; chunkOffset += chunkSize)
+            for (var chunkOffset = 0; chunkOffset < data.Length; chunkOffset += ChunkSize)
             {
-                var remainingSize = Math.Min(chunkSize, data.Length - chunkOffset);
+                var remainingSize = Math.Min(ChunkSize, data.Length - chunkOffset);
                 var subData = data.Slice(chunkOffset, remainingSize);
 
                 foreach (var b in subData)

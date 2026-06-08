@@ -114,12 +114,7 @@ public sealed class HubApi
 
             try
             {
-                var result = await response.Content
-                    .ReadFromJsonAsync<T>(cancellationToken: cancel)
-                    .ConfigureAwait(false);
-                if (result is null)
-                    throw new HubApiException($"Response body was null for {url}", requestUrl: url);
-                return result;
+                return await response.Content.ReadFromJsonAsync<T>(cancellationToken: cancel).ConfigureAwait(false) ?? throw new HubApiException($"Response body was null for {url}", requestUrl: url);
             }
             catch (JsonException ex)
             {

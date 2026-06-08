@@ -5,7 +5,7 @@ namespace Starlight.Launcher.Components.Atoms.Settings;
 
 public partial class AlternativeListOption : ComponentBase
 {
-    [Inject] private LocalizationManager Localization { get; set; } = null!;
+    [Inject] private LocalizationManager _localization { get; set; } = default!;
 
     [Parameter]public List<(string Value, long Priority)> Value { get; set; } = [];
     [Parameter] public EventCallback<List<(string Value, long Priority)>> ValueChanged { get; set; }

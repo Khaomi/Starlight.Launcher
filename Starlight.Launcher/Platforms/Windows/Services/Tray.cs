@@ -1,19 +1,19 @@
+using System.Runtime.Versioning;
 using CommunityToolkit.Mvvm.Input;
 using H.NotifyIcon;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Starlight.Launcher.Models;
-using Starlight.Launcher.Services;
 
 namespace Starlight.Launcher.Services;
 
+[SupportedOSPlatform("windows5.1.2600")]
 public sealed partial class WindowsTray : INativeTray
 {
     private TaskbarIcon? _icon;
-    private MauiWinUIWindow Win =>
-        (MauiWinUIWindow)Application.Current!.Windows[0].Handler!.PlatformView!;
+    private MauiWinUIWindow? _win => Application.Current!.Windows[0].Handler!.PlatformView! as MauiWinUIWindow;
 
     public event EventHandler? IconActivated;
-    public bool IsWindowVisible => Win.AppWindow.IsVisible;
+    public bool IsWindowVisible => _win?.AppWindow.IsVisible == true;
 
     public void Initialize(TrayOptions o, IReadOnlyList<TrayMenuItem> menu)
     {
@@ -31,13 +31,13 @@ public sealed partial class WindowsTray : INativeTray
             ToolTipText = o.Tooltip,
             IconSource = new BitmapImage(new Uri($"ms-appx:///{o.IconPath}")),
             ContextFlyout = flyout,
+            LeftClickCommand = new RelayCommand(() => IconActivated?.Invoke(this, EventArgs.Empty))
         };
-        _icon.LeftClickCommand = new RelayCommand(() => IconActivated?.Invoke(this, EventArgs.Empty));
         _icon.ForceCreate();
     }
 
-    public void ShowWindow() { Win.AppWindow.Show(); Win.Activate(); }
-    public void HideWindow() => Win.AppWindow.Hide();
-    public void UpdateTooltip(string t) { if (_icon is not null) _icon.ToolTipText = t; }
+    public void ShowWindow() { _win?.AppWindow.Show(); _win?.Activate(); }
+    public void HideWindow() => _win?.AppWindow.Hide();
+    public void UpdateTooltip(string t) => _icon?.ToolTipText = t;
     public void Dispose() => _icon?.Dispose();
 }

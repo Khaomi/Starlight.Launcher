@@ -4,10 +4,7 @@ namespace Robust.Launcher.Api.Utility;
 
 public static class TempFile
 {
-    public static FileStream CreateTempFile()
-    {
-        return new TempFileStream(Path.GetTempFileName());
-    }
+    public static FileStream CreateTempFile() => new TempFileStream(Path.GetTempFileName());
 
     private sealed class TempFileStream : FileStream
     {

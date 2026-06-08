@@ -1,19 +1,16 @@
-﻿using Starlight.Launcher.Services.Auth;
+﻿using System.Runtime.Versioning;
+using Starlight.Launcher.Services.Auth;
 
 namespace Starlight.Launcher;
 
 public partial class App : Application
 {
-    public App()
-    {
-        InitializeComponent();
-    }
+    public App() => InitializeComponent();
 
-    protected override Window CreateWindow(IActivationState? activationState)
-    {
-        return new Window(new MainPage()) { Title = "Starlight.Launcher" };
-    }
+    [SupportedOSPlatform("windows10.0.17763.0")]
+    protected override Window CreateWindow(IActivationState? activationState) => new(new MainPage()) { Title = "Starlight.Launcher" };
 
+    [SupportedOSPlatform("windows10.0.17763.0")]
     protected override void OnAppLinkRequestReceived(Uri uri)
     {
         base.OnAppLinkRequestReceived(uri);
