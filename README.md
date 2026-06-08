@@ -5,65 +5,86 @@
 <h1 align="center">🚀 Starlight Launcher</h1>
 
 <p align="center">
-  Modern launcher for <b>Space Station 14</b> built by the Starlight Team.
+  A modern launcher for <b>Space Station 14</b>, built by the Starlight Team.
 </p>
 
 <p align="center">
-
-[![Discord](https://img.shields.io/discord/1272545509562777621?label=Discord&logo=discord&logoColor=white)](https://discord.gg/wXJmswM5yt)
-[![GitHub Stars](https://img.shields.io/github/stars/ss14Starlight/Starlight.Launcher?style=social)](https://github.com/ss14Starlight/Starlight.Launcher)
-
+  <a href="https://discord.gg/wXJmswM5yt"><img alt="Discord" src="https://img.shields.io/discord/1272545509562777621?label=Discord&logo=discord&logoColor=white"></a>
+  <a href="https://github.com/ss14Starlight/Starlight.Launcher"><img alt="GitHub Stars" src="https://img.shields.io/github/stars/ss14Starlight/Starlight.Launcher?style=social"></a>
 </p>
 
 <p align="center">
-
-![GitHub commit activity](https://img.shields.io/github/commit-activity/y/ss14Starlight/Starlight.Launcher)
-![GitHub Issues](https://img.shields.io/github/issues/ss14Starlight/Starlight.Launcher)
-![GitHub Pull Requests](https://img.shields.io/github/issues-pr/ss14Starlight/Starlight.Launcher)
-
+  <img alt="Commit activity" src="https://img.shields.io/github/commit-activity/y/ss14Starlight/Starlight.Launcher">
+  <img alt="Issues" src="https://img.shields.io/github/issues/ss14Starlight/Starlight.Launcher">
+  <img alt="Pull requests" src="https://img.shields.io/github/issues-pr/ss14Starlight/Starlight.Launcher">
 </p>
 
 <p align="center">
-
-![.NET](https://img.shields.io/badge/.NET-11.0-512BD4?logo=dotnet)
-![MAUI](https://img.shields.io/badge/Powered%20by-.NET%20MAUI-512BD4?logo=dotnet)
-![Blazor](https://img.shields.io/badge/UI-Blazor-5C2D91?logo=blazor)
-![Windows](https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows)
-![License](https://img.shields.io/badge/License-MIT-green)
-
+  <img alt=".NET" src="https://img.shields.io/badge/.NET-11.0-512BD4?logo=dotnet">
+  <img alt="MAUI" src="https://img.shields.io/badge/Powered%20by-.NET%20MAUI-512BD4?logo=dotnet">
+  <img alt="Blazor" src="https://img.shields.io/badge/UI-Blazor-5C2D91?logo=blazor">
+  <img alt="Windows" src="https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows">
+  <img alt="License" src="https://img.shields.io/badge/License-MIT-green">
 </p>
+
+---
+
+## 📑 Table of Contents
+
+- [About](#-about)
+- [Features](#-features)
+- [Screenshots](#-screenshots)
+- [Built With](#-built-with)
+- [Getting Started](#-getting-started)
+- [Contributing](#-contributing)
+- [Community](#-community)
+- [License](#-license)
 
 ---
 
 ## ✨ About
 
-**Starlight Launcher** is a modern alternative launcher for **Space Station 14**.
+**Starlight Launcher** is a modern, community-built alternative launcher for **Space Station 14**.
 
 Created by the **Starlight Team**, it focuses on:
 
-- 🎨 Modern and responsive UI
+- 🎨 A modern, responsive UI
 - ⚡ Improved performance
 - 🔧 Advanced customization options
-- 🧩 Extensible architecture
+- 🧩 An extensible architecture
+
+> **Note:** Starlight Launcher is an unofficial community project and is not affiliated with or endorsed by the official Space Station 14 developers.
 
 ---
 
 ## 🌟 Features
 
-- Multi-account support
-- Rich launcher settings
-- Theme customization
-- Discord integration(statuses and OAuth)
-- Null link
+- **Multi-account support** — manage and switch between several accounts
+- **Rich launcher settings** — fine-grained control over how the game launches
+- **Theme customization** — personalize the look and feel of the launcher
+- **Discord integration** — Rich Presence statuses and OAuth login
+
+---
+
+## 🖼 Screenshots
+
+> _Add a few screenshots or a short demo GIF here so newcomers can see the launcher in action._
+
+| Home |
+|------|
+| <img width="1915" height="1153" alt="image" src="https://github.com/user-attachments/assets/2df46940-acf7-4aeb-b61c-b0fc6d4142eb" /> |
+| Settings|
+|---------|
+ | <img width="1422" height="843" alt="image" src="https://github.com/user-attachments/assets/c9e0d828-8830-4ee2-ba56-7c658b1a636c" /> |
 
 ---
 
 ## 🛠 Built With
 
-- [.NET](https://dotnet.microsoft.com/)
-- [.NET MAUI](https://learn.microsoft.com/dotnet/maui/)
-- [Blazor Hybrid](https://learn.microsoft.com/aspnet/core/blazor/hybrid/)
-- Space Station 14 Launcher API
+- [.NET](https://dotnet.microsoft.com/) — core framework
+- [.NET MAUI](https://learn.microsoft.com/dotnet/maui/) — cross-platform app framework
+- [Blazor Hybrid](https://learn.microsoft.com/aspnet/core/blazor/hybrid/) — UI layer
+- Space Station 14 Launcher API — server/auth integration
 
 ---
 
@@ -71,49 +92,63 @@ Created by the **Starlight Team**, it focuses on:
 
 ### Requirements
 
-- .NET SDK 9.0+
-- Visual Studio 2022 / Rider
+- **.NET SDK 11.0** _(currently in preview — final release expected November 2026)_
+- **.NET MAUI workload** — install with:
+  ```bash
+  dotnet workload install maui
+  ```
+- **Visual Studio 2022** (with the *.NET MAUI* workload) or **JetBrains Rider**
+- **Windows 10 (1809+) / Windows 11**
 
-### Build
+### Clone
 
 ```bash
 git clone https://github.com/ss14Starlight/Starlight.Launcher.git
 cd Starlight.Launcher
+```
+
+### Build
+
+```bash
 dotnet build
 ```
 
 ### Run
 
+The simplest way to run a .NET MAUI app is from **Visual Studio** or **Rider** (select the Windows target and press *Run*).
+
+From the CLI you need to specify the target framework moniker, for example:
+
 ```bash
-dotnet run
+dotnet build -t:Run -f net11.0-windows10.0.19041.0
 ```
+
+> Adjust the framework moniker (`-f`) to match the one defined in the `.csproj`.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions, bug reports and feature requests are welcome.
+Contributions, bug reports and feature requests are welcome!
 
-1. Fork repository
-2. Create feature branch
-3. Commit changes
-4. Open Pull Request
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/my-feature`)
+3. **Commit** your changes (`git commit -m "Add my feature"`)
+4. **Push** to your branch (`git push origin feature/my-feature`)
+5. **Open** a Pull Request
+
+Please keep changes focused and describe them clearly in the PR.
 
 ---
 
 ## 💬 Community
 
-- Discord: https://discord.gg/wXJmswM5yt
-- GitHub Issues: https://github.com/ss14Starlight/Starlight.Launcher/issues
+- **Discord:** https://discord.gg/wXJmswM5yt
+- **Issues:** https://github.com/ss14Starlight/Starlight.Launcher/issues
 
 ---
 
 ## 📄 License
 
-### MIT
-
-All source code is licensed under the MIT License.
-
-### CC BY-SA 3.0
-
-All non-code assets, including icons and sound files, are licensed under CC BY-SA 3.0 unless stated otherwise.
+- **Code** — licensed under the [MIT License](LICENSE).
+- **Non-code assets** (icons, sound files, etc.) — licensed under **CC BY-SA 3.0** unless stated otherwise.
