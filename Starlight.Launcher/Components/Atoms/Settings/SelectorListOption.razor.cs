@@ -18,6 +18,7 @@ public partial class SelectorListOption : ComponentBase
     [Parameter] public bool SelfValueControl { get; set; } = true;
     [Parameter] public Action<string?>? SelfValueControlAction { get; set; }
     [Parameter] public Func<Task<string?>>? SelfValueControlInitialization { get; set; }
+    [Parameter] public Func<string, string>? DisplayTextSelector { get; set; }
 
     protected override async Task OnInitializedAsync()
     {

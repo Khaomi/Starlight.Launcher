@@ -1,3 +1,4 @@
+@using System.Globalization
 @using AppTheme = Starlight.Launcher.Models.Settings.AppTheme;
 @using Starlight.Launcher.Components.Atoms.Settings
 @using Starlight.Launcher.Models.Data
@@ -9,7 +10,7 @@
         <MudTabPanel @ref="settingsTab" Text="@Localization["settings-menu-general-category"]">
             <MudContainer MaxWidth="MaxWidth.Small" Class="pa-0">
                 <MudText Typo="Typo.overline" Class="mud-text-secondary">@Localization["settings-menu-general-category"]</MudText>
-                <SelectorListOption Title="@Localization["settings-menu-language-option"]" Description="@Localization["settings-menu-language-option-description"]" EmptyOption="true" EmptyOptionName="@Localization["settings-menu-language-option-system"]" Icon="@Icons.Material.Filled.Language" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings<string?>(s => s.SelectedLanguage)" SelfValueControlAction="x => OnLanguageChanged(x, null, (s, v) => s with { SelectedLanguage = v })" Values="AvailableLanguages" />
+                <SelectorListOption Title="@Localization["settings-menu-language-option"]" Description="@Localization["settings-menu-language-option-description"]" EmptyOption="true" EmptyOptionName="@Localization["settings-menu-language-option-system"]" Icon="@Icons.Material.Filled.Language" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings<string?>(s => s.SelectedLanguage)" SelfValueControlAction="x => OnLanguageChanged(x, null, (s, v) => s with { SelectedLanguage = v })" Values="AvailableLanguages" DisplayTextSelector="@(x => new CultureInfo(x).EnglishName)" />
                 <AlternativeListOption Title="@Localization["settings-menu-hub-list-option"]" Description="@Localization["settings-menu-hub-list-option-description"]" AddButtonTooltip="@Localization["settings-menu-hub-list-option-add-tooltip"]" EmptyValuesString="@Localization["settings-menu-hub-list-option-empty-values"]" TextFieldLabel="@Localization["settings-menu-hub-list-option-text-label"]" Icon="@Icons.Material.Filled.Hub" SelfValueControl="true" SelfValueControlInitialization="async () => await FetchSettings<List<(string Url, long Priority)>>(s => [.. s.Hubs.Select(h => (h.HubUri.ToString(), h.Priority))])" SelfValueControlAction="x => OnSettingChanged(x, null, (s, v) => s with { Hubs = ConvertToHubList(v) })" />
             </MudContainer>
         </MudTabPanel>

@@ -1,0 +1,34 @@
+.hub-empty {
+    background: rgba(20, 24, 41, .55) !important;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 16px;
+}
+
+.server-card {
+    position: relative;
+    background: rgba(20, 24, 41, .62) !important;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 16px !important;
+    box-shadow: 0 8px 28px rgba(0,0,0,.35);
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    overflow: hidden;
+}
+
+    .server-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 16px 44px rgba(0,0,0,.5);
+        border-color: rgba(124,92,255,.35);
+    }
+
+    .server-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, rgba(124,92,255,1), rgba(34,211,238,1));
+        opacity: .8;
+    }

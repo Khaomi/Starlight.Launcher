@@ -1,8 +1,10 @@
 @page "/hub"
 
+<div class="app-bg"></div>
+
 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
     <div>
-        <MudText Typo="Typo.h5">Hub</MudText>
+        <MudText Typo="Typo.h5">@_localization["hub-menu-title"]</MudText>
         @if (_servers is not null)
         {
             <MudText Typo="Typo.caption" Class="mud-text-secondary">
@@ -36,7 +38,7 @@ else if (_servers.Count == 0)
 {
     <MudPaper Class="pa-8 d-flex flex-column align-center" Elevation="0">
         <MudIcon Icon="@Icons.Material.Filled.CloudOff" Size="Size.Large" Class="mud-text-secondary mb-2" />
-        <MudText Class="mud-text-secondary">Server list is empty.</MudText>
+        <MudText Class="mud-text-secondary">@_localization["hub-menu-server-list-empty"]</MudText>
     </MudPaper>
 }
 else
@@ -53,7 +55,7 @@ else
                                 <MudText Typo="Typo.h6">@ParseDescription(server.Title)</MudText>
                                 @if (server.IsAdultOnly)
                                 {
-                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="Color.Error">18+</MudChip>
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="Color.Error">@_localization["hub-menu-server-adult-tag"]</MudChip>
                                 }
                             </MudStack>
 
@@ -108,7 +110,7 @@ else
                                    StartIcon="@Icons.Material.Filled.Login"
                                    Disabled="@(server.Status == ServerStatus.Offline)"
                                    OnClick="@(() => Connect(server))">
-                            Connect
+                            @_localization["hub-menu-server-connect-button"]
                         </MudButton>
 
                         <MudIconButton Icon="@(IsFavorite(server) ? Icons.Material.Filled.Star : Icons.Material.Filled.StarBorder)"
@@ -121,14 +123,3 @@ else
         }
     </MudGrid>
 }
-
-<style>
-    .server-card {
-        transition: transform .15s ease, box-shadow .15s ease;
-    }
-
-        .server-card:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--mud-elevation-8);
-        }
-</style>

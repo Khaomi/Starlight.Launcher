@@ -1,0 +1,17 @@
+.home-content {
+    position: relative;
+    z-index: 1;
+}
+
+.server-panel {
+    --smooth-corners: 5;
+    --image: paint(smooth-corners);
+    -webkit-mask-image: var(--image);
+    mask-image: var(--image);
+    margin: 8px;
+    border-radius: 0;
+    background: rgba(20, 24, 41, .62);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,.06);
+    overflow: hidden;
+}

@@ -6,17 +6,18 @@ using Robust.Launcher.Api.Models;
 using Serilog;
 using Starlight.Launcher.Api.Models;
 using Starlight.Launcher.Services.Auth;
+using Starlight.Launcher.Services.Localization;
 
 namespace Starlight.Launcher.Components.Pages;
 
-public partial class Auth : Microsoft.AspNetCore.Components.ComponentBase, IDisposable
+public partial class Auth : ComponentBase, IDisposable
 {
-    [Inject] private LoginManager LoginManager { get; set; } = default!;
-    [Inject] private AuthApi AuthApi { get; set; } = default!;
-    [Inject] private NavigationManager Nav { get; set; } = default!;
-    [Inject] private DiscordAuthService DiscordAuth { get; set; } = default!;
-    [Inject] private ISnackbar Snackbar { get; set; } = default!;
-
+    [Inject] private LoginManager _loginManager { get; set; } = default!;
+    [Inject] private AuthApi _authApi { get; set; } = default!;
+    [Inject] private NavigationManager _nav { get; set; } = default!;
+    [Inject] private DiscordAuthService _discordAuth { get; set; } = default!;
+    [Inject] private ISnackbar _snackbar { get; set; } = default!;
+    [Inject] private LocalizationManager _localization { get; set; } = default!;
 
     private enum Mode
     {
@@ -35,6 +36,7 @@ public partial class Auth : Microsoft.AspNetCore.Components.ComponentBase, IDisp
     private bool _signInTfaRequired;
     private string? _signInError;
     private bool _signInShowResend;
+    private bool _showPwd;
 
     private string _registerUsername = "";
     private string _registerEmail = "";
@@ -51,21 +53,15 @@ public partial class Auth : Microsoft.AspNetCore.Components.ComponentBase, IDisp
 
     protected override void OnInitialized()
     {
-        LoginManager.LoginsChanged += OnLoginsChanged;
+        _loginManager.LoginsChanged += OnLoginsChanged;
 
-        if (LoginManager.Logins.Count == 0)
+        if (_loginManager.Logins.Count == 0)
             _mode = Mode.SignIn;
     }
 
-    private void OnLoginsChanged()
-    {
-        InvokeAsync(StateHasChanged);
-    }
+    private void OnLoginsChanged() => InvokeAsync(StateHasChanged);
 
-    public void Dispose()
-    {
-        LoginManager.LoginsChanged -= OnLoginsChanged;
-    }
+    public void Dispose() => _loginManager.LoginsChanged -= OnLoginsChanged;
 
     private async Task SelectAccount(LoggedInAccount account)
     {
@@ -74,22 +70,22 @@ public partial class Auth : Microsoft.AspNetCore.Components.ComponentBase, IDisp
         {
             try
             {
-                await LoginManager.UpdateSingleAccountStatus(account);
+                await _loginManager.UpdateSingleAccountStatus(account);
             }
             catch (AuthApiException ex)
             {
-                Snackbar.Add($"The token could not be verified: {ex.Message}", Severity.Warning);
+                _snackbar.Add(_localization.GetString("auth-menu-token-verify-warning", ("ex", ex.Message)), Severity.Warning);
             }
 
             if (account.Status == AccountLoginStatus.Expired)
             {
-                Snackbar.Add("Your session has expired. Please log in again.", Severity.Warning);
+                _snackbar.Add(_localization["auth-menu-session-expired-warning"], Severity.Warning);
                 await BeginRelogin(account);
                 return;
             }
 
-            LoginManager.ActiveAccountId = account.UserId;
-            Nav.NavigateTo("/");
+            _loginManager.ActiveAccountId = account.UserId;
+            _nav.NavigateTo("/");
         }
         finally
         {
@@ -99,8 +95,8 @@ public partial class Auth : Microsoft.AspNetCore.Components.ComponentBase, IDisp
 
     private void RemoveAccount(LoggedInAccount account)
     {
-        LoginManager.RemoveLogin(account.UserId);
-        Snackbar.Add($"Account {account.LoginInfo.Username} deleted", Severity.Info);
+        _loginManager.RemoveLogin(account.UserId);
+        _snackbar.Add(_localization.GetString("auth-menu-account-deleted", ("account", account.LoginInfo.Username)), Severity.Info);
     }
 
     private void GoToSignIn()
@@ -123,19 +119,27 @@ public partial class Auth : Microsoft.AspNetCore.Components.ComponentBase, IDisp
         _mode = Mode.SignIn;
     }
 
-    private static string StatusLabel(AccountLoginStatus s) => s switch
+    private string StatusLabel(AccountLoginStatus s) => s switch
     {
-        AccountLoginStatus.Available => "Online",
-        AccountLoginStatus.Expired => "The session has expired",
-        AccountLoginStatus.Unsure => "Checking...",
+        AccountLoginStatus.Available => _localization["auth-menu-online-status"],
+        AccountLoginStatus.Expired => _localization["auth-menu-expired-status"],
+        AccountLoginStatus.Unsure => _localization["auth-menu-unsure-status"],
         _ => s.ToString()
     };
 
+    private MudBlazor.Color StatusColor(AccountLoginStatus s) => s switch
+    {
+        AccountLoginStatus.Available => MudBlazor.Color.Success,
+        AccountLoginStatus.Expired => MudBlazor.Color.Warning,
+        AccountLoginStatus.Unsure => MudBlazor.Color.Surface,
+        _ => MudBlazor.Color.Default
+    };
+
     private Task LinkDiscord(LoggedInAccount account) =>
-        RunDiscordAttach(account, $"Discord linked to {account.LoginInfo.Username}.");
+        RunDiscordAttach(account, _localization.GetString("auth-menu-linked-status", ("account", account.LoginInfo.Username)));
 
     private Task ReloginDiscord(LoggedInAccount account) =>
-        RunDiscordAttach(account, "Discord session renewed.", navigateHome: true);
+        RunDiscordAttach(account, _localization["auth-menu-discord-renewed"], navigateHome: true);
 
     private async Task RunDiscordAttach(LoggedInAccount account, string success, bool navigateHome = false)
     {
@@ -143,26 +147,26 @@ public partial class Auth : Microsoft.AspNetCore.Components.ComponentBase, IDisp
         await InvokeAsync(StateHasChanged);
         try
         {
-            await DiscordAuth.AttachToAccountAsync(account);
-            Snackbar.Add(success, Severity.Success);
+            await _discordAuth.AttachToAccountAsync(account);
+            _snackbar.Add(success, Severity.Success);
             if (navigateHome)
             {
-                LoginManager.ActiveAccountId = account.UserId;
-                Nav.NavigateTo("/");
+                _loginManager.ActiveAccountId = account.UserId;
+                _nav.NavigateTo("/");
             }
         }
         catch (OperationCanceledException)
         {
-            Snackbar.Add("Discord login canceled or expired.", Severity.Warning);
+            _snackbar.Add(_localization["auth-menu-discord-login-error"], Severity.Warning);
         }
         catch (DiscordAuthException ex)
         {
-            Snackbar.Add(ex.Message, Severity.Error);
+            _snackbar.Add(ex.Message, Severity.Error);
         }
         catch (Exception ex)
         {
             Log.Warning(ex, "Discord attach failed");
-            Snackbar.Add("Failed to connect Discord.", Severity.Error);
+            _snackbar.Add(_localization["auth-menu-discord-connect-fail"], Severity.Error);
         }
         finally
         {
@@ -184,12 +188,12 @@ public partial class Auth : Microsoft.AspNetCore.Components.ComponentBase, IDisp
         await InvokeAsync(StateHasChanged);
         try
         {
-            await DiscordAuth.LoginAsync();
-            Nav.NavigateTo("/");
+            await _discordAuth.LoginAsync();
+            _nav.NavigateTo("/");
         }
         catch (OperationCanceledException)
         {
-            _signInError = "Discord login has been canceled or has expired.";
+            _signInError = _localization["auth-menu-discord-login-error"];
         }
         catch (DiscordAuthException ex)
         {
@@ -198,7 +202,7 @@ public partial class Auth : Microsoft.AspNetCore.Components.ComponentBase, IDisp
         catch (Exception ex)
         {
             Log.Warning(ex, "Discord login failed");
-            _signInError = "Failed to log in with Discord.";
+            _signInError = _localization["auth-menu-discord-connect-fail"];
         }
         finally
         {
@@ -214,7 +218,7 @@ public partial class Auth : Microsoft.AspNetCore.Components.ComponentBase, IDisp
 
         if (string.IsNullOrWhiteSpace(_signInUsername) || string.IsNullOrEmpty(_signInPassword))
         {
-            _signInError = "Enter your username and password";
+            _signInError = _localization["auth-menu-enter-info-error"];
             return;
         }
 
@@ -235,40 +239,40 @@ public partial class Auth : Microsoft.AspNetCore.Components.ComponentBase, IDisp
                     _signInTfaRequired ? _signInTfaCode : null);
             }
 
-            var result = await AuthApi.AuthenticateAsync(request);
+            var result = await _authApi.AuthenticateAsync(request);
 
             if (result.IsSuccess)
             {
-                LoginManager.AddFreshLogin(result.LoginInfo);
-                LoginManager.ActiveAccountId = result.LoginInfo.UserId;
-                Snackbar.Add($"Welcome, {result.LoginInfo.Username}!", Severity.Success);
-                Nav.NavigateTo("/");
+                _loginManager.AddFreshLogin(result.LoginInfo);
+                _loginManager.ActiveAccountId = result.LoginInfo.UserId;
+                _snackbar.Add(_localization.GetString("auth-menu-welcome-message", ("username", result.LoginInfo.Username)), Severity.Success);
+                _nav.NavigateTo("/");
                 return;
             }
 
             switch (result.Code)
             {
                 case AuthApi.AuthenticateDenyResponseCode.InvalidCredentials:
-                    _signInError = "Incorrect username or password";
+                    _signInError = _localization["auth-menu-incorrect-info-error"];
                     break;
 
                 case AuthApi.AuthenticateDenyResponseCode.AccountUnconfirmed:
-                    _signInError = "Your account has not been verified. Please check your email.";
+                    _signInError = _localization["auth-menu-unconfirmed-info-error"];
                     _signInShowResend = true;
                     break;
 
                 case AuthApi.AuthenticateDenyResponseCode.TfaRequired:
                     _signInTfaRequired = true;
-                    _signInError = "Enter your two-factor authentication code";
+                    _signInError = _localization["auth-menu-tfa-required-error"];
                     break;
 
                 case AuthApi.AuthenticateDenyResponseCode.TfaInvalid:
                     _signInTfaRequired = true;
-                    _signInError = "Invalid 2FA code";
+                    _signInError = _localization["auth-menu-tfa-invalid-error"];
                     break;
 
                 case AuthApi.AuthenticateDenyResponseCode.AccountLocked:
-                    _signInError = "Account blocked";
+                    _signInError = _localization["auth-menu-account-blocked-error"];
                     break;
 
                 default:
@@ -289,15 +293,15 @@ public partial class Auth : Microsoft.AspNetCore.Components.ComponentBase, IDisp
         {
             if (_signInUsername.Contains('@'))
             {
-                var errors = await AuthApi.ResendConfirmationAsync(_signInUsername);
+                var errors = await _authApi.ResendConfirmationAsync(_signInUsername);
                 if (errors == null)
-                    Snackbar.Add("The email has been resent", Severity.Success);
+                    _snackbar.Add(_localization.GetString("auth-menu-email-resent"), Severity.Success);
                 else
-                    Snackbar.Add(string.Join("\n", errors), Severity.Error);
+                    _snackbar.Add(string.Join("\n", errors), Severity.Error);
             }
             else
             {
-                Snackbar.Add("To resend, enter your email address in the username field", Severity.Warning);
+                _snackbar.Add(_localization["auth-menu-email-resent-info"], Severity.Warning);
             }
         }
         finally
@@ -330,13 +334,13 @@ public partial class Auth : Microsoft.AspNetCore.Components.ComponentBase, IDisp
 
         var validationErrors = new List<string>();
         if (string.IsNullOrWhiteSpace(_registerUsername))
-            validationErrors.Add("Enter your username");
+            validationErrors.Add(_localization["auth-menu-register-username-missing"]);
         if (string.IsNullOrWhiteSpace(_registerEmail) || !_registerEmail.Contains('@'))
-            validationErrors.Add("Please enter a valid email address");
+            validationErrors.Add(_localization["auth-menu-register-invalid-email"]);
         if (_registerPassword.Length < 8)
-            validationErrors.Add("The password must be at least 8 characters long");
+            validationErrors.Add(_localization["auth-menu-register-too-short-pass"]);
         if (_registerPassword != _registerPasswordConfirm)
-            validationErrors.Add("The passwords do not match");
+            validationErrors.Add(_localization["auth-menu-register-dont-match-pass"]);
 
         if (validationErrors.Count > 0)
         {
@@ -347,7 +351,7 @@ public partial class Auth : Microsoft.AspNetCore.Components.ComponentBase, IDisp
         _busy = true;
         try
         {
-            var result = await AuthApi.RegisterAsync(_registerUsername, _registerEmail, _registerPassword);
+            var result = await _authApi.RegisterAsync(_registerUsername, _registerEmail, _registerPassword);
 
             if (!result.IsSuccess)
             {
@@ -358,10 +362,9 @@ public partial class Auth : Microsoft.AspNetCore.Components.ComponentBase, IDisp
             _registerSuccessMessage = result.Status switch
             {
                 RegisterResponseStatus.Registered =>
-                    "Registration was successful! You can now log in.",
-                RegisterResponseStatus.RegisteredNeedConfirmation =>
-                    $"Registration was successful! An email has been sent to {_registerEmail} to confirm your account.",
-                _ => "Registration successful!"
+                    _localization["auth-menu-register-success"],
+                RegisterResponseStatus.RegisteredNeedConfirmation => _localization.GetString("auth-menu-register-required-confirmation", ("email", _registerEmail)),
+                _ => _localization["auth-menu-register-success"]
             };
 
             _registerPassword = "";
@@ -379,14 +382,14 @@ public partial class Auth : Microsoft.AspNetCore.Components.ComponentBase, IDisp
 
         if (string.IsNullOrWhiteSpace(_forgotEmail) || !_forgotEmail.Contains('@'))
         {
-            _forgotError = "Enter valid email";
+            _forgotError = _localization["auth-menu-forgot-notvalid-email-error"];
             return;
         }
 
         _busy = true;
         try
         {
-            var errors = await AuthApi.ForgotPasswordAsync(_forgotEmail);
+            var errors = await _authApi.ForgotPasswordAsync(_forgotEmail);
             if (errors == null)
             {
                 _forgotSuccess = true;
@@ -401,6 +404,14 @@ public partial class Auth : Microsoft.AspNetCore.Components.ComponentBase, IDisp
             _busy = false;
         }
     }
+
+    private static string StatusCssVar(AccountLoginStatus s) => s switch
+    {
+        AccountLoginStatus.Available => "success",
+        AccountLoginStatus.Expired => "warning",
+        AccountLoginStatus.Unsure => "info",
+        _ => "surface"
+    };
 
     private void SwitchMode(Mode mode)
     {

@@ -14,7 +14,9 @@
             }
             @foreach (var item in Values)
             {
-                <MudSelectItem T="string" Value="@item">@item</MudSelectItem>
+                <MudSelectItem T="string" Value="@item">
+                    @(DisplayTextSelector?.Invoke(item) ?? item)
+                </MudSelectItem>
             }
         </MudSelect>
     </div>

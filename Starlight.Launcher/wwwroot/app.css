@@ -304,3 +304,42 @@ h1:focus {
     overflow-y: auto;
     overflow-x: hidden;
 }
+
+.mud-main-content:has(.auth-bg) {
+    height: calc(100vh - 64px);
+    overflow: hidden;
+}
+
+.app-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-color: #0b0e1a;
+    --bg-paint: paint(animated-lines);
+    background-image: var(--bg-paint), radial-gradient(1200px 600px at 70% -10%, rgba(124,92,255,.25), transparent), radial-gradient(900px 500px at 10% 110%, rgba(34,211,238,.18), transparent);
+    --dot-color: rgba(170,150,255,.55);
+    --dot-size: 2;
+    --num-points: 55;
+    --line-color: rgba(124,92,255,.20);
+    --line-opacity: .18;
+    --dot-speed: 1;
+    --distance: 130;
+    --seed: 7;
+    --x: .15;
+    --y: -.05;
+    order: 0;
+    animation: app-bg-drive 1200s linear infinite;
+}
+
+@keyframes app-bg-drive {
+    to {
+        order: 60000;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .app-bg {
+        animation: none;
+    }
+}
