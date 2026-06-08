@@ -58,8 +58,6 @@ Created by the **Starlight Team**, it focuses on:
 
 ---
 
----
-
 ## 🛠 Built With
 
 - [.NET](https://dotnet.microsoft.com/)
