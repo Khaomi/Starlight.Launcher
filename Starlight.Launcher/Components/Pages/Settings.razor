@@ -5,6 +5,8 @@
 
 @page "/settings"
 
+<div class="app-bg"></div>
+
 <div class="settings-page">
     <MudTabs @ref="tabs" Elevation="0" ApplyEffectsToContainer="false" Class="settings-tabs pa-6" TabPanelsClass="settings-tabs-panels" ActivePanelIndexChanged="OnActivePanelIndexChanged">
         <MudTabPanel @ref="settingsTab" Text="@Localization["settings-menu-general-category"]">

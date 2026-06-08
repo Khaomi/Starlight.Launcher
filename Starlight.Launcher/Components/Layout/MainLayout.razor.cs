@@ -35,7 +35,13 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowse
         AppTheme.EmeraldLight => "emerald-light",
         AppTheme.EmeraldDark => "emerald-dark",
         AppTheme.AmberLight => "amber-light",
+        AppTheme.AmberDark => "amber-dark",
         AppTheme.Midnight => "midnight",
+        AppTheme.RoseLight => "rose-light",
+        AppTheme.RoseDark => "rose-dark",
+        AppTheme.VioletLight => "violet-light",
+        AppTheme.VioletDark => "violet-dark",
+        AppTheme.OceanLight => "ocean-light",
         AppTheme.System => systemPrefersDark ? "emerald-dark" : "emerald-light",
         _ => "emerald-light"
     };

@@ -315,13 +315,13 @@ h1:focus {
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    background-color: #0b0e1a;
+    background-color: oklch(from oklch(var(--c-bg)) calc(l - 0.015) c h);
     --bg-paint: paint(animated-lines);
-    background-image: var(--bg-paint), radial-gradient(1200px 600px at 70% -10%, rgba(124,92,255,.25), transparent), radial-gradient(900px 500px at 10% 110%, rgba(34,211,238,.18), transparent);
-    --dot-color: rgba(170,150,255,.55);
+    background-image: var(--bg-paint), radial-gradient(1200px 600px at 70% -10%, oklch(from oklch(var(--c-secondary)) calc(l + 0.10) c h / 0.18), transparent), radial-gradient(900px 500px at 10% 110%, oklch(from oklch(var(--c-tertiary)) calc(l + 0.10) c h / 0.14), transparent);
+    --dot-color: oklch(from oklch(var(--c-secondary)) l c h / 0.50);
     --dot-size: 2;
     --num-points: 55;
-    --line-color: rgba(124,92,255,.20);
+    --line-color: oklch(from oklch(var(--c-primary)) l c h / 0.20);
     --line-opacity: .18;
     --dot-speed: 1;
     --distance: 130;

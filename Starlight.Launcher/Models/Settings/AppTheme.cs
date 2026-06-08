@@ -6,5 +6,11 @@ public enum AppTheme
     EmeraldLight = 1,
     EmeraldDark = 2,
     AmberLight = 3,
-    Midnight = 4,
+    AmberDark = 4,
+    Midnight = 5,
+    RoseLight = 6,
+    RoseDark = 7,
+    VioletLight = 8,
+    VioletDark = 9,
+    OceanLight = 10,
 }
