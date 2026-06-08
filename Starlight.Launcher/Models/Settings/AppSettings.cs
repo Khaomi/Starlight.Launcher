@@ -46,6 +46,11 @@ public partial record AppSettings
     public bool CollapseInTrayAfterRun { get; init; } = true;
 
     /// <summary>
+    /// Determines should we uncollapse app from tray after game closing or not
+    /// </summary>
+    public bool UnCollapseFromTrayAfterEnd { get; init; } = false;
+
+    /// <summary>
     /// Determines should we collapse app to tray on close or not
     /// </summary>
     public bool CollapseInTrayOnClose { get; init; } = false;

@@ -49,6 +49,9 @@ settings-menu-tray-collapse-start-option-description = Запускать при
 settings-menu-tray-collapse-run-option = Свернуть при игре
 settings-menu-tray-collapse-run-option-description = Сворачивать приложение в трей при запуске игры.
 
+settings-menu-tray-uncollapse-end-option = Развернуть в конце
+settings-menu-tray-uncollapse-end-option-description = Разворачивать приложение из трея при окончании игры.
+
 settings-menu-tray-collapse-close-option = Свернуть при закрытии
 settings-menu-tray-collapse-close-option-description = Сворачивать приложение в трей при попытке закрыть его.
 

@@ -49,6 +49,9 @@ settings-menu-tray-collapse-start-option-description = Start the app minimized t
 settings-menu-tray-collapse-run-option = Collapse on Run
 settings-menu-tray-collapse-run-option-description = Minimize the app to the system tray when running game.
 
+settings-menu-tray-uncollapse-end-option = Uncollapse on End
+settings-menu-tray-uncollapse-end-option-description = Expand the app from system tray when closing game.
+
 settings-menu-tray-collapse-close-option = Collapse on Close
 settings-menu-tray-collapse-close-option-description = Minimize the app to the system tray when closing it.
 

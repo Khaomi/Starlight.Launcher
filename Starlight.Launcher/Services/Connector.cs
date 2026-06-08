@@ -323,6 +323,9 @@ public partial class Connector : ObservableObject
 
                 await waitClient;
 
+                if (settings.UnCollapseFromTrayAfterEnd)
+                    _tray.ShowWindow();
+
                 return;
             }
 
