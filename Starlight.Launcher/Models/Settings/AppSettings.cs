@@ -43,7 +43,7 @@ public partial record AppSettings
     /// <summary>
     /// Determines should we collapse app to tray after launching game or not
     /// </summary>
-    public bool CollapseInTrayAfterRun { get; init; } = true;
+    public bool CollapseInTrayAfterRun { get; init; } = false;
 
     /// <summary>
     /// Determines should we uncollapse app from tray after game closing or not
