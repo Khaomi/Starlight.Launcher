@@ -95,6 +95,7 @@ public static class MauiProgram
             builder.Services.AddSingleton<StarlightAuthApi>();
             builder.Services.AddSingleton<DiscordAuthService>();
             builder.Services.AddTransient<Connector>();
+            builder.Services.AddSingleton<UiTicker>();
             builder.Services.AddMauiBlazorWebView();
             builder.Services.AddMudServices();
 

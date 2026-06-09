@@ -3,8 +3,8 @@ using Microsoft.Extensions.Logging;
 using MudBlazor;
 using Robust.Launcher.Api.Models.ServerStatus;
 using Starlight.Launcher.Components.Pages;
+using Starlight.Launcher.Services;
 using Starlight.Launcher.Services.Localization;
-using TerraFX.Interop.DirectX;
 
 namespace Starlight.Launcher.Components.Atoms.ServerList;
 
@@ -12,6 +12,7 @@ public partial class ServerItem : ComponentBase, IDisposable
 {
     [Inject] private LocalizationManager _localization { get; set; } = default!;
     [Inject] private IDialogService _dialogService { get; set; } = default!;
+    [Inject] private UiTicker _ticker { get; set; } = default!;
     [Parameter, EditorRequired] public ServerStatusData Data { get; set; } = default!;
     [Parameter] public EventCallback<ServerStatusData> OnInfoNeeded { get; set; }
     [Parameter] public EventCallback<ServerStatusData> OnFavorites { get; set; }
@@ -19,8 +20,6 @@ public partial class ServerItem : ComponentBase, IDisposable
     [Inject] private ILogger<ServerItem> _logger { get; set; } = default!;
 
     private CancellationTokenSource? _infoCts;
-
-    private System.Timers.Timer? _roundTimer;
 
     private bool _expanded = false;
 
@@ -47,13 +46,10 @@ public partial class ServerItem : ComponentBase, IDisposable
     protected override void OnInitialized()
     {
         Data.Changed += OnDataChanged;
-
-        _roundTimer = new System.Timers.Timer(1000) { AutoReset = true };
-        _roundTimer.Elapsed += OnRoundTick;
-        _roundTimer.Start();
+        _ticker.Tick += OnTick;
     }
 
-    private async void OnRoundTick(object? sender, System.Timers.ElapsedEventArgs e)
+    private async void OnTick()
     {
         if (Data.RoundStartTime is null)
             return;
@@ -194,8 +190,7 @@ public partial class ServerItem : ComponentBase, IDisposable
 
     public void Dispose()
     {
-        _roundTimer?.Stop();
-        _roundTimer?.Dispose();
+        _ticker.Tick -= OnTick;
         _infoCts?.Cancel();
         _infoCts?.Dispose();
         Data.Changed -= OnDataChanged;

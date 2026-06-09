@@ -5,15 +5,21 @@ using Starlight.Launcher.Models.ServerStatus;
 using Starlight.Launcher.Services.Localization;
 using Starlight.Launcher.Services.ServerStatus;
 using Starlight.Launcher.Services.Settings;
+using System.Collections.Concurrent;
 using System.Globalization;
 
 namespace Starlight.Launcher.Components.Pages;
 
 public partial class Servers : ComponentBase, IDisposable
 {
+    private const int ServerRefreshThrottleMs = 200;
+    private const int FilterDebounceMs = 150;
+    private const int FilterPersistDelayMs = 500;
+
     [Inject] private SettingsService _settings { get; set; } = default!;
     [Inject] private HubServerFetcher _fetcher { get; set; } = default!;
     [Inject] private LocalizationManager _localization { get; set; } = default!;
+
     private ServerListFilters _filters = new();
     private readonly CancellationTokenSource _disposeCts = new();
 
@@ -24,13 +30,13 @@ public partial class Servers : ComponentBase, IDisposable
     private IReadOnlyList<string> _availableRegionTags = [];
     private int _totalCount;
 
-    private CancellationTokenSource? _searchDebounceCts;
+    private CancellationTokenSource? _filterCts;
+    private int _rebuildScheduled;
 
     private IReadOnlySet<string> _favoriteAddresses = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
     private bool _bottomSearch { get; set; }
     private ElementPosition _searchBarPosition { get; set; }
-
     private ElementPosition _tagsBarPosition { get; set; }
 
     protected override async Task OnInitializedAsync()
@@ -39,8 +45,7 @@ public partial class Servers : ComponentBase, IDisposable
         _bottomSearch = settings.ServerListToolbarBottomSearch;
         _searchBarPosition = settings.ServerListToolBarSearchPosition;
         _tagsBarPosition = settings.ServerListToolBarBottomTagsPosition;
-        _fetcher.ServersChanged += OnServersChanged;
-        _fetcher.StatusChanged += OnStatusChanged;
+
         _filters = settings.CachedFilters;
         _filters.TagsExpanded = settings.ServerListToolBarTagsBarOpen;
         _filters.Changed += OnFiltersChanged;
@@ -48,7 +53,35 @@ public partial class Servers : ComponentBase, IDisposable
         _favoriteAddresses = _settings.GetFavoriteAddressesSnapshot();
         _settings.FavoritesChanged += OnFavoritesChanged;
 
+        _fetcher.ServersChanged += OnServersChanged;
+        _fetcher.StatusChanged += OnStatusChanged;
+
         RebuildFromFetcher();
+    }
+
+    private async void OnServersChanged()
+    {
+        if (Interlocked.CompareExchange(ref _rebuildScheduled, 1, 0) != 0)
+            return;
+
+        try
+        {
+            await Task.Delay(ServerRefreshThrottleMs, _disposeCts.Token);
+            await InvokeAsync(() =>
+            {
+                Interlocked.Exchange(ref _rebuildScheduled, 0);
+                RebuildFromFetcher();
+                StateHasChanged();
+            });
+        }
+        catch (OperationCanceledException) { Interlocked.Exchange(ref _rebuildScheduled, 0); }
+        catch (ObjectDisposedException) { Interlocked.Exchange(ref _rebuildScheduled, 0); }
+    }
+
+    private async void OnStatusChanged(RefreshListStatus _)
+    {
+        try { await InvokeAsync(StateHasChanged); }
+        catch (ObjectDisposedException) { }
     }
 
     private async void OnFavoritesChanged()
@@ -64,17 +97,29 @@ public partial class Servers : ComponentBase, IDisposable
         catch (ObjectDisposedException) { }
     }
 
-    private async void OnServersChanged()
+    private void OnFiltersChanged()
+    {
+        _filterCts?.Cancel();
+        _filterCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token);
+        _ = DebounceFiltersAsync(_filterCts.Token);
+    }
+
+    private async Task DebounceFiltersAsync(CancellationToken token)
     {
         try
         {
+            await Task.Delay(FilterDebounceMs, token);
             await InvokeAsync(() =>
             {
-                RebuildFromFetcher();
+                ApplyFilters();
                 StateHasChanged();
             });
+
+            await Task.Delay(FilterPersistDelayMs, token);
+            await _settings.CacheFilters(_filters);
         }
-        catch (ObjectDisposedException) { /* page disposed */ }
+        catch (OperationCanceledException) { }
+        catch (ObjectDisposedException) { }
     }
 
     private void RebuildFromFetcher()
@@ -83,38 +128,6 @@ public partial class Servers : ComponentBase, IDisposable
         _totalCount = _allServers.Count;
         ExtractTags(_allServers, out _availableRPTags, out _availableLangTags, out _availableRegionTags);
         ApplyFilters();
-    }
-
-    private async void OnStatusChanged(RefreshListStatus _)
-    {
-        try
-        {
-            await InvokeAsync(StateHasChanged);
-        }
-        catch (ObjectDisposedException) { }
-    }
-
-    private void OnFiltersChanged()
-    {
-        _searchDebounceCts?.Cancel();
-        _searchDebounceCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token);
-        var token = _searchDebounceCts.Token;
-
-        _ = DebounceFiltersAsync(token);
-    }
-
-    private async Task DebounceFiltersAsync(CancellationToken token)
-    {
-        try
-        {
-            await Task.Delay(150, token);
-            await InvokeAsync(() =>
-            {
-                ApplyFilters();
-                StateHasChanged();
-            });
-        }
-        catch (OperationCanceledException) { }
     }
 
     private void ApplyFilters()
@@ -139,19 +152,15 @@ public partial class Servers : ComponentBase, IDisposable
         }
 
         if (_filters.SelectedRegion.Count > 0)
-        {
-            query = query.Where(s => GetRegion(s) != null && _filters.SelectedRegion.Contains(ParseRegionTag(GetRegion(s)!)));
-        }
+            query = query.Where(s => GetRegion(s) is { } r && _filters.SelectedRegion.Contains(ParseRegionTag(r)));
 
         if (_filters.SelectedLang.Count > 0)
-        {
-            query = query.Where(s => GetLanguage(s) != null && _filters.SelectedLang.Contains(ParseLangTag(GetLanguage(s)!)));
-        }
+            query = query.Where(s => GetLanguage(s) is { } l && _filters.SelectedLang.Contains(ParseLangTag(l)));
 
         if (_filters.HideAdult)
-            query = query.Where(s => GetTags(s) is { } tags && !(tags.Contains("18+") || tags.Contains("+18")));
+            query = query.Where(s => !IsAdult(s));
         else if (_filters.OnlyAdult)
-            query = query.Where(s => GetTags(s) is { } tags && (tags.Contains("18+") || tags.Contains("+18")));
+            query = query.Where(IsAdult);
 
         if (_filters.HideEmpty)
             query = query.Where(s => GetPlayers(s) > 0);
@@ -167,8 +176,6 @@ public partial class Servers : ComponentBase, IDisposable
         };
 
         _filteredServers = [.. query];
-
-        _settings.CacheFilters(_filters).GetAwaiter().GetResult();
     }
 
     private void HandleRefresh() => _fetcher.RequestRefresh();
@@ -217,7 +224,15 @@ public partial class Servers : ComponentBase, IDisposable
         regionTags = [.. allTags.Where(t => t.StartsWith("region:")).Select(ParseRegionTag).Distinct()];
     }
 
-    public static string ParseRPTag(string tag)
+    private static readonly ConcurrentDictionary<string, string> _rpTagCache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly ConcurrentDictionary<string, string> _langTagCache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly ConcurrentDictionary<string, string> _regionTagCache = new(StringComparer.OrdinalIgnoreCase);
+
+    public static string ParseRPTag(string tag) => _rpTagCache.GetOrAdd(tag, ParseRPTagCore);
+    public static string ParseLangTag(string tag) => _langTagCache.GetOrAdd(tag, ParseLangTagCore);
+    public static string ParseRegionTag(string tag) => _regionTagCache.GetOrAdd(tag, ParseRegionTagCore);
+
+    private static string ParseRPTagCore(string tag)
     {
         foreach (var kvp in _rPTagTypes)
         {
@@ -228,9 +243,12 @@ public partial class Servers : ComponentBase, IDisposable
         return tag;
     }
 
-    public static string ParseLangTag(string tag)
+    private static string ParseLangTagCore(string tag)
     {
-        if (tag.StartsWith("lang:", StringComparison.OrdinalIgnoreCase))
+        if (!tag.StartsWith("lang:", StringComparison.OrdinalIgnoreCase))
+            return tag;
+
+        try
         {
             var cultureId = tag[5..];
             var culture = CultureInfo.GetCultureInfo(cultureId);
@@ -238,30 +256,32 @@ public partial class Servers : ComponentBase, IDisposable
                 ? culture.EnglishName
                 : CultureInfo.GetCultureInfo(culture.TwoLetterISOLanguageName).EnglishName;
         }
-        return tag;
+        catch (CultureNotFoundException)
+        {
+            return tag;
+        }
     }
 
-    public static string ParseRegionTag(string tag)
+    private static string ParseRegionTagCore(string tag)
     {
-        if (tag.StartsWith("region:", StringComparison.OrdinalIgnoreCase))
-        {
-            var regionId = tag[7..];
-            if (_regionTransformations.TryGetValue(regionId, out var regionName))
-                return regionName;
+        if (!tag.StartsWith("region:", StringComparison.OrdinalIgnoreCase))
+            return tag;
 
-            try
-            {
-                var region = new RegionInfo(regionId);
-                return region.TwoLetterISORegionName == region.Name
-                    ? region.EnglishName
-                    : new RegionInfo(region.TwoLetterISORegionName).EnglishName;
-            }
-            catch
-            {
-                return tag;
-            }
+        var regionId = tag[7..];
+        if (_regionTransformations.TryGetValue(regionId, out var regionName))
+            return regionName;
+
+        try
+        {
+            var region = new RegionInfo(regionId);
+            return region.TwoLetterISORegionName == region.Name
+                ? region.EnglishName
+                : new RegionInfo(region.TwoLetterISORegionName).EnglishName;
         }
-        return tag;
+        catch (ArgumentException)
+        {
+            return tag;
+        }
     }
 
     private static readonly Dictionary<string, List<string>> _rPTagTypes = new()
@@ -305,6 +325,14 @@ public partial class Servers : ComponentBase, IDisposable
     private static string? GetLanguage(ServerStatusData s) => s.Tags.FirstOrDefault(x => x.StartsWith("lang:"));
     private static string? GetRegion(ServerStatusData s) => s.Tags.FirstOrDefault(x => x.StartsWith("region:"));
 
+    private static bool IsAdult(ServerStatusData s)
+    {
+        foreach (var t in GetTags(s))
+            if (t is "18+" or "+18")
+                return true;
+        return false;
+    }
+
     public void Dispose()
     {
         GC.SuppressFinalize(this);
@@ -314,6 +342,6 @@ public partial class Servers : ComponentBase, IDisposable
         _settings.FavoritesChanged -= OnFavoritesChanged;
         _disposeCts.Cancel();
         _disposeCts.Dispose();
-        _searchDebounceCts?.Dispose();
+        _filterCts?.Dispose();
     }
 }

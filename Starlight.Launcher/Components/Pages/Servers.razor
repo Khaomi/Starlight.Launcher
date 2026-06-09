@@ -17,8 +17,8 @@
     else if (_fetcher.Status == RefreshListStatus.Error && _totalCount == 0)
     {
         <div class="server-page__state">
-            <MudIcon Icon="@Icons.Material.Filled.CloudOff" Size="Size.Large" Color="Color.Error" />
-            <MudText Typo="Typo.subtitle1">@_localization["servers-menu-fetch-failed"]</MudText>
+            <MudIcon Icon="@Icons.Material.Filled.CloudOff" Color="Color.Error" />
+            <MudText Typo="Typo.subtitle1" Class="server-page__state-title">@_localization["servers-menu-fetch-failed"]</MudText>
             <MudButton Variant="Variant.Filled" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Refresh"
                        OnClick="HandleRefresh">
@@ -86,10 +86,10 @@
                 @_localization["servers-menu-cant-reach-hubs"]
             </MudAlert>
         }
-        if (_filteredServers.Count == 0)
+        @if (_filteredServers.Count == 0)
         {
             <div class="server-page__state">
-                <MudIcon Icon="@Icons.Material.Filled.SearchOff" Size="Size.Large" Color="Color.Default" />
+                <MudIcon Icon="@Icons.Material.Filled.SearchOff" Color="Color.Default" />
                 <MudText Typo="Typo.body2" Color="Color.Secondary">
                     @(_totalCount == 0 ? _localization["servers-menu-no-online-servers"] : _localization["servers-menu-no-matched-servers"])
                 </MudText>
@@ -105,11 +105,13 @@
         {
             <div class="server-page__list">
                 <MudVirtualize Items="_filteredServers"
-                Context="server"
-                ItemSize="56"
-                OverscanCount="3">
+                               Context="server"
+                               ItemSize="56"
+                               OverscanCount="3">
                     <ServerItem @key="server.Address" Data="server"
-                                    IsInFavorites="@(_favoriteAddresses.Contains(server.Address))" OnInfoNeeded="HandleInfoNeeded" OnFavorites="async x => await HandleFavorite(x)" />
+                                IsInFavorites="@(_favoriteAddresses.Contains(server.Address))"
+                                OnInfoNeeded="HandleInfoNeeded"
+                                OnFavorites="async x => await HandleFavorite(x)" />
                 </MudVirtualize>
             </div>
         }

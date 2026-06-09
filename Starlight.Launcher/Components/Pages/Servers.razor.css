@@ -1,4 +1,3 @@
-/* App shell fills the viewport; pages manage their own scrolling. */
 html, body, #app {
     height: 100vh;
     margin: 0;
@@ -37,20 +36,36 @@ html, body, #app {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 14px;
     padding: 48px 24px;
+    text-align: center;
+    color: var(--mud-palette-text-secondary);
+}
+
+    .server-page__state .mud-icon-root {
+        font-size: 3rem;
+        opacity: 0.65;
+    }
+
+.server-page__state-title {
+    font-weight: 600;
+    color: var(--mud-palette-text-primary);
 }
 
 .server-page__alert {
     flex-shrink: 0;
+    margin: 8px;
+    border-radius: 10px;
 }
 
 .server-page__list {
     flex: 1;
     min-height: 0;
+    height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    height: 0;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
 }
 
     .server-page__list::-webkit-scrollbar {
@@ -69,20 +84,3 @@ html, body, #app {
         .server-page__list::-webkit-scrollbar-thumb:hover {
             background: var(--mud-palette-action-disabled);
         }
-
-.server-toolbar {
-    background: var(--mud-palette-surface);
-    border-radius: 12px;
-    margin: 8px;
-    padding: 8px 12px;
-    backdrop-filter: blur(8px);
-    border: 1px solid var(--mud-palette-lines-default);
-}
-
-@media (max-width: 720px) {
-    .server-toolbar {
-        margin: 4px;
-        padding: 6px 8px;
-        border-radius: 10px;
-    }
-}
