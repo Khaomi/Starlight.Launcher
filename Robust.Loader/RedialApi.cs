@@ -14,6 +14,7 @@ internal sealed class RedialApi : IRedialApi
         "ROBUST_AUTH_USERID",
         "ROBUST_AUTH_PUBKEY",
         "ROBUST_AUTH_SERVER",
+        "STARLIGHT_AUTH_DISCORDTOKEN",
 
         // Launcher config.
         "SS14_LOADER_CONTENT_DB",
