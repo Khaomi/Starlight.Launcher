@@ -94,18 +94,31 @@ public sealed partial class EngineManagerDynamic : IEngineManager
             engineVersion,
             foundVersion.Version);
 
-        if (_settings.GetEngines().TryGetValue(foundVersion.Version, out _))
-        {
-            // Already have the engine version, we're good.
-            return new EngineInstallationResult(foundVersion.Version, false);
-        }
-
-        Log.Information("Installing engine version {version}...", foundVersion.Version);
-
         var bestRid = RidUtility.FindBestRid(foundVersion.Info.Platforms.Keys) ?? throw new NoEngineForPlatformException("No engine version available for our platform!");
         Log.Debug("Selecting RID {rid}", bestRid);
 
         var buildInfo = foundVersion.Info.Platforms[bestRid];
+
+        if (_settings.GetEngines().TryGetValue(foundVersion.Version, out var installed))
+        {
+            if (!string.IsNullOrEmpty(installed.Sha256)
+                && string.Equals(installed.Sha256, buildInfo.Sha256, StringComparison.OrdinalIgnoreCase))
+                return new EngineInstallationResult(foundVersion.Version, false);
+
+            Log.Information(
+                "Engine {Version} is installed but its hash ({Have}) does not match the requested build ({Want}); re-downloading.",
+                foundVersion.Version,
+                installed.Sha256 ?? "<none>",
+                buildInfo.Sha256);
+
+            _settings.RemoveInstalledEngine(foundVersion.Version);
+
+            var stalePath = Path.Combine(settings.DirEngineInstallations, $"{foundVersion.Version}.zip");
+            if (File.Exists(stalePath))
+                File.Delete(stalePath);
+        }
+
+        Log.Information("Installing engine version {version}...", foundVersion.Version);
 
         Log.Debug("Downloading engine: {EngineDownloadUrl}", buildInfo.Url);
 
@@ -127,8 +140,26 @@ public sealed partial class EngineManagerDynamic : IEngineManager
             throw;
         }
 
-        _settings.AddInstalledEngine(new InstalledEngineVersion(foundVersion.Version, buildInfo.Signature));
+        file.Seek(0, SeekOrigin.Begin);
+        var actualSha = await ComputeSha256Hex(file, cancel);
+
+        if (!string.Equals(actualSha, buildInfo.Sha256, StringComparison.OrdinalIgnoreCase))
+        {
+            await file.DisposeAsync();
+            File.Delete(downloadTarget);
+            throw new UpdateException(
+                $"Downloaded engine {foundVersion.Version} hash mismatch: expected {buildInfo.Sha256}, got {actualSha}.");
+        }
+
+        _settings.AddInstalledEngine(new InstalledEngineVersion(foundVersion.Version, buildInfo.Signature, actualSha));
         return new EngineInstallationResult(foundVersion.Version, true);
+    }
+
+    private static async Task<string> ComputeSha256Hex(Stream stream, CancellationToken cancel)
+    {
+        using var sha = System.Security.Cryptography.SHA256.Create();
+        var hash = await sha.ComputeHashAsync(stream, cancel);
+        return Convert.ToHexString(hash);
     }
 
     /// <summary>
