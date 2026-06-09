@@ -4,6 +4,7 @@ using MudBlazor;
 using Robust.Launcher.Api.Models.ServerStatus;
 using Starlight.Launcher.Components.Pages;
 using Starlight.Launcher.Services.Localization;
+using TerraFX.Interop.DirectX;
 
 namespace Starlight.Launcher.Components.Atoms.ServerList;
 
@@ -22,13 +23,15 @@ public partial class ServerItem : ComponentBase, IDisposable
     private System.Timers.Timer? _roundTimer;
 
     private bool _expanded = false;
-    private string _rowClass => "server-row server-row--clickable";
 
-    private List<string>? _displayTags => Data.Tags?
-        .Select(ParseTag)
-        .Where(t => !string.IsNullOrEmpty(t))
-        .Take(3)
-        .ToList();
+    private List<string>? _displayTags;
+
+    protected override void OnParametersSet()
+        => _displayTags = Data.Tags?
+            .Select(ParseTag)
+            .Where(t => !string.IsNullOrEmpty(t))
+            .Take(3)
+            .ToList();
 
     private static string ParseTag(string tag)
     {
@@ -62,8 +65,7 @@ public partial class ServerItem : ComponentBase, IDisposable
     protected override void OnAfterRender(bool firstRender)
     {
         base.OnAfterRender(firstRender);
-
-        if (Data.StatusInfo == ServerStatusInfoCode.NotFetched)
+        if (firstRender && Data.StatusInfo == ServerStatusInfoCode.NotFetched)
         {
             _infoCts = new CancellationTokenSource();
             _ = RequestInfoDebouncedAsync(_infoCts.Token);
@@ -88,8 +90,11 @@ public partial class ServerItem : ComponentBase, IDisposable
 
     private async Task HandleClick()
     {
-        if (string.IsNullOrEmpty(Data.Description) && Data.StatusInfo is ServerStatusInfoCode.Fetched and not ServerStatusInfoCode.Error)
-            _ = RequestInfoDebouncedAsync((_infoCts ?? new CancellationTokenSource()).Token);
+        if (string.IsNullOrEmpty(Data.Description) && Data.StatusInfo == ServerStatusInfoCode.Fetched)
+        {
+            _infoCts ??= new CancellationTokenSource();
+            await RequestInfoDebouncedAsync(_infoCts.Token);
+        }
         _expanded = !_expanded;
     }
 
@@ -130,10 +135,10 @@ public partial class ServerItem : ComponentBase, IDisposable
 
     private string _pingClass => _pingMs switch
     {
-        null => "server-row__ping--unknown",
-        <= 100 => "server-row__ping--good",
-        <= 250 => "server-row__ping--ok",
-        _ => "server-row__ping--bad",
+        null => "server-card__ping--unknown",
+        <= 100 => "server-card__ping--good",
+        <= 250 => "server-card__ping--ok",
+        _ => "server-card__ping--bad",
     };
 
     private string? _roundTime

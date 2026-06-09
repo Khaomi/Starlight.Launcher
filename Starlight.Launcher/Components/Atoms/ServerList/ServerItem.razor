@@ -1,10 +1,12 @@
 @using Robust.Launcher.Api.Models.ServerStatus
 
-<div class="server-card @(_expanded ? "server-card--expanded" : null)" @onclick="HandleClick">
+<div class="server-card @(_expanded ? "server-card--expanded" : null)" @onclick="HandleClick" role="button" tabindex="0" aria-expanded="@_expanded">
     <div class="server-card__row">
 
         <div class="server-card__primary">
-            <MudIcon Icon="@Icons.Material.Rounded.ChevronRight" Class="server-card__chevron" />
+            <span class="server-card__chevron">
+                <MudIcon Icon="@Icons.Material.Rounded.ChevronRight" />
+            </span>
             <div class="server-card__title-block">
                 <div class="server-card__title-line">
                     <span class="server-card__name">@(Data.Name ?? Data.Address)</span>

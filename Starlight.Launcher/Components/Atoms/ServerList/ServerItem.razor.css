@@ -35,6 +35,13 @@
         opacity: 1;
     }
 
+
+    .server-card--expanded .server-card__details {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 70ms;
+    }
+
 .server-card__row {
     display: flex;
     align-items: center;
@@ -54,9 +61,11 @@
 }
 
 .server-card__chevron {
-    font-size: 20px !important;
+    display: inline-flex;
+    align-items: center;
     color: var(--mud-palette-text-disabled);
     flex-shrink: 0;
+    font-size: 20px;
     transition: transform 150ms ease, color 150ms ease;
 }
 
@@ -219,6 +228,9 @@
 
 .server-card__details {
     padding: 0 16px 12px 44px;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 180ms ease, transform 180ms ease;
 }
 
 .server-card__description {
