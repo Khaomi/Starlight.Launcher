@@ -26,7 +26,7 @@ public sealed partial class SettingsService : IAsyncDisposable
     private readonly string _favoritesPath;
     private volatile HashSet<string> _favoriteAddresses = new(StringComparer.OrdinalIgnoreCase);
 
-    private Dictionary<Guid, LoginInfo> _logins;
+    private Dictionary<Guid, LoginInfo> _logins = new();
     private readonly SemaphoreSlim _loginsLock = new(1, 1);
     private readonly string _loginsPath;
 
@@ -40,6 +40,7 @@ public sealed partial class SettingsService : IAsyncDisposable
     private readonly string _modulesPath;
 
     private readonly ILogger<SettingsService> _logger;
+    private readonly ILoginKeyProvider _keyProvider;
 
     public event Action? FavoritesChanged;
 
@@ -56,17 +57,18 @@ public sealed partial class SettingsService : IAsyncDisposable
 
     #endregion
 
-    public SettingsService(ILogger<SettingsService> logger)
+    public SettingsService(ILogger<SettingsService> logger, ILoginKeyProvider keyProvider)
     {
         _logger = logger;
+        _keyProvider = keyProvider;
         _filePath = Path.Combine(FileSystem.AppDataDirectory, "settings.json");
-        _favoritesPath = Path.Combine(FileSystem.AppDataDirectory, "favorites.json");
         _loginsPath = Path.Combine(FileSystem.AppDataDirectory, "logins.json");
+        _favoritesPath = Path.Combine(FileSystem.AppDataDirectory, "favorites.json");
         _enginesPath = Path.Combine(FileSystem.AppDataDirectory, "engines.json");
         _modulesPath = Path.Combine(FileSystem.AppDataDirectory, "modules.json");
         _settings = LoadJson(_filePath, new AppSettings());
+        Task.Run(() => InitializeLoginsAsync());
         _favorites = LoadJson(_favoritesPath, new List<FavoriteServer>());
-        _logins = LoadJson(_loginsPath, new List<LoginInfo>()).ToDictionary(x => x.UserId);
         _engineInstallations = LoadJson(_enginesPath, new List<InstalledEngineVersion>()).ToDictionary(x => x.Version);
         _engineModules = LoadJson(_modulesPath, new HashSet<(string Version, string Name)>());
         RebuildFavoritesIndex(); // Rebuild addresses after load.
@@ -128,7 +130,7 @@ public sealed partial class SettingsService : IAsyncDisposable
         {
             SaveJsonAsync(_filePath, _settingsLock, _settings),
             SaveJsonAsync(_favoritesPath, _favoritesLock, _favorites),
-            SaveJsonAsync(_loginsPath, _loginsLock, _logins.Values),
+            SaveLoginsEncryptedAsync(),
             SaveJsonAsync(_enginesPath, _enginesLock, _engineInstallations.Values),
             SaveJsonAsync(_modulesPath, _modulesLock, _engineModules)
         };
@@ -235,6 +237,9 @@ public sealed partial class SettingsService : IAsyncDisposable
         _settingsLock.Dispose();
         _favoritesLock.Dispose();
         _loginsLock.Dispose();
+        _enginesLock.Dispose();
+        _modulesLock.Dispose();
+        _keyLock.Dispose();
 
         GC.SuppressFinalize(this);
     }

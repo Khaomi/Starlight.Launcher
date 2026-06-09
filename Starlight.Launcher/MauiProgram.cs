@@ -59,6 +59,12 @@ public static class MauiProgram
             builder.Services.AddSingleton<INativeTray, MacTray>();
             // #elif (Avalonia backend) → builder.Services.AddSingleton<INativeTray, AvaloniaTray>();
 #endif
+
+#if WINDOWS
+                builder.Services.AddSingleton<ILoginKeyProvider, DpapiKeyProvider>();
+#endif
+            //builder.Services.AddSingleton<ILoginKeyProvider, FileKeyProvider>(); Linux
+
             builder.Services.AddSingleton<SettingsService>();
 
 #if WINDOWS

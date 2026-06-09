@@ -29,7 +29,11 @@ public partial record AppSettings
 
     public string PathLoaderSigningKey => Path.Combine(DirLauncherData, "loader_signing_key");
 
-    private const string PrimaryCdnPublicKey = "";
+    private const string PrimaryCdnPublicKey = """
+        -----BEGIN PUBLIC KEY-----
+        MCowBQYDK2VwAyEAvF9h6FVrVhh9cYoSk0g/XluUVIrg40PQy8VPNaGu1vQ=
+        -----END PUBLIC KEY-----
+        """;
 
     private const string SecondaryCdnPublicKey = """
         -----BEGIN PUBLIC KEY-----
@@ -44,7 +48,7 @@ public partial record AppSettings
     // TODO: Redone to configurable option.
     public static ImmutableArray<RobustCdn> RobustCdns { get; } = [
         // Primary CDN — checked first.
-        //new RobustCdn("https://robust-builds.cdn.spacestation14.com/"),
+        new RobustCdn("https://robust-builds.starlight.network/") { PublicKey=PrimaryCdnPublicKey },
 
         // Secondary CDN with its own availability fallback (mirror).
         // Checked only if the requested version is missing from the primary CDN's manifest.
