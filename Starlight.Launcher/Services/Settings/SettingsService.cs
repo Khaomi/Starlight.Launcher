@@ -61,12 +61,12 @@ public sealed partial class SettingsService : IAsyncDisposable
     {
         _logger = logger;
         _keyProvider = keyProvider;
-        _filePath = Path.Combine(FileSystem.AppDataDirectory, "settings.json");
-        _loginsPath = Path.Combine(FileSystem.AppDataDirectory, "logins.json");
-        _favoritesPath = Path.Combine(FileSystem.AppDataDirectory, "favorites.json");
-        _enginesPath = Path.Combine(FileSystem.AppDataDirectory, "engines.json");
-        _modulesPath = Path.Combine(FileSystem.AppDataDirectory, "modules.json");
+        _filePath = Path.Combine(AppContext.BaseDirectory, "settings.json");
         _settings = LoadJson(_filePath, new AppSettings());
+        _loginsPath = Path.Combine(_settings.DirLauncherData, "logins.json");
+        _favoritesPath = Path.Combine(_settings.DirLauncherData, "favorites.json");
+        _enginesPath = Path.Combine(_settings.DirLauncherData, "engines.json");
+        _modulesPath = Path.Combine(_settings.DirLauncherData, "modules.json");
         Task.Run(() => InitializeLoginsAsync());
         _favorites = LoadJson(_favoritesPath, new List<FavoriteServer>());
         _engineInstallations = LoadJson(_enginesPath, new List<InstalledEngineVersion>()).ToDictionary(x => x.Version);

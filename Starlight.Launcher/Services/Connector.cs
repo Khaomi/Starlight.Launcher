@@ -359,7 +359,8 @@ public partial class Connector : ObservableObject
                 cVars.Add(("STARLIGHT_AUTH_DISCORDTOKEN", account.LoginInfo.DiscordToken.Token));
             cVars.Add(("ROBUST_AUTH_USERID", account.LoginInfo.UserId.ToString()));
             cVars.Add(("ROBUST_AUTH_PUBKEY", info.AuthInformation.PublicKey));
-            cVars.Add(("ROBUST_AUTH_SERVER", settings.BuildAuthUrlSet().GetMostSuccessfulUrl()));
+            if (settings.SelectedAuthServer != null)
+                cVars.Add(("ROBUST_AUTH_SERVER", settings.SelectedAuthServer));
         }
 
         try

@@ -1,5 +1,6 @@
 ﻿using Robust.Launcher.Api.Utility;
 using System.Collections.Immutable;
+using System.Text.Json.Serialization;
 
 namespace Starlight.Launcher.Models.Settings;
 
@@ -11,6 +12,7 @@ public partial record AppSettings
     public string DirLauncherData { get; init; } = FileSystem.AppDataDirectory;
 
     // Where the launcher itself is installed. Used to locate the loader/engine (release builds).
+    [JsonIgnore]
     public string DirLauncherInstall { get; init; } = AppContext.BaseDirectory;
 
     public string DirLogs => Path.Combine(DirLauncherData, "logs");
@@ -60,28 +62,14 @@ public partial record AppSettings
     #endregion
 
     #region Auth
-
-    private static readonly List<string> _defaultAuthServerUrls =
-    [
-        "https://auth.spacestation14.com/",
-        "https://auth.fallback.spacestation14.com/"
-    ];
-
     /// <summary>
     /// Auth servers in priority order. User-editable, any count.
     /// </summary>
-    public List<string> AuthServerUrls { get; init; } = [.. _defaultAuthServerUrls];
+    public List<string> AuthServerUrls { get; init; } = [ "https://auth.spacestation14.com/", "https://auth.fallback.spacestation14.com/" ];
+
+    public string? SelectedAuthServer = "https://auth.spacestation14.com/";
 
     public const string FallbackUsername = "JoeGenero";
-
-    /// <summary>
-    /// Builds a fresh fallback set from the configured URLs. Falls back to defaults if the user cleared the list.
-    /// </summary>
-    public UrlFallbackSet BuildAuthUrlSet()
-    {
-        var urls = AuthServerUrls is { Count: > 0 } list ? list : _defaultAuthServerUrls;
-        return new UrlFallbackSet([.. urls]);
-    }
 
     #endregion
 }

@@ -18,6 +18,15 @@ settings-menu-hub-list-option-add-tooltip = Add hub
 settings-menu-hub-list-option-empty-values = No hubs configured. Click + to add one.
 settings-menu-hub-list-option-text-label = Hub URL
 
+settings-menu-auth-list-option = Auth Servers List
+settings-menu-auth-list-option-description = Manage the list of auth and select current auth server.
+settings-menu-auth-list-option-add-tooltip = Add auth server
+settings-menu-auth-list-option-empty-values = No auth servers configurated. Click + to add one.
+settings-menu-auth-list-option-text-label = Auth Server URL
+
+settings-menu-data-folder-option = Data Folder
+settings-menu-data-folder-option-description = Select folder which will be used to store data.
+
 # Appearance
 
 settings-menu-theme-option = Theme
