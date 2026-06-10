@@ -36,7 +36,6 @@
 - [Screenshots](#-screenshots)
 - [Built With](#-built-with)
 - [Getting Started](#-getting-started)
-- [Contributing](#-contributing)
 - [Community](#-community)
 - [License](#-license)
 
@@ -59,16 +58,14 @@ Created by the **Starlight Team**, it focuses on:
 
 ## 🌟 Features
 
-- **Multi-account support** — manage and switch between several accounts
-- **Rich launcher settings** — fine-grained control over how the game launches
-- **Theme customization** — personalize the look and feel of the launcher
-- **Discord integration** — Rich Presence statuses and OAuth login
+- **Multi-account support** - manage and switch between several accounts
+- **Rich launcher settings** - fine-grained control over how the game launches
+- **Theme customization** - personalize the look and feel of the launcher
+- **Discord integration** - Rich Presence statuses and OAuth login
 
 ---
 
 ## 🖼 Screenshots
-
-> _Add a few screenshots or a short demo GIF here so newcomers can see the launcher in action._
 
 | Home |
 |------|
@@ -81,10 +78,10 @@ Created by the **Starlight Team**, it focuses on:
 
 ## 🛠 Built With
 
-- [.NET](https://dotnet.microsoft.com/) — core framework
-- [.NET MAUI](https://learn.microsoft.com/dotnet/maui/) — cross-platform app framework
-- [Blazor Hybrid](https://learn.microsoft.com/aspnet/core/blazor/hybrid/) — UI layer
-- Space Station 14 Launcher API — server/auth integration
+- [.NET](https://dotnet.microsoft.com/) - core framework
+- [.NET MAUI](https://learn.microsoft.com/dotnet/maui/) - cross-platform app framework
+- [Blazor Hybrid](https://learn.microsoft.com/aspnet/core/blazor/hybrid/) - UI layer
+- Space Station 14 Launcher API - server/auth integration
 
 ---
 
@@ -92,52 +89,13 @@ Created by the **Starlight Team**, it focuses on:
 
 ### Requirements
 
-- **.NET SDK 11.0** _(currently in preview — final release expected November 2026)_
-- **.NET MAUI workload** — install with:
+- **.NET SDK 11.0** _(currently in preview - final release expected November 2026)_
+- **.NET MAUI workload** - install with:
   ```bash
   dotnet workload install maui
   ```
-- **Visual Studio 2022** (with the *.NET MAUI* workload) or **JetBrains Rider**
+- **Visual Studio 2022-2026** (with the *.NET MAUI* workload) or **JetBrains Rider**
 - **Windows 10 (1809+) / Windows 11**
-
-### Clone
-
-```bash
-git clone https://github.com/ss14Starlight/Starlight.Launcher.git
-cd Starlight.Launcher
-```
-
-### Build
-
-```bash
-dotnet build
-```
-
-### Run
-
-The simplest way to run a .NET MAUI app is from **Visual Studio** or **Rider** (select the Windows target and press *Run*).
-
-From the CLI you need to specify the target framework moniker, for example:
-
-```bash
-dotnet build -t:Run -f net11.0-windows10.0.19041.0
-```
-
-> Adjust the framework moniker (`-f`) to match the one defined in the `.csproj`.
-
----
-
-## 🤝 Contributing
-
-Contributions, bug reports and feature requests are welcome!
-
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/my-feature`)
-3. **Commit** your changes (`git commit -m "Add my feature"`)
-4. **Push** to your branch (`git push origin feature/my-feature`)
-5. **Open** a Pull Request
-
-Please keep changes focused and describe them clearly in the PR.
 
 ---
 
@@ -150,5 +108,5 @@ Please keep changes focused and describe them clearly in the PR.
 
 ## 📄 License
 
-- **Code** — licensed under the [MIT License](LICENSE).
-- **Non-code assets** (icons, sound files, etc.) — licensed under **CC BY-SA 3.0** unless stated otherwise.
+- **Code** - licensed under the [MIT License](LICENSE).
+- **Non-code assets** (icons, sound files, etc.) - licensed under **CC BY-SA 3.0** unless stated otherwise.
