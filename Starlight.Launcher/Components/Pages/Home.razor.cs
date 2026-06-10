@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components;
 using MudBlazor;
 using Robust.Launcher.Api.Models.ServerStatus;
-using Starlight.Launcher.Components.Atoms;
+using Starlight.Launcher.Components.Atoms.Dialogs;
 using Starlight.Launcher.Models.Data;
 using Starlight.Launcher.Services;
 using Starlight.Launcher.Services.Localization;
@@ -90,7 +90,7 @@ public partial class Home : ComponentBase, IDisposable
         if (result.AddToFavorites)
             await AddDirectFavorite(result.Address);
 
-        await ShowConnecting(p => p.Add(x => x.Address, result.Address));
+        await ShowConnecting(p => { p.Add(x => x.Address, result.Address); p.Add(x => x.Title, null); } );
     }
 
     private async Task LoadReplay()

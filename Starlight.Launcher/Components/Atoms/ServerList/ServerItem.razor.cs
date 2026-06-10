@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using MudBlazor;
 using Robust.Launcher.Api.Models.ServerStatus;
+using Starlight.Launcher.Components.Atoms.Dialogs;
 using Starlight.Launcher.Components.Pages;
 using Starlight.Launcher.Services;
 using Starlight.Launcher.Services.Localization;
@@ -112,7 +113,8 @@ public partial class ServerItem : ComponentBase, IDisposable
     {
         var parameters = new DialogParameters<ConnectingDialog>
         {
-            { x => x.Address, Data.Address }
+            { x => x.Address, Data.Address },
+            { x => x.Title, Data.Name }
         };
 
         var options = new DialogOptions

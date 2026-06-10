@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
 using Starlight.Launcher.Components.Atoms;
+using Starlight.Launcher.Components.Atoms.Dialogs;
 using Starlight.Launcher.Models.Data;
 using Starlight.Launcher.Services.Localization;
 using Starlight.Launcher.Services.Settings;
@@ -88,7 +89,8 @@ public sealed partial class NullLinkHub : ComponentBase, IAsyncDisposable
     {
         var parameters = new DialogParameters<ConnectingDialog>
         {
-            { x => x.Address, server.ConnectionString }
+            { x => x.Address, server.ConnectionString },
+            { x => x.Title, server.Title },
         };
 
         var options = new DialogOptions
