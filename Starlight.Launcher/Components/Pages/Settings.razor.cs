@@ -18,6 +18,7 @@ public partial class Settings : ComponentBase, IDisposable
     [Inject] private AppState _state { get; set; } = default!;
     [Inject] private IDialogService _dialog { get; set; } = default!;
     [Inject] private IFileDialogService _fileDialog { get; set; } = default!;
+    [Inject] private NavigationManager _navigation { get; set; } = default!;
     private List<string> _availableLanguages = [];
 
     private MudTabs _tabs = null!;
@@ -34,6 +35,25 @@ public partial class Settings : ComponentBase, IDisposable
         _availableLanguages = _localization.EnumarateAllLoadedLanguages().Select(x => new CultureInfo(x).Name).ToList();
         _state.OnChange += OnStateChanged;
         await base.OnInitializedAsync();
+    }
+
+    private async Task OnResetSettings()
+    {
+        var confirmed = await _dialog.ShowMessageBoxAsync(
+            _localization["settings-menu-reset-confirm-title"],
+            _localization["settings-menu-reset-confirm-text"],
+            yesText: _localization["settings-menu-reset-confirm-yes"],
+            cancelText: _localization["settings-menu-reset-confirm-cancel"]);
+
+        if (confirmed != true)
+            return;
+
+        await _service.WriteSettingsAsync(new AppSettings());
+
+        _appSettingsCache = null;
+        _state.CallUpdate();
+
+        _navigation.NavigateTo("/settings", forceLoad: true);
     }
 
     private void OnStateChanged() 

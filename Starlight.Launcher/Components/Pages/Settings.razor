@@ -8,6 +8,15 @@
 <div class="app-bg"></div>
 
 <div class="settings-page">
+    <div class="settings-reset-button">
+        <MudButton Variant="Variant.Outlined"
+                   Color="Color.Error"
+                   StartIcon="@Icons.Material.Filled.SettingsBackupRestore"
+                   OnClick="OnResetSettings">
+            @_localization["settings-menu-reset-option"]
+        </MudButton>
+    </div>
+
     <MudTabs @ref="_tabs" Elevation="0" ApplyEffectsToContainer="false" Class="settings-tabs pa-6" TabPanelsClass="settings-tabs-panels" ActivePanelIndexChanged="OnActivePanelIndexChanged">
         <MudTabPanel @ref="_settingsTab" Text="@_localization["settings-menu-general-category"]">
             <MudContainer MaxWidth="MaxWidth.Small" Class="pa-0">

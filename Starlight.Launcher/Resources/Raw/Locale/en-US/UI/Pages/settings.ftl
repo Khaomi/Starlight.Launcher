@@ -8,6 +8,12 @@ settings-menu-development-category = Development
 
 # General
 
+settings-menu-reset-option = Reset Settings
+settings-menu-reset-confirm-title = Reset Settings to Defaults
+settings-menu-reset-confirm-text = Are you sure you want to reset the settings to their defaults?
+settings-menu-reset-confirm-yes = Yes
+settings-menu-reset-confirm-cancel = Cancel
+
 settings-menu-language-option = Language
 settings-menu-language-option-description = Select the language for the app.
 settings-menu-language-option-system = System
