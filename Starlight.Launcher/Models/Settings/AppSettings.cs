@@ -70,6 +70,7 @@ public partial record AppSettings
     /// </summary>
     public bool HidePresence { get; set; } = false;
     #endregion
+    #region General
     /// <summary>
     /// Save interval in milliseconds
     /// </summary>
@@ -86,6 +87,12 @@ public partial record AppSettings
     /// Currently selected login.
     /// </summary>
     public Guid? SelectedLoginId { get; set; } = null;
+
+    /// <summary>
+    /// Prevents launch of multiple game instances
+    /// </summary>
+    public bool PreventMultipleClients { get; set; } = true;
+    #endregion
 
     #region Cache
     public ServerListFilters CachedFilters { get; set; } = new ServerListFilters();

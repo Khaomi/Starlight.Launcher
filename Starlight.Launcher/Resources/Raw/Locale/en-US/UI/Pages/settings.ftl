@@ -1,6 +1,7 @@
 # Categories
 
 settings-menu-general-category = General
+settings-menu-servers-category = Servers
 settings-menu-appearance-category = Appearance
 settings-menu-server-list-category = Server List
 settings-menu-tray-category = Tray
@@ -18,6 +19,14 @@ settings-menu-language-option = Language
 settings-menu-language-option-description = Select the language for the app.
 settings-menu-language-option-system = System
 
+settings-menu-multiple-clients-option = Prevent Multiple Clients
+settings-menu-multiple-clients-option-description = Prevents launch of multiple clients at once.
+
+settings-menu-data-folder-option = Data Folder
+settings-menu-data-folder-option-description = Select folder which will be used to store data.
+
+# Servers
+
 settings-menu-hub-list-option = Hub List
 settings-menu-hub-list-option-description = Manage the list of hubs.
 settings-menu-hub-list-option-add-tooltip = Add hub
@@ -29,9 +38,6 @@ settings-menu-auth-list-option-description = Manage the list of auth and select 
 settings-menu-auth-list-option-add-tooltip = Add auth server
 settings-menu-auth-list-option-empty-values = No auth servers configurated. Click + to add one.
 settings-menu-auth-list-option-text-label = Auth Server URL
-
-settings-menu-data-folder-option = Data Folder
-settings-menu-data-folder-option-description = Select folder which will be used to store data.
 
 # Appearance
 

@@ -35,6 +35,8 @@ public partial class Connector : ObservableObject
     private readonly DiscordRichPresence _presence;
     private TaskCompletionSource<PrivacyPolicyAcceptResult>? _acceptPrivacyPolicyTcs;
 
+    private int _activeLaunches;
+
     public Connector(Updater updater, IEngineManager engineManager, HttpClient http, LoginManager login, SettingsService settings, INativeTray tray, DiscordRichPresence presence)
     {
         _updater = updater;
@@ -66,8 +68,30 @@ public partial class Connector : ObservableObject
         private set => SetProperty(ref field, value);
     }
 
+
+    private bool TryBeginLaunch()
+    {
+        var others = Interlocked.Increment(ref _activeLaunches) - 1;
+
+        if (others > 0 && _settings.GetSettings().PreventMultipleClients)
+        {
+            Interlocked.Decrement(ref _activeLaunches);
+            return false;
+        }
+
+        return true;
+    }
+
+    private void EndLaunch() => Interlocked.Decrement(ref _activeLaunches);
+
     public async void Connect(string address, CancellationToken cancel = default)
     {
+        if (!TryBeginLaunch())
+        {
+            Log.Information("Ignoring connect: a client is already launching/running");
+            return;
+        }
+
         try
         {
             await ConnectInternalAsync(address, cancel);
@@ -85,11 +109,18 @@ public partial class Connector : ObservableObject
         finally
         {
             Cleanup();
+            EndLaunch();
         }
     }
 
     public async void LaunchContentBundle(FileResult file, CancellationToken cancel = default)
     {
+        if (!TryBeginLaunch())
+        {
+            Log.Information("Ignoring connect: a client is already launching/running");
+            return;
+        }
+
         Log.Information("Launching content bundle: {FileName}", file.FileName);
 
         try
