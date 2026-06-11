@@ -24,7 +24,8 @@ public partial class Auth : ComponentBase, IDisposable
         AccountList,
         SignIn,
         Register,
-        ForgotPassword
+        ForgotPassword,
+        LinkAccount
     }
 
     private Mode _mode = Mode.AccountList;
@@ -48,6 +49,13 @@ public partial class Auth : ComponentBase, IDisposable
     private string _forgotEmail = "";
     private string? _forgotError;
     private bool _forgotSuccess;
+
+    private Guid? _linkUserId;
+    private string _linkUsername = "";
+    private string _linkPassword = "";
+    private string _linkTfaCode = "";
+    private bool _linkTfaRequired;
+    private string? _linkError;
 
     private Guid? _relogUserId;
 
@@ -134,6 +142,80 @@ public partial class Auth : ComponentBase, IDisposable
         AccountLoginStatus.Unsure => MudBlazor.Color.Surface,
         _ => MudBlazor.Color.Default
     };
+
+    private void LinkAccount(LoggedInAccount account)
+    {
+        _linkUserId = account.UserId;
+        _linkUsername = account.LoginInfo.Username;
+        _linkPassword = "";
+        _linkTfaCode = "";
+        _linkTfaRequired = false;
+        _linkError = null;
+        _mode = Mode.LinkAccount;
+    }
+
+    private async Task OnLinkKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !_busy)
+            await DoLinkAccount();
+    }
+
+    private async Task DoLinkAccount()
+    {
+        _linkError = null;
+
+        if (string.IsNullOrWhiteSpace(_linkUsername) || string.IsNullOrEmpty(_linkPassword))
+        {
+            _linkError = _localization["auth-menu-enter-info-error"];
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var request = new AuthApi.AuthenticateRequest(
+                _linkUsername, null, _linkPassword,
+                _linkTfaRequired ? _linkTfaCode : null);
+
+            var result = await _authApi.AuthenticateAsync(request);
+
+            if (result.IsSuccess && _linkUserId != null)
+            {
+                _loginManager.LinkAuthToken(_linkUserId.Value, result.LoginInfo.UserId, result.LoginInfo);
+
+                _snackbar.Add(_localization.GetString("auth-menu-account-linked",
+                    ("account", result.LoginInfo.Username)), Severity.Success);
+
+                BackToAccountList();
+                return;
+            }
+
+            switch (result.Code)
+            {
+                case AuthApi.AuthenticateDenyResponseCode.InvalidCredentials:
+                    _linkError = _localization["auth-menu-incorrect-info-error"];
+                    break;
+                case AuthApi.AuthenticateDenyResponseCode.TfaRequired:
+                    _linkTfaRequired = true;
+                    _linkError = _localization["auth-menu-tfa-required-error"];
+                    break;
+                case AuthApi.AuthenticateDenyResponseCode.TfaInvalid:
+                    _linkTfaRequired = true;
+                    _linkError = _localization["auth-menu-tfa-invalid-error"];
+                    break;
+                case AuthApi.AuthenticateDenyResponseCode.AccountLocked:
+                    _linkError = _localization["auth-menu-account-blocked-error"];
+                    break;
+                default:
+                    _linkError = string.Join("\n", result.Errors);
+                    break;
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
 
     private Task LinkDiscord(LoggedInAccount account) =>
         RunDiscordAttach(account, _localization.GetString("auth-menu-linked-status", ("account", account.LoginInfo.Username)));

@@ -96,6 +96,24 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
         _settings.LoginsChanged += OnSettingsLoginsChanged;
     }
 
+    public void LinkAuthToken(Guid oldUserID, Guid newUserId, LoginInfo authLogin)
+    {
+        var existing = Logins.FirstOrDefault(l => l.UserId == oldUserID);
+        if (existing is null)
+            return;
+
+        var loginInfo = new LoginInfo()
+        {
+            UserId = newUserId,
+            Username = authLogin.Username,
+            Token = authLogin.Token,
+            DiscordToken = existing.LoginInfo.DiscordToken,
+            DiscordRefreshToken = existing.LoginInfo.DiscordRefreshToken,
+            DiscordSessionId = existing.LoginInfo.DiscordSessionId
+        };
+        AddFreshLogin(loginInfo);
+    }
+
     private void OnSettingsLoginsChanged()
     {
         var current = _settings.GetLogins();
@@ -264,6 +282,7 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
         if (isNew)
         {
             DispatchToUi(() => _loginsView.Add(data));
+            LoginsChanged?.Invoke();
         }
 
         data.SetStatus(AccountLoginStatus.Available);

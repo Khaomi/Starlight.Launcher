@@ -78,3 +78,14 @@ auth-menu-forgotpassword-alert = If an account with that email address exists, p
 auth-menu-enter-email-label = Enter the email address associated with your account.
 auth-menu-forgotpassword-status-busy = Sending...
 auth-menu-forgotpassword-status-wait = Send
+
+# Link
+
+auth-menu-can-play-no-discord = Can play without Discord
+auth-menu-link-account-button = Link account
+auth-menu-needs-discord = Requires auth via Discord
+auth-menu-link-account-title = Account Linking
+auth-menu-link-account-hint     = Log in to your authentication server account to play without Discord
+auth-menu-link-account-confirm  = Link
+auth-menu-link-account-busy     = Linking...
+auth-menu-account-linked        = The {account} account was linked

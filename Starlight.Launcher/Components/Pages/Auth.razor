@@ -50,6 +50,20 @@
                                                             @_localization["auth-menu-active-chip"]
                                                         </MudChip>
                                                     }
+                                                    @if (acc.LoginInfo.Token != null)
+                                                    {
+                                                        <MudTooltip Text="@_localization["auth-menu-can-play-no-discord"]">
+                                                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle"
+                                                                     Size="Size.Small" Color="Color.Success" />
+                                                        </MudTooltip>
+                                                    }
+                                                    else
+                                                    {
+                                                        <MudTooltip Text="@_localization["auth-menu-needs-discord"]">
+                                                            <MudIcon Icon="@Icons.Material.Filled.Cancel"
+                                                                     Size="Size.Small" Color="Color.Error" />
+                                                        </MudTooltip>
+                                                    }
                                                     @if (acc.LoginInfo.DiscordToken != null)
                                                     {
                                                         <MudTooltip Text="@_localization["auth-menu-discord-linked-tooltip"]">
@@ -94,6 +108,13 @@
                                                     <MudMenuItem Icon="@Icons.Custom.Brands.Discord" IconColor="Color.Info"
                                                                  OnClick="() => LinkDiscord(acc)">
                                                         @_localization["auth-menu-link-discord-button"]
+                                                    </MudMenuItem>
+                                                }
+                                                @if (acc.Status != AccountLoginStatus.Expired && acc.LoginInfo.Token == null && acc.LoginInfo.DiscordToken != null)
+                                                {
+                                                    <MudMenuItem Icon="@Icons.Material.Filled.Key" IconColor="Color.Info"
+                                                                 OnClick="() => LinkAccount(acc)">
+                                                        @_localization["auth-menu-link-account-button"]
                                                     </MudMenuItem>
                                                 }
                                                 <MudMenuItem Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error"
@@ -342,6 +363,54 @@
                             else
                             {
                                 <span>@_localization["auth-menu-forgotpassword-status-wait"]</span>
+                            }
+                        </MudButton>
+                        break;
+
+                    case Mode.LinkAccount:
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4">
+                            <MudIconButton Icon="@Icons.Material.Filled.ArrowBack"
+                                           OnClick="BackToAccountList" Disabled="_busy" />
+                            <MudText Typo="Typo.h5">@_localization["auth-menu-link-account-title"]</MudText>
+                        </MudStack>
+
+                        <MudText Class="mb-3 mud-text-secondary">
+                            @_localization["auth-menu-link-account-hint"]
+                        </MudText>
+
+                        <MudTextField @bind-Value="_linkUsername"
+                                      Label="@_localization["auth-menu-username-label"]"
+                                      Variant="Variant.Outlined" Disabled="_busy" Class="mb-3" />
+
+                        <MudTextField @bind-Value="_linkPassword"
+                                      Label="@_localization["auth-menu-password-label"]"
+                                      InputType="InputType.Password"
+                                      Variant="Variant.Outlined" Disabled="_busy" Class="mb-3"
+                                      OnKeyDown="OnLinkKey" />
+
+                        @if (_linkTfaRequired)
+                        {
+                            <MudTextField @bind-Value="_linkTfaCode"
+                                          Label="@_localization["auth-menu-2fa-label"]"
+                                          Variant="Variant.Outlined" Disabled="_busy" Class="mb-3"
+                                          OnKeyDown="OnLinkKey" />
+                        }
+
+                        @if (!string.IsNullOrEmpty(_linkError))
+                        {
+                            <MudAlert Severity="Severity.Error" Class="mb-3">@_linkError</MudAlert>
+                        }
+
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   FullWidth="true" Disabled="_busy" OnClick="DoLinkAccount">
+                            @if (_busy)
+                            {
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                                <span>@_localization["auth-menu-link-account-busy"]</span>
+                            }
+                            else
+                            {
+                                <span>@_localization["auth-menu-link-account-confirm"]</span>
                             }
                         </MudButton>
                         break;
