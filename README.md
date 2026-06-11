@@ -48,7 +48,6 @@
 Created by the **Starlight Team**, it focuses on:
 
 - 🎨 A modern, responsive UI
-- ⚡ Improved performance
 - 🔧 Advanced customization options
 - 🧩 An extensible architecture
 
