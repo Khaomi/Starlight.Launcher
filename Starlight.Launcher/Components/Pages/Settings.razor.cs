@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using System.Globalization;
+using Microsoft.AspNetCore.Components;
 using MudBlazor;
 using Starlight.Launcher.Components.Atoms.Settings;
 using Starlight.Launcher.Models.Settings;
@@ -6,13 +7,11 @@ using Starlight.Launcher.Services;
 using Starlight.Launcher.Services.Localization;
 using Starlight.Launcher.Services.Settings;
 using Starlight.Launcher.Services.State;
-using System.Globalization;
 
 namespace Starlight.Launcher.Components.Pages;
 
 public partial class Settings : ComponentBase, IDisposable
 {
-    [Inject] private SettingsService _service { get; set; } = default!;
     [Inject] private LocalizationManager _localization { get; set; } = default!;
     [Inject] private SettingsService _settings { get; set; } = default!;
     [Inject] private AppState _state { get; set; } = default!;
@@ -23,7 +22,8 @@ public partial class Settings : ComponentBase, IDisposable
 
     private MudTabs _tabs = null!;
 
-    private MudTabPanel _settingsTab = null!;
+    private MudTabPanel _generalTab = null!;
+    private MudTabPanel _developmentTab = null!;
 
     private AppSettings? _appSettingsCache = null;
     private DateTime _lastCacheUpdate;
@@ -31,7 +31,7 @@ public partial class Settings : ComponentBase, IDisposable
 
     protected override async Task OnInitializedAsync()
     {
-        var settings = await _service.GetSettingsAsync();
+        var settings = await _settings.GetSettingsAsync();
         _availableLanguages = _localization.EnumarateAllLoadedLanguages().Select(x => new CultureInfo(x).Name).ToList();
         _state.OnChange += OnStateChanged;
         await base.OnInitializedAsync();
@@ -48,7 +48,7 @@ public partial class Settings : ComponentBase, IDisposable
         if (confirmed != true)
             return;
 
-        await _service.WriteSettingsAsync(new AppSettings());
+        await _settings.WriteSettingsAsync(new AppSettings());
 
         _appSettingsCache = null;
         _state.CallUpdate();
@@ -61,7 +61,9 @@ public partial class Settings : ComponentBase, IDisposable
 
     private async void OnActivePanelIndexChanged(int value)
     {
-        if (value == 2)
+        var index = _tabs.Panels.Select((value, index) => (value, index)).FirstOrDefault(x => ReferenceEquals(x.value, _developmentTab)).index;
+
+        if (value == index)
         {
             var options = new DialogOptions
             {
@@ -78,7 +80,7 @@ public partial class Settings : ComponentBase, IDisposable
                 if (dialog.Dialog is AlertDialog alert)
                 {
                     alert.OnSuccess += async () => await _settings.WriteSettingsAsync(await _settings.GetSettingsAsync() with { DevPolicyAccepted = true });
-                    alert.OnCancel += async () => await _tabs.ActivatePanelAsync(_settingsTab);
+                    alert.OnCancel += async () => await _tabs.ActivatePanelAsync(_generalTab);
                 }
             }
         }
@@ -102,9 +104,9 @@ public partial class Settings : ComponentBase, IDisposable
 
     private async Task UpdateSetting(Func<AppSettings, AppSettings> update, bool callWindowUpdate = false)
     {
-        var settings = await _service.GetSettingsAsync();
+        var settings = await _settings.GetSettingsAsync();
         var newSettings = update(settings);
-        await _service.WriteSettingsAsync(newSettings);
+        await _settings.WriteSettingsAsync(newSettings);
         if (callWindowUpdate)
             _state.CallUpdate();
     }
@@ -119,7 +121,7 @@ public partial class Settings : ComponentBase, IDisposable
         }
         else
         {
-            settings = await _service.GetSettingsAsync();
+            settings = await _settings.GetSettingsAsync();
             _appSettingsCache = settings;
             _lastCacheUpdate = DateTime.Now;
         }

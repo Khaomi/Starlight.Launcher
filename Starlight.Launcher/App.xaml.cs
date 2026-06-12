@@ -1,16 +1,43 @@
 ﻿using System.Runtime.Versioning;
+using Starlight.Launcher.Services;
 using Starlight.Launcher.Services.Auth;
+using Starlight.Launcher.Services.State;
+using TerraFX.Interop.Windows;
 
 namespace Starlight.Launcher;
 
 public partial class App : Application
 {
-    public App() => InitializeComponent();
+    private readonly LauncherCommands _commands;
+    private readonly LauncherMessaging _messaging;
+    private readonly AppState _state;
+    public App(LauncherCommands commands, LauncherMessaging messaging, AppState state)
+    {
+        InitializeComponent();
 
-    [SupportedOSPlatform("windows10.0.17763.0")]
-    protected override Window CreateWindow(IActivationState? activationState) => new(new MainPage()) { Title = "Starlight.Launcher" };
+        _commands = commands;
+        _messaging = messaging;
+        _state = state;
 
-    [SupportedOSPlatform("windows10.0.17763.0")]
+        _commands.RunCommandTask();
+        _messaging.StartServerTask(commands);
+    }
+
+    protected override Window CreateWindow(IActivationState? activationState)
+    {
+        var window = new Window(new MainPage(_state)) { Title = "Starlight.Launcher" };
+
+        window.Destroying += (_, _) =>
+        {
+            _commands.Shutdown();
+            _messaging.StopAndWait();
+        };
+        window.Stopped += (s, e) => _state.NotifyPaused();
+        window.Resumed += (s, e) => _state.NotifyResumed();
+
+        return window;
+    }
+
     protected override void OnAppLinkRequestReceived(Uri uri)
     {
         base.OnAppLinkRequestReceived(uri);

@@ -45,6 +45,33 @@ public static class MauiProgram
             builder.Logging.ClearProviders();
             builder.Logging.AddSerilog(logger);
 
+            var messaging = new LauncherMessaging();
+            string[] commands = { LauncherCommands.PingCommand };
+            var commandSendAnyway = false;
+            var args = Environment.GetCommandLineArgs().Skip(1).ToArray();
+            if (args.Length == 1)
+            {
+                if (Uri.TryCreate(args[0], UriKind.Absolute, out var result))
+                {
+                    commands = new string[]
+                        { LauncherCommands.BlankReasonCommand, LauncherCommands.ConstructConnectCommand(result) };
+                    commandSendAnyway = true;
+                }
+            }
+            else if (args.Length >= 2)
+            {
+                if (args[0] == "--commands")
+                {
+                    commands = new string[args.Length - 1];
+                    for (var i = 0; i < commands.Length; i++)
+                        commands[i] = args[i + 1];
+                    commandSendAnyway = true;
+                }
+            }
+
+            if (messaging.SendCommandsOrClaim(commands, commandSendAnyway))
+                Environment.Exit(0);
+
             builder
                 .UseMauiApp<App>()
                 .ConfigureFonts(fonts =>
@@ -67,9 +94,7 @@ public static class MauiProgram
 
             builder.Services.AddSingleton<SettingsService>();
 
-#if WINDOWS
-            builder.Services.AddSingleton<DiscordRichPresence>(); // MacOS doesn't support Discord RPC =(
-#endif
+            builder.Services.AddSingleton<DiscordRichPresence>();
 
 #if WINDOWS
             builder.Services.AddSingleton<IFileDialogService, WindowsFileDialogService>();
@@ -78,6 +103,9 @@ public static class MauiProgram
 #endif
 
             builder.Services.AddSingleton<TrayCoordinator>();
+
+            builder.Services.AddSingleton(messaging);
+            builder.Services.AddSingleton<LauncherCommands>();
 
             var httpClient = HappyEyeballsHttp.CreateHttpClient();
             builder.Services.AddSingleton(httpClient);

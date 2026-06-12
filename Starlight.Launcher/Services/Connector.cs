@@ -37,6 +37,8 @@ public partial class Connector : ObservableObject
 
     private int _activeLaunches;
 
+    public int ActiveLaunches => _activeLaunches;
+
     public Connector(Updater updater, IEngineManager engineManager, HttpClient http, LoginManager login, SettingsService settings, INativeTray tray, DiscordRichPresence presence)
     {
         _updater = updater;
@@ -67,7 +69,6 @@ public partial class Connector : ObservableObject
         get;
         private set => SetProperty(ref field, value);
     }
-
 
     private bool TryBeginLaunch()
     {
