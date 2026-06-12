@@ -1,8 +1,7 @@
-﻿using System.Runtime.Versioning;
-using Starlight.Launcher.Services;
+﻿using Starlight.Launcher.Services;
 using Starlight.Launcher.Services.Auth;
 using Starlight.Launcher.Services.State;
-using TerraFX.Interop.Windows;
+using System.Runtime.InteropServices;
 
 namespace Starlight.Launcher;
 
@@ -41,8 +40,25 @@ public partial class App : Application
     protected override void OnAppLinkRequestReceived(Uri uri)
     {
         base.OnAppLinkRequestReceived(uri);
-        IPlatformApplication.Current!.Services
-            .GetRequiredService<DiscordAuthService>()
-            .HandleDeepLink(uri);
+
+        if (IsDiscordAuthLink(uri))
+        {
+            IPlatformApplication.Current!.Services
+                .GetRequiredService<DiscordAuthService>()
+                .HandleDeepLink(uri);
+            return;
+        }
+
+        var serverUri = ExtractConnectUri(uri);
+        if (serverUri is not null)
+        {
+            _ = _commands.QueueCommand(LauncherCommands.ConstructConnectCommand(serverUri));
+        }
     }
+
+    private static bool IsDiscordAuthLink(Uri uri) =>
+        uri.Host.Equals("discord", StringComparison.OrdinalIgnoreCase) ||
+        uri.AbsolutePath.Contains("auth", StringComparison.OrdinalIgnoreCase);
+
+    private static Uri? ExtractConnectUri(Uri uri) => uri;
 }

@@ -14,18 +14,14 @@ public partial class LauncherCommands
     private static string s_reason = "";
 
     private readonly LoginManager _loginManager;
-    private readonly LauncherMessaging _msgr;
-    private readonly IDispatcher _dispatcher;
-    private readonly IDialogService _dialog;
     private readonly Connector _connector;
     public readonly Channel<string> CommandChannel;
 
-    public LauncherCommands(LoginManager loginManager, LauncherMessaging launcherMessaging, IDispatcher dispatcher, IDialogService dialog, Connector connector)
+    public event Func<string, Task>? ConnectRequested;
+
+    public LauncherCommands(LoginManager loginManager, Connector connector)
     {
         _loginManager = loginManager;
-        _msgr = launcherMessaging;
-        _dispatcher = dispatcher;
-        _dialog = dialog;
         _connector = connector;
 
         CommandChannel = Channel.CreateUnbounded<string>();
@@ -83,22 +79,15 @@ public partial class LauncherCommands
         // Note that we don't want to activate the window for something we'll requeue again and again.
         ActivateWindow();
         Log.Information($"Connect command: \"{param}\", \"{reason}\"");
-        var parameters = new DialogParameters<ConnectingDialog>
-        {
-            { x => x.Address, param },
-            { x => x.Title, null }
-        };
 
-        var options = new DialogOptions
+        var handler = ConnectRequested;
+        if (handler is null)
         {
-            BackdropClick = false,
-            CloseOnEscapeKey = false,
-            CloseButton = false,
-            MaxWidth = MaxWidth.ExtraSmall,
-            FullWidth = true
-        };
+            Log.Error("Connect: no UI handler subscribed to ConnectRequested");
+            return;
+        }
 
-        await _dialog.ShowAsync<ConnectingDialog>("Connecting", parameters, options);
+        await handler(param);
     }
 
     public async ValueTask QueueCommand(string cmd) => await CommandChannel.Writer.WriteAsync(cmd);

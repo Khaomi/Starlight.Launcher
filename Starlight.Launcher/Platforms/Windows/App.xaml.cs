@@ -1,13 +1,12 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Microsoft.Maui.Platform;
 using Microsoft.UI.Windowing;
-using Microsoft.UI.Xaml;
 using Microsoft.Windows.AppLifecycle;
 using Serilog;
 using Starlight.Launcher.Services;
 using Starlight.Launcher.Services.Auth;
 using Starlight.Launcher.Services.Settings;
-using System.Diagnostics;
 using Windows.ApplicationModel.Activation;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -103,12 +102,50 @@ public partial class App : MauiWinUIApplication
             return;
         }
 
-        instance.Activated += (_, e) => HandleProtocol(e);
-        HandleProtocol(activated);
+        instance.Activated += (_, e) => HandleProtocol(e, warm: true);
+        HandleProtocol(activated, warm: false);
         base.OnLaunched(args);
     }
 
-    private static void HandleProtocol(AppActivationArguments? e)
+    [DllImport("shell32.dll", SetLastError = true)]
+    private static extern IntPtr CommandLineToArgvW(
+        [MarshalAs(UnmanagedType.LPWStr)] string lpCmdLine, out int pNumArgs);
+
+    [DllImport("kernel32.dll")]
+    private static extern IntPtr LocalFree(IntPtr hMem);
+
+    private static string[] SplitCommandLine(string commandLine)
+    {
+        var ptr = CommandLineToArgvW(commandLine, out var argc);
+        if (ptr == IntPtr.Zero) return Array.Empty<string>();
+        try
+        {
+            var args = new string[argc];
+            for (var i = 0; i < argc; i++)
+            {
+                var p = Marshal.ReadIntPtr(ptr, i * IntPtr.Size);
+                args[i] = Marshal.PtrToStringUni(p) ?? "";
+            }
+            return args;
+        }
+        finally
+        {
+            LocalFree(ptr);
+        }
+    }
+
+    private static string[]? ExtractCommands(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+
+        var argv = SplitCommandLine(raw);
+        var idx = Array.IndexOf(argv, "--commands");
+        if (idx < 0 || idx + 1 >= argv.Length) return null;
+
+        return argv[(idx + 1)..];
+    }
+
+    private static void HandleProtocol(AppActivationArguments? e, bool warm)
     {
         if (e?.Kind == ExtendedActivationKind.Protocol && e.Data is IProtocolActivatedEventArgs p)
         {
@@ -125,9 +162,25 @@ public partial class App : MauiWinUIApplication
 
             var uri = ExtractStarlightUri(raw);
             if (uri is not null)
+            {
                 IPlatformApplication.Current!.Services
                     .GetRequiredService<DiscordAuthService>()
                     .HandleDeepLink(uri);
+                return;
+            }
+
+            if (warm)
+            {
+                var commands = ExtractCommands(raw);
+                if (commands is { Length: > 0 })
+                {
+                    var lc = IPlatformApplication.Current!.Services
+                        .GetRequiredService<LauncherCommands>();
+
+                    foreach (var c in commands)
+                        _ = lc.QueueCommand(c);
+                }
+            }
         }
     }
 
