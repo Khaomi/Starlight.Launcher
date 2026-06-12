@@ -260,6 +260,7 @@ h1:focus {
 
 .mud-main-content {
     height: 100vh;
+    overflow: hidden;
 }
 
 .mud-layout.has-bottom-nav .mud-main-content {
@@ -268,12 +269,10 @@ h1:focus {
 }
 
 .mud-main-content:has(.settings-page) {
-    height: calc(100vh - 64px);
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     min-height: 0;
-    overflow: hidden;
 }
 
     .mud-main-content:has(.settings-page) > .settings-page {
@@ -281,7 +280,6 @@ h1:focus {
         min-height: 0;
         display: flex;
         flex-direction: column;
-        overflow: hidden;
     }
 
 .mud-tabs.settings-tabs {
@@ -303,16 +301,6 @@ h1:focus {
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-}
-
-.mud-main-content:has(.auth-bg) {
-    height: calc(100vh - 64px);
-    overflow: hidden;
-}
-
-.mud-main-content:has(.home-content) {
-    height: calc(100vh - 64px);
-    overflow: hidden;
 }
 
 .app-bg {
