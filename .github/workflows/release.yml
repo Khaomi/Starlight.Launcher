@@ -34,11 +34,18 @@ jobs:
           dotnet workload restore ${{ env.MAIN_PROJECT }}
           dotnet workload restore ${{ env.LOADER_PROJECT }}
 
+      - name: Resolve version
+        id: ver
+        shell: pwsh
+        run: |
+          $v = "${{ github.ref_name }}" -replace '^v',''
+          echo "version=$v" >> $env:GITHUB_OUTPUT
+
       - name: Publish (win-x64, self-contained)
         shell: pwsh
         run: |
-          dotnet publish ${{ env.MAIN_PROJECT }} -c Release -f net11.0-windows10.0.19041.0 -r win-x64 --self-contained true -p:WindowsAppSDKSelfContained=true -p:FullRelease=true -o publish/win-x64
-          dotnet publish ${{ env.LOADER_PROJECT }} -c Release -r win-x64 --self-contained true -o publish/win-x64/loader
+          dotnet publish ${{ env.MAIN_PROJECT }} -c Release -f net11.0-windows10.0.19041.0 -r win-x64 --self-contained true -p:WindowsAppSDKSelfContained=true -p:FullRelease=true -p:Version=${{ steps.ver.outputs.version }} -o publish/win-x64
+          dotnet publish ${{ env.LOADER_PROJECT }} -c Release -r win-x64 --self-contained true -p:Version=${{ steps.ver.outputs.version }} -o publish/win-x64/loader
 
       - name: Verify launcher output
         shell: pwsh
@@ -62,7 +69,7 @@ jobs:
         run: >
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
           /DAppName=${{ env.APP_NAME }}
-          /DAppVersion=${{ github.ref_name }}
+          /DAppVersion=${{ steps.ver.outputs.version }}
           /DExeName=${{ env.EXE_NAME }}
           "/DSourceDir=${{ github.workspace }}\publish\win-x64"
           installer\Starlight.iss
