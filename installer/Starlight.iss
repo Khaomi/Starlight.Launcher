@@ -1,5 +1,5 @@
 [Setup]
-AppId={7168EE69-1ED3-458C-AE24-A189E255112D}
+AppId={{7168EE69-1ED3-458C-AE24-A189E255112D}}
 AppName={#AppName}
 AppVersion={#AppVersion}
 DefaultDirName={autopf}\{#AppName}
