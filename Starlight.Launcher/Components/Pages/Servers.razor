@@ -91,15 +91,15 @@
                 else
                 {
                     <div class="server-page__list">
-                        <MudVirtualize Items="_filteredServers"
-                                       Context="server"
-                                       ItemSize="56"
-                                       OverscanCount="3">
+                        <Virtualize Items="_filteredServers"
+                                    Context="server"
+                                    ItemSize="64"
+                                    OverscanCount="3">
                             <ServerItem @key="server.Address" Data="server"
                                         IsInFavorites="@(_favoriteAddresses.Contains(server.Address))"
                                         OnInfoNeeded="HandleInfoNeeded"
                                         OnFavorites="async x => await HandleFavorite(x)" />
-                        </MudVirtualize>
+                        </Virtualize>
                     </div>
                 }
             </div>

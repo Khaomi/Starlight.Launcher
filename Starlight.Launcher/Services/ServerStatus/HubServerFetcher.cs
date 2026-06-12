@@ -194,6 +194,18 @@ public sealed partial class HubServerFetcher(HubApi hub, SettingsService setting
             SetStatus(RefreshListStatus.Updated);
     }
 
+    public Task UpdateInfoForAsync(ServerStatusData statusData)
+    {
+        if (statusData.HubAddress == null)
+        {
+            Log.Error("Tried to get info for hubbed server {Name} without HubAddress", statusData.Name);
+            statusData.StatusInfo = ServerStatusInfoCode.Error;
+            return Task.CompletedTask;
+        }
+
+        return FireAndForgetUpdateInfo(statusData);
+    }
+
     /// <summary>
     /// Trying to update info for a server. This is fire-and-forget and updates the ServerStatusData in-place. It also handles backoff for hubs that return 429 or time out.
     /// </summary>
@@ -315,17 +327,7 @@ public sealed partial class HubServerFetcher(HubApi hub, SettingsService setting
     /// <summary>
     /// Updates the info for a server. This is called by ServerStatusCache when it wants to update info for a server that came from a hub. It will call FireAndForgetUpdateInfo, which does the actual work of fetching the info and updating the ServerStatusData in-place.
     /// </summary>
-    void IServerSource.UpdateInfoFor(ServerStatusData statusData)
-    {
-        if (statusData.HubAddress == null)
-        {
-            Log.Error("Tried to get info for hubbed server {Name} without HubAddress", statusData.Name);
-            statusData.StatusInfo = ServerStatusInfoCode.Error;
-            return;
-        }
-
-        _ = FireAndForgetUpdateInfo(statusData);
-    }
+    void IServerSource.UpdateInfoFor(ServerStatusData statusData) => _ = UpdateInfoForAsync(statusData);
 
     /// <summary>
     /// Handles a failed hub request. This is called by RefreshServerList when processing the results of hub requests. It checks the type of failure and updates the backoff state for the hub accordingly. It also logs the failure with appropriate severity and details.

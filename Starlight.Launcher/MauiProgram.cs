@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Microsoft.Maui.Controls.PlatformConfiguration;
 using MudBlazor.Services;
 using Robust.Launcher.Api.Api;
 using Robust.Launcher.Api.Models.ServerStatus;
@@ -115,6 +114,11 @@ public static class MauiProgram
             builder.Services.AddSingleton<HubApi>();
             builder.Services.AddSingleton<AuthApi>();
             builder.Services.AddSingleton<HubServerFetcher>();
+            builder.Services.AddSingleton(sp =>
+            {
+                var fetcher = sp.GetRequiredService<HubServerFetcher>();
+                return new ServerInfoLoader(fetcher.UpdateInfoForAsync);
+            });
             builder.Services.AddSingleton<ServerStatusCache>();
             builder.Services.AddSingleton<ContentManager>();
             builder.Services.AddSingleton<IEngineManager, EngineManagerDynamic>();

@@ -6,12 +6,14 @@ using Starlight.Launcher.Components.Atoms.Dialogs;
 using Starlight.Launcher.Components.Pages;
 using Starlight.Launcher.Services;
 using Starlight.Launcher.Services.Localization;
+using Starlight.Launcher.Services.ServerStatus;
 
 namespace Starlight.Launcher.Components.Atoms.ServerList;
 
 public partial class ServerItem : ComponentBase, IDisposable
 {
     [Inject] private LocalizationManager _localization { get; set; } = default!;
+    [Inject] private ServerInfoLoader _infoLoader { get; set; } = default!;
     [Inject] private IDialogService _dialogService { get; set; } = default!;
     [Inject] private UiTicker _ticker { get; set; } = default!;
     [Parameter, EditorRequired] public ServerStatusData Data { get; set; } = default!;
@@ -19,8 +21,6 @@ public partial class ServerItem : ComponentBase, IDisposable
     [Parameter] public EventCallback<ServerStatusData> OnFavorites { get; set; }
     [Parameter] public bool IsInFavorites { get; set; } = false;
     [Inject] private ILogger<ServerItem> _logger { get; set; } = default!;
-
-    private CancellationTokenSource? _infoCts;
 
     private bool _expanded = false;
 
@@ -62,21 +62,8 @@ public partial class ServerItem : ComponentBase, IDisposable
     protected override void OnAfterRender(bool firstRender)
     {
         base.OnAfterRender(firstRender);
-        if (firstRender && Data.StatusInfo == ServerStatusInfoCode.NotFetched)
-        {
-            _infoCts = new CancellationTokenSource();
-            _ = RequestInfoDebouncedAsync(_infoCts.Token);
-        }
-    }
-
-    private async Task RequestInfoDebouncedAsync(CancellationToken token)
-    {
-        try
-        {
-            await Task.Delay(250, token);
-            await OnInfoNeeded.InvokeAsync(Data);
-        }
-        catch (OperationCanceledException) { }
+        if (firstRender)
+            _infoLoader.Request(Data);
     }
 
     private async void OnDataChanged()
@@ -88,11 +75,10 @@ public partial class ServerItem : ComponentBase, IDisposable
     private async Task HandleClick()
     {
         if (string.IsNullOrEmpty(Data.Description) && Data.StatusInfo == ServerStatusInfoCode.Fetched)
-        {
-            _infoCts ??= new CancellationTokenSource();
-            await RequestInfoDebouncedAsync(_infoCts.Token);
-        }
+            _infoLoader.Request(Data);
+
         _expanded = !_expanded;
+        await Task.CompletedTask;
     }
 
     private async Task HandleFavorites() => await OnFavorites.InvokeAsync(Data);
@@ -193,8 +179,6 @@ public partial class ServerItem : ComponentBase, IDisposable
     public void Dispose()
     {
         _ticker.Tick -= OnTick;
-        _infoCts?.Cancel();
-        _infoCts?.Dispose();
         Data.Changed -= OnDataChanged;
     }
 }
