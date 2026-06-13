@@ -21,27 +21,74 @@ public partial class Home : ComponentBase, IDisposable
     [Inject] private LocalizationManager _localization { get; set; } = default!;
 
     private List<ServerStatusData> _favoriteServers { get; set; } = null!;
+    private readonly CancellationTokenSource _disposeCts = new();
+    private int _rebuildScheduled;
 
     public void Dispose()
     {
         _settings.FavoritesChanged -= HandleFavorites;
+        _fetcher.ServersChanged -= OnServersChanged;
+        _fetcher.StatusChanged -= OnStatusChanged;
+        _disposeCts.Cancel();
+        _disposeCts.Dispose();
         GC.SuppressFinalize(this);
     }
+
+    private void RefreshServers() => _statusCache.Refresh();
 
     protected override async Task OnInitializedAsync()
     {
         UpdateFavorites(await _settings.GetFavoritesAsync());
         _settings.FavoritesChanged += HandleFavorites;
+        _fetcher.ServersChanged += OnServersChanged;
+        _fetcher.StatusChanged += OnStatusChanged;
         await base.OnInitializedAsync();
     }
 
-    private void UpdateFavorites(List<FavoriteServer> servers)
-        => _favoriteServers = servers.Select(x =>
+    private async void OnServersChanged()
+    {
+        if (Interlocked.CompareExchange(ref _rebuildScheduled, 1, 0) != 0)
+            return;
+
+        try
+        {
+            await Task.Delay(200, _disposeCts.Token);
+            await InvokeAsync(() =>
             {
-                var data = _statusCache.GetStatusFor(x.Address, x.HubAddress);
-                _statusCache.InitialUpdateStatus(data);
-                return data;
-            }).ToList();
+                Interlocked.Exchange(ref _rebuildScheduled, 0);
+                UpdateFavorites(_settings.GetFavorites());
+                StateHasChanged();
+            });
+        }
+        catch (OperationCanceledException) { Interlocked.Exchange(ref _rebuildScheduled, 0); }
+        catch (ObjectDisposedException) { Interlocked.Exchange(ref _rebuildScheduled, 0); }
+    }
+
+    private async void OnStatusChanged(RefreshListStatus _)
+    {
+        try { await InvokeAsync(StateHasChanged); }
+        catch (ObjectDisposedException) { }
+    }
+
+    private void UpdateFavorites(List<FavoriteServer> servers)
+    {
+        foreach (var s in _favoriteServers ?? Enumerable.Empty<ServerStatusData>())
+            s.Changed -= OnServerDataChanged;
+
+        _favoriteServers = servers.Select(x =>
+        {
+            var data = _statusCache.GetStatusFor(x.Address, x.HubAddress);
+            _statusCache.TryInitialUpdateStatus(data);
+            data.Changed += OnServerDataChanged;
+            return data;
+        }).ToList();
+    }
+
+    private async void OnServerDataChanged()
+    {
+        try { await InvokeAsync(StateHasChanged); }
+        catch (ObjectDisposedException) { }
+    }
 
     private async void HandleFavorites()
     {
