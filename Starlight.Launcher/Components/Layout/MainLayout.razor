@@ -12,6 +12,9 @@
         @if (_elementPosition == ElementPosition.Bottom || _isSmallScreen)
         {
             <MudText Typo="Typo.h5" Class="ml-3">STARLIGHT</MudText>
+            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary" Class="ml-2">
+                @AppInfo.VersionString
+            </MudChip>
             <MudSpacer />
             <MudTooltip Text="@_localization["main-layout-auth-tab"]">
                 <MudIconButton Href="/auth" Icon="@Icons.Material.Filled.People" Size="Size.Medium" />
@@ -53,6 +56,9 @@
                 </MudTooltip>
                 <MudSpacer />
                 <MudText Typo="Typo.h5" Class="mr-3">STARLIGHT</MudText>
+                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary" Class="ml-2">
+                    @AppInfo.VersionString
+                </MudChip>
             }
             else if (_elementPosition == ElementPosition.Bottom)
             {
