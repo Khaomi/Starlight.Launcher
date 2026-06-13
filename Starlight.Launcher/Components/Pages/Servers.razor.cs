@@ -16,6 +16,7 @@ public partial class Servers : ComponentBase, IDisposable
     private const int FilterDebounceMs = 150;
     private const int FilterPersistDelayMs = 500;
 
+    [Inject] private ServerStatusCache _cache { get; set; } = default!;
     [Inject] private SettingsService _settings { get; set; } = default!;
     [Inject] private HubServerFetcher _fetcher { get; set; } = default!;
     [Inject] private LocalizationManager _localization { get; set; } = default!;
@@ -208,9 +209,11 @@ public partial class Servers : ComponentBase, IDisposable
         }
     }
 
-    private void HandleInfoNeeded(ServerStatusData server) =>
-        // Lazy-load
+    private void HandleInfoNeeded(ServerStatusData server)
+    {
         ((IServerSource)_fetcher).UpdateInfoFor(server);
+        _cache.TryInitialPing(server);
+    }
 
     private static void ExtractTags(IEnumerable<ServerStatusData> servers, out IReadOnlyList<string> rpTags, out IReadOnlyList<string> langTags, out IReadOnlyList<string> regionTags)
     {

@@ -1,8 +1,7 @@
-using Microsoft.Extensions.Logging;
-using Robust.Launcher.Api.Api;
-using Robust.Launcher.Api.Utility;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -11,6 +10,9 @@ using System.Net.Sockets;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Robust.Launcher.Api.Api;
+using Robust.Launcher.Api.Utility;
 
 namespace Robust.Launcher.Api.Models.ServerStatus;
 
@@ -19,9 +21,7 @@ namespace Robust.Launcher.Api.Models.ServerStatus;
 /// </summary>
 public sealed class ServerStatusCache : IServerSource
 {
-    // Yes this class "memory leaks" because it never frees these data objects.
-    // Oh well!
-    private readonly Dictionary<string, CacheReg> _cachedData = new();
+    private readonly ConcurrentDictionary<string, CacheReg> _cachedData = new();
     private readonly HttpClient _http;
     private readonly ILogger<ServerStatusCache> _logger;
 
@@ -37,36 +37,28 @@ public sealed class ServerStatusCache : IServerSource
     /// </summary>
     /// <param name="serverAddress">The address of the server to fetch data for.</param>
     public ServerStatusData GetStatusFor(string serverAddress, string? hubAddress = null)
-    {
-        if (_cachedData.TryGetValue(serverAddress, out var reg))
-            return reg.Data;
-
-        ServerStatusData data;
-        if (hubAddress != null)
-            data = new(serverAddress, hubAddress);
-        else
-            data = new(serverAddress);
-        reg = new CacheReg(data);
-        _cachedData.Add(serverAddress, reg);
-
-        return data;
-    }
+        => _cachedData.GetOrAdd(
+            serverAddress,
+            static (addr, hub) => new CacheReg(hub != null ? new(addr, hub) : new(addr)),
+            hubAddress).Data;
 
     /// <summary>
     ///     Do the initial status update for a server status. This only acts once.
     /// </summary>
-    public void InitialUpdateStatus(ServerStatusData data)
+    public bool TryInitialUpdateStatus(ServerStatusData data)
     {
         var reg = _cachedData[data.Address];
         if (reg.DidInitialStatusUpdate)
-            return;
+            return false;
 
         UpdateStatusFor(reg);
+        return true;
     }
 
     private async void UpdateStatusFor(CacheReg reg)
     {
         reg.DidInitialStatusUpdate = true;
+        reg.DidInitialPing = true;
         await reg.Semaphore.WaitAsync();
         var cancelSource = reg.Cancellation = new CancellationTokenSource();
         var cancel = cancelSource.Token;
@@ -78,6 +70,39 @@ public sealed class ServerStatusCache : IServerSource
         {
             reg.Semaphore.Release();
         }
+    }
+
+    private static async Task MeasurePing(ServerStatusData data, string host, int port, CancellationToken cancel)
+    {
+        try
+        {
+            using var tcp = new TcpClient();
+            using var pingCancel = CancellationTokenSource.CreateLinkedTokenSource(cancel);
+            pingCancel.CancelAfter(TimeSpan.FromSeconds(2));
+            var sw = Stopwatch.StartNew();
+            await tcp.ConnectAsync(host, port, pingCancel.Token);
+            sw.Stop();
+            data.Ping = sw.Elapsed;
+        }
+        catch { data.Ping = null; }
+    }
+
+    public bool TryInitialPing(ServerStatusData data)
+    {
+        if (!_cachedData.TryGetValue(data.Address, out var reg) || reg.DidInitialPing)
+            return false;
+        PingFor(reg);
+        return true;
+    }
+
+    private async void PingFor(CacheReg reg)
+    {
+        reg.DidInitialPing = true;
+        var data = reg.Data;
+        if (!UriHelper.TryParseSs14Uri(data.Address, out var parsed))
+            return;
+        await MeasurePing(data, parsed.Host, parsed.Port, CancellationToken.None);
+        data.NotifyChanged();
     }
 
     public async Task UpdateStatusFor(ServerStatusData data, HttpClient http, CancellationToken cancel)
@@ -92,11 +117,12 @@ public sealed class ServerStatusCache : IServerSource
                 return;
             }
 
+            await MeasurePing(data, parsedAddress.Host, parsedAddress.Port, cancel);
+
             var statusAddr = UriHelper.GetServerStatusAddress(parsedAddress);
             data.Status = ServerStatusCode.FetchingStatus;
 
             ServerApi.ServerStatus status;
-            var sw = System.Diagnostics.Stopwatch.StartNew();
             try
             {
                 using (var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(cancel))
@@ -108,7 +134,6 @@ public sealed class ServerStatusCache : IServerSource
                         HttpCompletionOption.ResponseHeadersRead,
                         linkedToken.Token);
 
-                    sw.Stop();
                     response.EnsureSuccessStatusCode();
 
                     status = await response.Content
@@ -121,13 +146,11 @@ public sealed class ServerStatusCache : IServerSource
             catch (Exception e) when (e is JsonException or HttpRequestException or InvalidDataException or IOException
                                           or SocketException)
             {
-                data.Ping = null;
                 data.Status = ServerStatusCode.Offline;
                 data.NotifyChanged();
                 return;
             }
 
-            data.Ping = sw.Elapsed;
             ApplyStatus(data, status);
         }
         catch (OperationCanceledException)
@@ -326,6 +349,7 @@ public sealed class ServerStatusCache : IServerSource
         public readonly SemaphoreSlim Semaphore = new(1);
         public CancellationTokenSource? Cancellation;
         public bool DidInitialStatusUpdate;
+        public bool DidInitialPing;
 
         public CacheReg(ServerStatusData data) => Data = data;
     }

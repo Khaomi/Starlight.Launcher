@@ -172,7 +172,7 @@ public sealed partial class HubServerFetcher(HubApi hub, SettingsService setting
             _allServers.Clear();
             _allServers.AddRange(entries.Select(kv =>
             {
-                var s = new ServerStatusData(kv.Value.Address, kv.Value.HubAddress);
+                var s = _cache.GetStatusFor(kv.Value.Address, kv.Value.HubAddress);
                 ServerStatusCache.ApplyStatus(s, kv.Value.StatusData);
                 return s;
             }));
