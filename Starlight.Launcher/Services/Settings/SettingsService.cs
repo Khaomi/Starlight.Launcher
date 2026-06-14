@@ -61,7 +61,7 @@ public sealed partial class SettingsService : IAsyncDisposable
     {
         _logger = logger;
         _keyProvider = keyProvider;
-        _filePath = Path.Combine(AppContext.BaseDirectory, "settings.json");
+        _filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Starlight.Launcher", "settings.json");
         _settings = LoadJson(_filePath, new AppSettings());
         _loginsPath = Path.Combine(_settings.DirLauncherData, "logins.json");
         _favoritesPath = Path.Combine(_settings.DirLauncherData, "favorites.json");
