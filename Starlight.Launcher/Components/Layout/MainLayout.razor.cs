@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using System.Diagnostics;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
@@ -29,6 +30,8 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowse
     Guid IBrowserViewportObserver.Id { get; } = Guid.NewGuid();
 
     private bool _isSmallScreen = false;
+
+    public static string GetVersion() => Environment.ProcessPath == null ? "" : FileVersionInfo.GetVersionInfo(Environment.ProcessPath).ProductVersion ?? "";
 
     private static string ToDataTheme(AppTheme t, bool systemPrefersDark) => t switch
     {
