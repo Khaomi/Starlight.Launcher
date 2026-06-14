@@ -40,9 +40,6 @@
         <ApplicationId>com.starlight.launcher</ApplicationId>
 		<PublisherDisplayName>Starlight</PublisherDisplayName>
 
-        <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
-        <ApplicationVersion>1</ApplicationVersion>
-
         <WindowsPackageType>None</WindowsPackageType>
 
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">17.0</SupportedOSPlatformVersion>
