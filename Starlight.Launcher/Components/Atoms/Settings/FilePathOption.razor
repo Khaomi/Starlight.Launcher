@@ -8,16 +8,24 @@
             </MudText>
         </div>
     </div>
-    <MudTextField T="string"
-                  Value="Value"
-                  ValueChanged="OnValueChanged"
-                  Label="@Label"
-                  HelperText="@Helper"
-                  HelperTextOnFocus="HelperOnFocus"
-                  ReadOnly="@(!AllowManualInput)"
-                  Variant="Variant.Outlined"
-                  Adornment="Adornment.End"
-                  AdornmentIcon="@Icons.Material.Filled.FolderOpen"
-                  AdornmentAriaLabel="Browse"
-                  OnAdornmentClick="BrowseAsync" />
+    <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+        <MudTextField T="string"
+                      Class="flex-grow-1"
+                      Value="Value"
+                      ValueChanged="OnValueChanged"
+                      Label="@Label"
+                      HelperText="@Helper"
+                      ReadOnly="@(!AllowManualInput)"
+                      Variant="Variant.Outlined"
+                      Adornment="Adornment.End"
+                      AdornmentIcon="@Icons.Material.Filled.FolderOpen"
+                      OnAdornmentClick="BrowseAsync" />
+        @if (ShowOpenButton)
+        {
+            <MudTooltip Text="@_localization["settings-file-path-option-tooltip"]">
+                <MudIconButton Icon="@Icons.Material.Filled.OpenInNew"
+                               OnClick="OpenFolderAsync" />
+            </MudTooltip>
+        }
+    </MudStack>
 </MudPaper>

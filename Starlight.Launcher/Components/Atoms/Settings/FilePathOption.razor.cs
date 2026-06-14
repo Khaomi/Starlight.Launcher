@@ -1,12 +1,15 @@
+using System.Diagnostics;
 using Microsoft.AspNetCore.Components;
 using Robust.Launcher.Api.Models.Data;
 using Starlight.Launcher.Services;
+using Starlight.Launcher.Services.Localization;
 
 namespace Starlight.Launcher.Components.Atoms.Settings;
 
 public partial class FilePathOption : ComponentBase
 {
     [Inject] private IFileDialogService _fileDialog { get; set; } = default!;
+    [Inject] private LocalizationManager _localization { get; set; } = default!;
 
     [Parameter] public string Value { get; set; } = "";
     [Parameter] public EventCallback<string> ValueChanged { get; set; }
@@ -16,6 +19,11 @@ public partial class FilePathOption : ComponentBase
     [Parameter] public string Label { get; set; } = "";
     [Parameter] public string Helper { get; set; } = "";
     [Parameter] public bool HelperOnFocus { get; set; } = false;
+
+    /// <summary>
+    /// Determines should we show open folder/file button.
+    /// </summary>
+    [Parameter] public bool ShowOpenButton { get; set; } = false;
 
     /// <summary>
     /// Allows typing the path manually. If false, the value can only be
@@ -43,6 +51,12 @@ public partial class FilePathOption : ComponentBase
             return;
         Value = await SelfValueControlInitialization.Invoke();
     }
+
+    private async Task OpenFolderAsync() => Process.Start(new ProcessStartInfo
+    {
+        FileName = Value,
+        UseShellExecute = true
+    });
 
     private Task OnValueChanged(string value) => ApplyValueAsync(value);
 
