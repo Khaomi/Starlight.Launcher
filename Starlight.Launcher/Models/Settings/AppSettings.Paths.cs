@@ -55,8 +55,7 @@ public partial record AppSettings
         // Secondary CDN with its own availability fallback (mirror).
         // Checked only if the requested version is missing from the primary CDN's manifest.
         new RobustCdn(
-            "https://robust-builds.cdn.spacestation14.com/",
-            "https://robust-builds.fallback.cdn.spacestation14.com/") { PublicKey = SecondaryCdnPublicKey },
+            "https://robust-builds.playss14.com/") { PublicKey = SecondaryCdnPublicKey },
     ];
 
     #endregion
@@ -65,9 +64,9 @@ public partial record AppSettings
     /// <summary>
     /// Auth servers in priority order. User-editable, any count.
     /// </summary>
-    public List<string> AuthServerUrls { get; init; } = [ "https://auth.spacestation14.com/", "https://auth.fallback.spacestation14.com/" ];
+    public List<string> AuthServerUrls { get; init; } = ["https://auth.playss14.com/"];
 
-    public string? SelectedAuthServer = "https://auth.spacestation14.com/";
+    public string? SelectedAuthServer = "https://auth.playss14.com/";
 
     public const string FallbackUsername = "JoeGenero";
 
