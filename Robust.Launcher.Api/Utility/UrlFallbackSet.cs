@@ -37,6 +37,22 @@ public sealed class UrlFallbackSet
         }
     }
 
+    public UrlFallbackSet(string url, UrlFallbackSetStats? stats = null)
+    {
+        Urls = [url];
+
+        if (stats != null)
+        {
+            if (stats.RequestCount.Length != Urls.Length)
+                throw new ArgumentException("Stats has wrong length!");
+            Stats = stats;
+        }
+        else
+        {
+            Stats = new UrlFallbackSetStats(Urls.Length);
+        }
+    }
+
     public async Task<T?> GetFromJsonAsync<T>(HttpClient client, CancellationToken cancel = default) where T : notnull
     {
         var msg = await GetAsync(client, cancel).ConfigureAwait(false);

@@ -1,6 +1,7 @@
 using Robust.Launcher.Api.Api;
 using Robust.Launcher.Api.Models;
 using Robust.Launcher.Api.Models.Data;
+using Robust.Launcher.Api.Utility;
 using Serilog;
 using Starlight.Launcher.Api.Models;
 using Starlight.Launcher.Models.Helpers;
@@ -109,7 +110,8 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
             Token = authLogin.Token,
             DiscordToken = existing.LoginInfo.DiscordToken,
             DiscordRefreshToken = existing.LoginInfo.DiscordRefreshToken,
-            DiscordSessionId = existing.LoginInfo.DiscordSessionId
+            DiscordSessionId = existing.LoginInfo.DiscordSessionId,
+            AuthServerUrl = authLogin.AuthServerUrl,
         };
         AddFreshLogin(loginInfo);
     }
@@ -341,10 +343,10 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
 
     private async Task UpdateSingleAccountStatus(ActiveLoginData data)
     {
-        if (data.LoginInfo.Token != null && data.LoginInfo.Token.ShouldRefresh())
+        if (data.LoginInfo.Token != null && data.LoginInfo.Token.ShouldRefresh() && data.LoginInfo.AuthServerUrl != null)
         {
             Log.Debug("Refreshing token for {login}", data.LoginInfo);
-            var newTokenHopefully = await _authApi.RefreshTokenAsync(data.LoginInfo.Token.Token);
+            var newTokenHopefully = await _authApi.RefreshTokenAsync(data.LoginInfo.Token.Token, new UrlFallbackSet(data.LoginInfo.AuthServerUrl));
             if (newTokenHopefully == null)
             {
                 data.SetStatus(AccountLoginStatus.Expired);
@@ -386,9 +388,9 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
                 Log.Debug("Refreshed Starlight token for {login}", data.LoginInfo);
             }
         }
-        else if (data.Status == AccountLoginStatus.Unsure && data.LoginInfo.Token != null)
+        else if (data.Status == AccountLoginStatus.Unsure && data.LoginInfo.Token != null && data.LoginInfo.AuthServerUrl != null)
         {
-            var valid = await _authApi.CheckTokenAsync(data.LoginInfo.Token.Token);
+            var valid = await _authApi.CheckTokenAsync(data.LoginInfo.Token.Token, new UrlFallbackSet(data.LoginInfo.AuthServerUrl));
             Log.Debug("Token for {login} still valid? {valid}", data.LoginInfo, valid);
             data.SetStatus(valid ? AccountLoginStatus.Available : AccountLoginStatus.Expired);
         }

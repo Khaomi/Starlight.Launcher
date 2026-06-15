@@ -3,16 +3,19 @@ using Microsoft.AspNetCore.Components.Web;
 using MudBlazor;
 using Robust.Launcher.Api.Api;
 using Robust.Launcher.Api.Models;
+using Robust.Launcher.Api.Utility;
 using Serilog;
 using Starlight.Launcher.Api.Models;
 using Starlight.Launcher.Services.Auth;
 using Starlight.Launcher.Services.Localization;
+using Starlight.Launcher.Services.Settings;
 
 namespace Starlight.Launcher.Components.Pages;
 
 public partial class Auth : ComponentBase, IDisposable
 {
     [Inject] private LoginManager _loginManager { get; set; } = default!;
+    [Inject] private SettingsService _settings { get; set; } = default!;
     [Inject] private AuthApi _authApi { get; set; } = default!;
     [Inject] private NavigationManager _nav { get; set; } = default!;
     [Inject] private DiscordAuthService _discordAuth { get; set; } = default!;
@@ -170,6 +173,12 @@ public partial class Auth : ComponentBase, IDisposable
             return;
         }
 
+        if ((await _settings.GetSettingsAsync()).SelectedAuthServer is not { } authServer)
+        {
+            _linkError = _localization["auth-menu-no-server-error"];
+            return;
+        }
+
         _busy = true;
         try
         {
@@ -177,7 +186,7 @@ public partial class Auth : ComponentBase, IDisposable
                 _linkUsername, null, _linkPassword,
                 _linkTfaRequired ? _linkTfaCode : null);
 
-            var result = await _authApi.AuthenticateAsync(request);
+            var result = await _authApi.AuthenticateAsync(request, new UrlFallbackSet(authServer));
 
             if (result.IsSuccess && _linkUserId != null)
             {
@@ -304,6 +313,12 @@ public partial class Auth : ComponentBase, IDisposable
             return;
         }
 
+        if ((await _settings.GetSettingsAsync()).SelectedAuthServer is not { } authServer)
+        {
+            _signInError = _localization["auth-menu-no-server-error"];
+            return;
+        }
+
         _busy = true;
         try
         {
@@ -321,7 +336,7 @@ public partial class Auth : ComponentBase, IDisposable
                     _signInTfaRequired ? _signInTfaCode : null);
             }
 
-            var result = await _authApi.AuthenticateAsync(request);
+            var result = await _authApi.AuthenticateAsync(request, new UrlFallbackSet(authServer));
 
             if (result.IsSuccess)
             {
@@ -370,12 +385,18 @@ public partial class Auth : ComponentBase, IDisposable
 
     private async Task ResendConfirmation()
     {
+        if ((await _settings.GetSettingsAsync()).SelectedAuthServer is not { } authServer)
+        {
+            _snackbar.Add(_localization["auth-menu-no-server-error"], Severity.Error);
+            return;
+        }
+
         _busy = true;
         try
         {
             if (_signInUsername.Contains('@'))
             {
-                var errors = await _authApi.ResendConfirmationAsync(_signInUsername);
+                var errors = await _authApi.ResendConfirmationAsync(_signInUsername, new UrlFallbackSet(authServer));
                 if (errors == null)
                     _snackbar.Add(_localization.GetString("auth-menu-email-resent"), Severity.Success);
                 else
@@ -414,7 +435,11 @@ public partial class Auth : ComponentBase, IDisposable
         _registerErrors = null;
         _registerSuccessMessage = null;
 
+        var authServer = (await _settings.GetSettingsAsync()).SelectedAuthServer;
+
         var validationErrors = new List<string>();
+        if (authServer == null)
+            validationErrors.Add(_localization["auth-menu-no-server-error"]);
         if (string.IsNullOrWhiteSpace(_registerUsername))
             validationErrors.Add(_localization["auth-menu-register-username-missing"]);
         if (string.IsNullOrWhiteSpace(_registerEmail) || !_registerEmail.Contains('@'))
@@ -433,7 +458,7 @@ public partial class Auth : ComponentBase, IDisposable
         _busy = true;
         try
         {
-            var result = await _authApi.RegisterAsync(_registerUsername, _registerEmail, _registerPassword);
+            var result = await _authApi.RegisterAsync(_registerUsername, _registerEmail, _registerPassword, new UrlFallbackSet(authServer!));
 
             if (!result.IsSuccess)
             {
@@ -462,6 +487,12 @@ public partial class Auth : ComponentBase, IDisposable
     {
         _forgotError = null;
 
+        if ((await _settings.GetSettingsAsync()).SelectedAuthServer is not { } authServer)
+        {
+            _forgotError = _localization["auth-menu-no-server-error"];
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(_forgotEmail) || !_forgotEmail.Contains('@'))
         {
             _forgotError = _localization["auth-menu-forgot-notvalid-email-error"];
@@ -471,7 +502,7 @@ public partial class Auth : ComponentBase, IDisposable
         _busy = true;
         try
         {
-            var errors = await _authApi.ForgotPasswordAsync(_forgotEmail);
+            var errors = await _authApi.ForgotPasswordAsync(_forgotEmail, new UrlFallbackSet(authServer));
             if (errors == null)
             {
                 _forgotSuccess = true;

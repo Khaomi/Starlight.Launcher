@@ -4,7 +4,6 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Runtime.Serialization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -17,9 +16,6 @@ namespace Robust.Launcher.Api.Api;
 
 public sealed class AuthApi
 {
-    private static readonly UrlFallbackSetStats _statsHubInfra = new(2);
-    public static readonly UrlFallbackSet AuthUrl = new(["https://auth.spacestation14.com/", "https://auth.fallback.spacestation14.com/"], _statsHubInfra);
-
     private readonly HttpClient _httpClient;
     private readonly ILogger<AuthApi> _logger;
 
@@ -29,11 +25,11 @@ public sealed class AuthApi
         _logger = logger;
     }
 
-    public async Task<AuthenticateResult> AuthenticateAsync(AuthenticateRequest request)
+    public async Task<AuthenticateResult> AuthenticateAsync(AuthenticateRequest request, UrlFallbackSet authSet)
     {
         try
         {
-            var authUrl = AuthUrl + "api/auth/authenticate";
+            var authUrl = authSet + "api/auth/authenticate";
 
             using var resp = await _httpClient.PostAsJsonAsync(authUrl, request);
 
@@ -45,7 +41,8 @@ public sealed class AuthApi
                 {
                     UserId = respJson.UserId,
                     Token = token,
-                    Username = respJson.Username
+                    Username = respJson.Username,
+                    AuthServerUrl = authUrl.GetMostSuccessfulUrl(),
                 });
             }
 
@@ -82,13 +79,13 @@ public sealed class AuthApi
         }
     }
 
-    public async Task<RegisterResult> RegisterAsync(string username, string email, string password)
+    public async Task<RegisterResult> RegisterAsync(string username, string email, string password, UrlFallbackSet authSet)
     {
         try
         {
             var request = new RegisterRequest(username, email, password);
 
-            var authUrl = AuthUrl + "api/auth/register";
+            var authUrl = authSet + "api/auth/register";
 
             using var resp = await _httpClient.PostAsJsonAsync(authUrl, request);
 
@@ -126,13 +123,13 @@ public sealed class AuthApi
     }
 
     /// <returns>Any errors that occured</returns>
-    public async Task<string[]?> ForgotPasswordAsync(string email)
+    public async Task<string[]?> ForgotPasswordAsync(string email, UrlFallbackSet authSet)
     {
         try
         {
             var request = new ResetPasswordRequest(email);
 
-            var authUrl = AuthUrl + "api/auth/resetPassword";
+            var authUrl = authSet + "api/auth/resetPassword";
 
             using var resp = await _httpClient.PostAsJsonAsync(authUrl, request);
 
@@ -155,13 +152,13 @@ public sealed class AuthApi
         }
     }
 
-    public async Task<string[]?> ResendConfirmationAsync(string email)
+    public async Task<string[]?> ResendConfirmationAsync(string email, UrlFallbackSet authSet)
     {
         try
         {
             var request = new ResendConfirmationRequest(email);
 
-            var authUrl = AuthUrl + "api/auth/resendConfirmation";
+            var authUrl = authSet + "api/auth/resendConfirmation";
 
             using var resp = await _httpClient.PostAsJsonAsync(authUrl, request);
 
@@ -189,13 +186,13 @@ public sealed class AuthApi
     /// <exception cref="AuthApiException">
     ///     Thrown if an unexpected error occured.
     /// </exception>
-    public async Task<LoginToken?> RefreshTokenAsync(string token)
+    public async Task<LoginToken?> RefreshTokenAsync(string token, UrlFallbackSet authSet)
     {
         try
         {
             var request = new RefreshRequest(token);
 
-            var authUrl = AuthUrl + "api/auth/refresh";
+            var authUrl = authSet + "api/auth/refresh";
 
             using var resp = await _httpClient.PostAsJsonAsync(authUrl, request);
 
@@ -234,13 +231,13 @@ public sealed class AuthApi
         }
     }
 
-    public async Task LogoutTokenAsync(string token)
+    public async Task LogoutTokenAsync(string token, UrlFallbackSet authSet)
     {
         try
         {
             var request = new LogoutRequest(token);
 
-            var authUrl = AuthUrl + "api/auth/logout";
+            var authUrl = authSet + "api/auth/logout";
 
             using var resp = await _httpClient.PostAsJsonAsync(authUrl, request);
 
@@ -270,11 +267,11 @@ public sealed class AuthApi
     /// <exception cref="AuthApiException">
     ///     Thrown if an unexpected error occured.
     /// </exception>
-    public async Task<bool> CheckTokenAsync(string token)
+    public async Task<bool> CheckTokenAsync(string token, UrlFallbackSet authSet)
     {
         try
         {
-            var authUrl = AuthUrl + "api/auth/ping";
+            var authUrl = authSet + "api/auth/ping";
 
             using var resp = await authUrl.SendAsync(_httpClient, url =>
             {

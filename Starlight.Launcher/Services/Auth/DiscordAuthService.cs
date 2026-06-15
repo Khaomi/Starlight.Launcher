@@ -71,10 +71,11 @@ public sealed class DiscordAuthService(StarlightAuthApi api, LoginManager loginM
         {
             UserId = info.UserId,
             Username = info.Username,
-            Token = null,
+            Token = account.LoginInfo.Token,
             DiscordToken = new LoginToken { Token = handoff.Token, ExpireTime = DateTime.UtcNow.AddDays(2) },
             DiscordRefreshToken = handoff.RefreshToken,
             DiscordSessionId = handoff.SessionId,
+            AuthServerUrl = account.LoginInfo.AuthServerUrl
         };
         loginManager.AddFreshLogin(newLoginInfo);
         loginManager.ActiveAccountId = newLoginInfo.UserId;
