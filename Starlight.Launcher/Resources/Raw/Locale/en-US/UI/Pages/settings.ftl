@@ -25,6 +25,9 @@ settings-menu-multiple-clients-option-description = Prevents launch of multiple 
 settings-menu-data-folder-option = Data Folder
 settings-menu-data-folder-option-description = Select folder which will be used to store data.
 
+settings-menu-deauth-onchange-option = Deauth On Change
+settings-menu-deauth-onchange-option-description = Should we deauth launcher after changing auth server? 
+
 # Servers
 
 settings-menu-hub-list-option = Hub List

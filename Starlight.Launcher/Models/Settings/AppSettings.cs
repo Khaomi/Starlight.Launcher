@@ -70,6 +70,7 @@ public partial record AppSettings
     /// </summary>
     public bool HidePresence { get; set; } = false;
     #endregion
+
     #region General
     /// <summary>
     /// Save interval in milliseconds
@@ -83,10 +84,6 @@ public partial record AppSettings
     /// Currently selected language. Should be a key from LocalizationsIndex. Default is "en-US"
     /// </summary>
     public string? SelectedLanguage { get; init; } = null;
-    /// <summary>
-    /// Currently selected login.
-    /// </summary>
-    public Guid? SelectedLoginId { get; set; } = null;
 
     /// <summary>
     /// Prevents launch of multiple game instances
@@ -164,5 +161,35 @@ public partial record AppSettings
     ///Privacy policies accepted by the user, the key is the policy identifier.
     /// </summary>
     public Dictionary<string, AcceptedPrivacyPolicy> AcceptedPrivacyPolicies { get; init; } = new();
+    #endregion
+
+    #region Auth
+    /// <summary>
+    /// Currently selected login.
+    /// </summary>
+    public Guid? SelectedLoginId { get; set; } = null;
+
+    /// <summary>
+    /// Auth servers in priority order. User-editable, any count.
+    /// </summary>
+    public List<string> AuthServerUrls { get; init; } = ["https://auth.playss14.com/"];
+
+    /// <summary>
+    /// Currently selected auth server.
+    /// </summary>
+
+    public string? SelectedAuthServer = "https://auth.playss14.com/";
+
+    /// <summary>
+    /// Fallback name which will be used if there's no logins.
+    /// </summary>
+
+    public const string FallbackUsername = "JoeGenero";
+
+    /// <summary>
+    /// Determines should we deauth launcher if auth server was changed.
+    /// </summary>
+    public bool DeauthOnChange = true;
+
     #endregion
 }

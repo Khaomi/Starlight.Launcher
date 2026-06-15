@@ -59,16 +59,4 @@ public partial record AppSettings
     ];
 
     #endregion
-
-    #region Auth
-    /// <summary>
-    /// Auth servers in priority order. User-editable, any count.
-    /// </summary>
-    public List<string> AuthServerUrls { get; init; } = ["https://auth.playss14.com/"];
-
-    public string? SelectedAuthServer = "https://auth.playss14.com/";
-
-    public const string FallbackUsername = "JoeGenero";
-
-    #endregion
 }
