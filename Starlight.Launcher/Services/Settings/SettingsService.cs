@@ -173,9 +173,11 @@ public sealed partial class SettingsService : IAsyncDisposable
     /// scheduled for asynchronous persistence and may not occur immediately.</remarks>
     public void WriteSettings(AppSettings settings)
     {
+        AppSettings old;
         _settingsLock.Wait();
         try
         {
+            old = _settings;
             _settings = settings;
         }
         finally
@@ -183,6 +185,7 @@ public sealed partial class SettingsService : IAsyncDisposable
             _settingsLock.Release();
         }
 
+        NotifySettingsChanged(old, settings);
         ScheduleSaveInternal(ref _settingsSaveCts, () => SaveJsonAsync(_filePath, _settingsLock, _settings), "settings");
     }
 
@@ -211,9 +214,11 @@ public sealed partial class SettingsService : IAsyncDisposable
     /// </summary>
     public async Task WriteSettingsAsync(AppSettings settings)
     {
+        AppSettings old;
         await _settingsLock.WaitAsync();
         try
         {
+            old = settings;
             _settings = settings;
         }
         finally
@@ -221,6 +226,7 @@ public sealed partial class SettingsService : IAsyncDisposable
             _settingsLock.Release();
         }
 
+        NotifySettingsChanged(old, settings);
         ScheduleSaveInternal(ref _settingsSaveCts, () => SaveJsonAsync(_filePath, _settingsLock, _settings), "settings");
     }
 
@@ -246,16 +252,17 @@ public sealed partial class SettingsService : IAsyncDisposable
 
     public async Task CacheFilters(ServerListFilters filters)
     {
+        AppSettings old, updated;
         await _settingsLock.WaitAsync();
         try
         {
-            _settings.CachedFilters = filters;
+            old = _settings;
+            updated = _settings with { CachedFilters = filters };
+            _settings = updated;
         }
-        finally
-        {
-            _settingsLock.Release();
-        }
+        finally { _settingsLock.Release(); }
 
+        NotifySettingsChanged(old, updated);
         ScheduleSaveInternal(ref _settingsSaveCts, () => SaveJsonAsync(_filePath, _settingsLock, _settings), "settings");
     }
 

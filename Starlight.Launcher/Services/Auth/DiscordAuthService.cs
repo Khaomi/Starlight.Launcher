@@ -11,7 +11,7 @@ namespace Starlight.Launcher.Services.Auth;
 
 public sealed class DiscordAuthService(StarlightAuthApi api, LoginManager loginManager)
 {
-    private static readonly TimeSpan FlowTimeout = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan _flowTimeout = TimeSpan.FromMinutes(5);
 
     private readonly ConcurrentDictionary<string, TaskCompletionSource<HandoffResult>> _pending = new();
 
@@ -26,7 +26,7 @@ public sealed class DiscordAuthService(StarlightAuthApi api, LoginManager loginM
                 throw new DiscordAuthException("Unable to open the browser to log in.");
 
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancel);
-            timeoutCts.CancelAfter(FlowTimeout);
+            timeoutCts.CancelAfter(_flowTimeout);
 
             HandoffResult handoff;
             await using (timeoutCts.Token.Register(() => tcs.TrySetCanceled(timeoutCts.Token)))
