@@ -263,9 +263,13 @@ h1:focus {
     overflow: hidden;
 }
 
-.mud-layout.has-bottom-nav .mud-main-content {
-    height: calc(100vh - var(--bottom-nav-height));
-    max-height: calc(100vh - var(--bottom-nav-height));
+    .mud-main-content.has-bottom-nav .mud-main-content {
+        height: calc(100vh - var(--bottom-nav-height));
+        max-height: calc(100vh - var(--bottom-nav-height));
+    }
+
+.mud-main-content.has-bottom-nav .settings-tabs-panels > .mud-tab-panel {
+    padding-bottom: var(--bottom-nav-height);
 }
 
 .mud-main-content:has(.settings-page) {
@@ -273,6 +277,7 @@ h1:focus {
     display: flex;
     flex-direction: column;
     min-height: 0;
+    overflow: hidden;
 }
 
     .mud-main-content:has(.settings-page) > .settings-page {
@@ -280,6 +285,7 @@ h1:focus {
         min-height: 0;
         display: flex;
         flex-direction: column;
+        overflow: hidden;
     }
 
 .mud-tabs.settings-tabs {
