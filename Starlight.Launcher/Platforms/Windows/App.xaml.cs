@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using Microsoft.Maui.Platform;
 using Microsoft.UI.Windowing;
 using Microsoft.Windows.AppLifecycle;
@@ -19,6 +18,8 @@ namespace Starlight.Launcher.WinUI;
 /// </summary>
 public partial class App : MauiWinUIApplication
 {
+    private const string ProtocolScheme = "starlight";
+
     /// <summary>
     /// Initializes the singleton application object.  This is the first line of authored code
     /// executed, and as such is the logical equivalent of main() or WinMain().
@@ -26,7 +27,6 @@ public partial class App : MauiWinUIApplication
     public App()
     {
         InitializeComponent();
-        RegisterProtocol();
 
         Microsoft.Maui.Handlers.WindowHandler.Mapper.AppendToMapping(nameof(IWindow), (handler, view) =>
         {
@@ -72,8 +72,9 @@ public partial class App : MauiWinUIApplication
         try
         {
             var exe = Environment.ProcessPath!;
+
             ActivationRegistrationManager.RegisterForProtocolActivation(
-                scheme: "starlight",
+                scheme: ProtocolScheme,
                 logo: $"{exe},0",
                 displayName: "Starlight Protocol",
                 exePath: exe);
@@ -84,26 +85,23 @@ public partial class App : MauiWinUIApplication
         }
     }
 
-    protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
+    protected override async void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
+        RegisterProtocol();
+
         var instance = AppInstance.FindOrRegisterForKey("starlight-main");
         var activated = AppInstance.GetCurrent().GetActivatedEventArgs();
 
         if (!instance.IsCurrent)
         {
-            var done = new ManualResetEventSlim(false);
-            _ = Task.Run(async () =>
-            {
-                try { await instance.RedirectActivationToAsync(activated); }
-                finally { done.Set(); }
-            });
-            done.Wait();
-            Process.GetCurrentProcess().Kill();
+            await instance.RedirectActivationToAsync(activated);
             return;
         }
 
         instance.Activated += (_, e) => HandleProtocol(e, warm: true);
+
         HandleProtocol(activated, warm: false);
+
         base.OnLaunched(args);
     }
 
@@ -147,50 +145,67 @@ public partial class App : MauiWinUIApplication
 
     private static void HandleProtocol(AppActivationArguments? e, bool warm)
     {
-        if (e?.Kind == ExtendedActivationKind.Protocol && e.Data is IProtocolActivatedEventArgs p)
-        {
-            Log.Information("Protocol uri: {uri}", p.Uri);
-            IPlatformApplication.Current!.Services
-                .GetRequiredService<DiscordAuthService>()
-                .HandleDeepLink(p.Uri);
-        }
-        else if (e?.Kind == ExtendedActivationKind.Launch)
-        {
-            Log.Information("Launch data type: {t}", e.Data?.GetType().FullName);
-            var raw = (e.Data as ILaunchActivatedEventArgs)?.Arguments;
-            Log.Information("Launch args: {raw}", raw);
+        var services = IPlatformApplication.Current?.Services;
+        if (services is null) return;
 
-            var uri = ExtractStarlightUri(raw);
-            if (uri is not null)
-            {
-                IPlatformApplication.Current!.Services
-                    .GetRequiredService<DiscordAuthService>()
-                    .HandleDeepLink(uri);
-                return;
-            }
-
-            if (warm)
-            {
-                var commands = ExtractCommands(raw);
-                if (commands is { Length: > 0 })
+        switch (e?.Kind)
+        {
+            case ExtendedActivationKind.Protocol when e.Data is IProtocolActivatedEventArgs p:
                 {
-                    var lc = IPlatformApplication.Current!.Services
-                        .GetRequiredService<LauncherCommands>();
+                    Log.Information("Protocol URI: {uri}", p.Uri);
 
-                    foreach (var c in commands)
-                        _ = lc.QueueCommand(c);
+                    services.GetRequiredService<DiscordAuthService>()
+                        .HandleDeepLink(p.Uri);
+
+                    break;
                 }
-            }
+
+            case ExtendedActivationKind.Launch:
+                {
+                    var launch = (ILaunchActivatedEventArgs?)e.Data;
+                    var raw = launch?.Arguments;
+
+                    var uri = ExtractStarlightUri(raw);
+                    if (uri != null)
+                    {
+                        services.GetRequiredService<DiscordAuthService>()
+                            .HandleDeepLink(uri);
+                        return;
+                    }
+
+                    if (warm)
+                    {
+                        var commands = ExtractCommands(raw);
+                        if (commands is { Length: > 0 })
+                        {
+                            var lc = services.GetRequiredService<LauncherCommands>();
+                            foreach (var c in commands)
+                                _ = lc.QueueCommand(c);
+                        }
+                    }
+
+                    break;
+                }
         }
     }
 
     private static Uri? ExtractStarlightUri(string? raw)
     {
-        if (string.IsNullOrWhiteSpace(raw)) return null;
-        var idx = raw.IndexOf("starlight://", StringComparison.OrdinalIgnoreCase);
-        if (idx < 0) return null;
-        var part = raw[idx..].Trim().Trim('"');
-        return Uri.TryCreate(part, UriKind.Absolute, out var u) ? u : null;
+        if (string.IsNullOrWhiteSpace(raw))
+            return null;
+
+        var args = SplitCommandLine(raw);
+
+        foreach (var arg in args)
+        {
+            if (Uri.TryCreate(arg, UriKind.Absolute, out var uri) &&
+                uri.Scheme.Equals(ProtocolScheme, StringComparison.OrdinalIgnoreCase))
+            {
+                return uri;
+            }
+        }
+
+        return null;
     }
 
     protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
