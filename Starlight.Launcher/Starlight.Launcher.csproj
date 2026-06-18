@@ -22,11 +22,6 @@
 		<DefineConstants>$(BuildFlavor);$(DefineConstants)</DefineConstants>
 	</PropertyGroup>
 
-    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-        <PublishTrimmed>true</PublishTrimmed>
-        <TrimMode>partial</TrimMode>
-    </PropertyGroup>
-
     <PropertyGroup>
 
         <!-- Note for MacCatalyst:
