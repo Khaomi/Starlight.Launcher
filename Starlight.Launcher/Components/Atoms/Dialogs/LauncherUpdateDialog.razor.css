@@ -1,0 +1,58 @@
+.connect-dialog {
+    min-width: 360px;
+}
+
+.connect-percent {
+    font-size: 2rem;
+    font-weight: 600;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.connect-meta {
+    font-variant-numeric: tabular-nums;
+    color: var(--mud-palette-text-secondary);
+}
+
+.dl-bar {
+    position: relative;
+    height: 10px;
+    width: 100%;
+    border-radius: 999px;
+    background: var(--mud-palette-action-disabled-background);
+    overflow: hidden;
+}
+
+.dl-bar-fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--mud-palette-primary-darken), var(--mud-palette-primary), var(--mud-palette-primary-lighten));
+    background-size: 200% 100%;
+    animation: dl-flow 2.5s linear infinite;
+    transition: width .35s cubic-bezier(.4, 0, .2, 1);
+    box-shadow: 0 0 10px -2px var(--mud-palette-primary);
+}
+
+    .dl-bar-fill.indeterminate {
+        width: 40%;
+        animation: dl-flow 2.5s linear infinite, dl-sweep 1.3s ease-in-out infinite;
+    }
+
+@keyframes dl-flow {
+    to {
+        background-position: -200% 0;
+    }
+}
+
+@keyframes dl-sweep {
+    0% {
+        left: -40%;
+    }
+
+    100% {
+        left: 100%;
+    }
+}

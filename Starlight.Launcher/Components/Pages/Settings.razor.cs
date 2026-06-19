@@ -2,6 +2,7 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
+using Starlight.Launcher.Components.Atoms.Dialogs;
 using Starlight.Launcher.Components.Atoms.Settings;
 using Starlight.Launcher.Models.Settings;
 using Starlight.Launcher.Services;
@@ -61,26 +62,47 @@ public partial class Settings : ComponentBase, IDisposable
 
     private async Task CheckUpdate()
     {
-        var (isUpdateAvailable, currentVersion, latestVersion, latestUrl) = await _launcherUpdater.IsUpdateAvailable();
-        if (isUpdateAvailable)
-        {
-            _snackbar.Add(_localization.GetString("settings-menu-update-found", ("latest", latestVersion)), Severity.Warning, config =>
+        var info = await _launcherUpdater.IsUpdateAvailable();
+        if (!info.IsUpdateAvailable)
+            return;
+
+        _snackbar.Add(
+            _localization.GetString("settings-menu-update-found", ("latest", info.LatestVersion)),
+            Severity.Warning,
+            config =>
             {
                 config.Action = _localization["settings-menu-update-download"];
                 config.ActionColor = MudBlazor.Color.Primary;
-                config.OnClick = _snackbar =>
+                config.OnClick = _ =>
                 {
-                    Process.Start(new ProcessStartInfo
+                    if (info.Asset is { } asset)
                     {
-                        FileName = latestUrl,
-                        UseShellExecute = true
-                    });
+                        var parameters = new DialogParameters<LauncherUpdateDialog>
+                        {
+                        { x => x.Asset, asset }
+                        };
+                        _dialog.ShowAsync<LauncherUpdateDialog>(
+                            null,
+                            parameters,
+                            new DialogOptions
+                            {
+                                CloseOnEscapeKey = false,
+                                BackdropClick = false,
+                                CloseButton = false
+                            });
+                    }
+                    else
+                    {
+                        // No installer for this OS in the release — fall back to the release page.
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = info.ReleasePageUrl,
+                            UseShellExecute = true
+                        });
+                    }
                     return Task.CompletedTask;
                 };
             });
-        }
-        else
-            _snackbar.Add(_localization["settings-menu-update-latest"], Severity.Success);
     }
 
     private void OnStateChanged()

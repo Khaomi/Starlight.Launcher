@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using MudBlazor;
 using MudBlazor.Services;
+using Starlight.Launcher.Components.Atoms.Dialogs;
 using Starlight.Launcher.Models.Data;
 using Starlight.Launcher.Services;
 using Starlight.Launcher.Services.Discord;
@@ -28,6 +29,7 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowse
     [Inject] private DiscordRichPresence _presence { get; set; } = default!;
     [Inject] private LauncherUpdater _launcherUpdater { get; set; } = default!;
     [Inject] private ISnackbar _snackbar { get; set; } = default!;
+    [Inject] private IDialogService _dialogService { get; set; } = default!;
 
     Guid IBrowserViewportObserver.Id { get; } = Guid.NewGuid();
 
@@ -67,29 +69,53 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowse
         if (settings.CollapseInTrayOnStart)
             _tray.HideWindow(); // If layout is initialized - window exists, so we can hide it right away if the user wants that.
 
+        _launcherUpdater.CleanupOldInstallers();
         CheckUpdate();
     }
 
-    private async void CheckUpdate()
+    private async Task CheckUpdate()
     {
-        var (isUpdateAvailable, currentVersion, latestVersion, latestUrl) = await _launcherUpdater.IsUpdateAvailable();
-        if (isUpdateAvailable)
-        {
-            _snackbar.Add(_localization.GetString("settings-menu-update-found", ("latest", latestVersion)), Severity.Warning, config =>
+        var info = await _launcherUpdater.IsUpdateAvailable();
+        if (!info.IsUpdateAvailable)
+            return;
+
+        _snackbar.Add(
+            _localization.GetString("settings-menu-update-found", ("latest", info.LatestVersion)),
+            Severity.Warning,
+            config =>
             {
                 config.Action = _localization["settings-menu-update-download"];
                 config.ActionColor = MudBlazor.Color.Primary;
-                config.OnClick = _snackbar =>
+                config.OnClick = _ =>
                 {
-                    Process.Start(new ProcessStartInfo
+                    if (info.Asset is { } asset)
                     {
-                        FileName = latestUrl,
-                        UseShellExecute = true
-                    });
+                        var parameters = new DialogParameters<LauncherUpdateDialog>
+                        {
+                        { x => x.Asset, asset }
+                        };
+                        _dialogService.ShowAsync<LauncherUpdateDialog>(
+                            null,
+                            parameters,
+                            new DialogOptions
+                            {
+                                CloseOnEscapeKey = false,
+                                BackdropClick = false,
+                                CloseButton = false
+                            });
+                    }
+                    else
+                    {
+                        // No installer for this OS in the release — fall back to the release page.
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = info.ReleasePageUrl,
+                            UseShellExecute = true
+                        });
+                    }
                     return Task.CompletedTask;
                 };
             });
-        }
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)

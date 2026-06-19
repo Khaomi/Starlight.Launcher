@@ -1,45 +1,192 @@
 using System.Diagnostics;
-using System.Net.Http.Headers;
+using System.Runtime.InteropServices;
 using System.Text.Json;
-using Starlight.Launcher.Components.Layout;
+using Starlight.Launcher.Services.Settings;
 
 namespace Starlight.Launcher.Services;
 
 public partial class LauncherUpdater
 {
-    public static string GetVersion() => Environment.ProcessPath == null ? "" : FileVersionInfo.GetVersionInfo(Environment.ProcessPath).ProductVersion?.Split('+')[0] ?? "";
+    private readonly SettingsService _settings;
 
-    // Man... I remember why i hate async sometimes... i mean they are good, but this has given so many issues.
-    // But this... WORKS... VERY WELL... I am happy.
-    public async Task<(bool IsUpdateAvailable, string CurrentVersion, string LatestVersion, string LatestUrl)> IsUpdateAvailable()
+    public LauncherUpdater(SettingsService settings) => _settings = settings;
+
+    public static string GetVersion() => Environment.ProcessPath == null
+        ? ""
+        : FileVersionInfo.GetVersionInfo(Environment.ProcessPath).ProductVersion?.Split('+')[0] ?? "";
+
+    public sealed record ReleaseAsset(string Name, string DownloadUrl, long Size);
+
+    public sealed record UpdateInfo(
+        bool IsUpdateAvailable,
+        string CurrentVersion,
+        string LatestVersion,
+        string ReleasePageUrl,
+        ReleaseAsset? Asset);
+
+    // Progress reporting for the download. (downloaded, total) — total == 0 means unknown.
+    public event Action<(long downloaded, long total)>? DownloadProgress;
+
+    public async Task<UpdateInfo> IsUpdateAvailable()
     {
-        var (tagName, htmlUrl) = await GetLatestRelease();
+        var (tagName, htmlUrl, assets) = await GetLatestRelease();
         var currentVersion = NormalizeVersion(GetVersion());
         var latestVersion = NormalizeVersion(tagName);
 
         Console.WriteLine($"Current version: {currentVersion}");
         Console.WriteLine($"Latest version: {latestVersion}");
 
-        return (!string.Equals(currentVersion, latestVersion, StringComparison.OrdinalIgnoreCase), currentVersion, latestVersion, htmlUrl ?? string.Empty);
+        var asset = PickAssetForCurrentOs(assets);
+
+        return new UpdateInfo(
+            !string.Equals(currentVersion, latestVersion, StringComparison.OrdinalIgnoreCase),
+            currentVersion,
+            latestVersion,
+            htmlUrl ?? string.Empty,
+            asset);
     }
 
     private static string NormalizeVersion(string? version)
         => version?.Trim().TrimStart('v', 'V') ?? string.Empty;
 
-    private async Task<(string? TagName, string? HtmlUrl)> GetLatestRelease()
+    // OS-specific asset selection. Today only Windows; the switch makes adding Linux/Mac trivial later.
+    private static ReleaseAsset? PickAssetForCurrentOs(IReadOnlyList<ReleaseAsset> assets)
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            // e.g. "Starlight.Launcher-1.1.2-setup.exe"
+            return assets.FirstOrDefault(a =>
+                a.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
+                a.Name.Contains("setup", StringComparison.OrdinalIgnoreCase));
+        }
+
+        // TODO Linux:  return assets.FirstOrDefault(a => a.Name.EndsWith(".AppImage", ...));
+        // TODO macOS:  return assets.FirstOrDefault(a => a.Name.EndsWith(".dmg", ...));
+        return null;
+    }
+
+    private async Task<(string? TagName, string? HtmlUrl, IReadOnlyList<ReleaseAsset> Assets)> GetLatestRelease()
     {
         using var httpClient = new HttpClient();
-        httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Starlight.Launcher"); // Without that we get an error 403... Ok github?
+        httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Starlight.Launcher");
 
-        using var response = await httpClient.GetAsync("https://api.github.com/repos/ss14Starlight/Starlight.Launcher/releases/latest", HttpCompletionOption.ResponseHeadersRead);
+        using var response = await httpClient.GetAsync(
+            "https://api.github.com/repos/ss14Starlight/Starlight.Launcher/releases/latest",
+            HttpCompletionOption.ResponseHeadersRead);
         response.EnsureSuccessStatusCode();
 
         string responseBody = await response.Content.ReadAsStringAsync();
         using var document = JsonDocument.Parse(responseBody);
 
-        document.RootElement.TryGetProperty("tag_name", out var tagName); // Yep we get the TAG... DONT FUCK IT UP.
-        document.RootElement.TryGetProperty("html_url", out var htmlUrl); // We also get the URL for the latest download so we can easly offer it after checking update.
+        document.RootElement.TryGetProperty("tag_name", out var tagName);
+        document.RootElement.TryGetProperty("html_url", out var htmlUrl);
 
-        return (tagName.GetString(), htmlUrl.GetString());
+        var assets = new List<ReleaseAsset>();
+        if (document.RootElement.TryGetProperty("assets", out var assetsEl) &&
+            assetsEl.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var a in assetsEl.EnumerateArray())
+            {
+                var name = a.TryGetProperty("name", out var n) ? n.GetString() : null;
+                var url = a.TryGetProperty("browser_download_url", out var u) ? u.GetString() : null;
+                long size = a.TryGetProperty("size", out var s) && s.TryGetInt64(out var sv) ? sv : 0;
+
+                if (!string.IsNullOrWhiteSpace(name) && !string.IsNullOrWhiteSpace(url))
+                    assets.Add(new ReleaseAsset(name, url, size));
+            }
+        }
+
+        return (tagName.GetString(), htmlUrl.GetString(), assets);
+    }
+
+    /// <summary>
+    /// Downloads the asset to the launcher data folder and returns the local path.
+    /// </summary>
+    public async Task<string> DownloadAsset(ReleaseAsset asset, CancellationToken ct = default)
+    {
+        var dir = GetUpdateFolder();
+        Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, asset.Name);
+
+        using var httpClient = new HttpClient();
+        httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Starlight.Launcher");
+
+        using var response = await httpClient.GetAsync(
+            asset.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, ct);
+        response.EnsureSuccessStatusCode();
+
+        // Content-Length can be null; fall back to the size from the API.
+        var total = response.Content.Headers.ContentLength ?? (asset.Size > 0 ? asset.Size : 0);
+
+        await using var src = await response.Content.ReadAsStreamAsync(ct);
+        await using var dst = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
+
+        var buffer = new byte[81920];
+        long downloaded = 0;
+        int read;
+        DownloadProgress?.Invoke((0, total));
+
+        while ((read = await src.ReadAsync(buffer, ct)) > 0)
+        {
+            await dst.WriteAsync(buffer.AsMemory(0, read), ct);
+            downloaded += read;
+            DownloadProgress?.Invoke((downloaded, total));
+        }
+
+        return path;
+    }
+
+    private string GetUpdateFolder() => Path.Combine(_settings.GetSettings().DirLauncherData, "updates");
+
+    // Removes previously downloaded installers. Call on launcher startup:
+    // at that point any installer from a past update is already unlocked.
+    public void CleanupOldInstallers()
+    {
+        try
+        {
+            var dir = GetUpdateFolder();
+            if (!Directory.Exists(dir))
+                return;
+
+            foreach (var file in Directory.EnumerateFiles(dir))
+            {
+                try
+                {
+                    File.Delete(file);
+                }
+                catch (IOException)
+                {
+                    // File still locked (rare) — skip it, we'll get it next launch.
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    // Same idea — don't let one stubborn file break startup.
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Cleanup must never crash startup.
+            Console.WriteLine($"Installer cleanup failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Starts the installer and asks the app to exit so it isn't locked during install.
+    /// </summary>
+    public static void RunInstallerAndExit(string installerPath)
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = installerPath,
+                UseShellExecute = true
+            });
+        }
+        // TODO Linux/macOS: chmod +x the AppImage / open the .dmg, etc.
+
+        // Give the OS a beat, then exit so the installer can replace files.
+        Environment.Exit(0);
     }
 }
