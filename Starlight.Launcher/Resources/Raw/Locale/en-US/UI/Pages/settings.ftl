@@ -26,7 +26,12 @@ settings-menu-data-folder-option = Data Folder
 settings-menu-data-folder-option-description = Select folder which will be used to store data.
 
 settings-menu-deauth-onchange-option = Deauth On Change
-settings-menu-deauth-onchange-option-description = Should we deauth launcher after changing auth server? 
+settings-menu-deauth-onchange-option-description = Should we deauth launcher after changing auth server?
+
+settings-menu-update-option = Check for update
+settings-menu-update-latest = You are already on the latest version.
+settings-menu-update-found = version { $latest } is now available!
+settings-menu-update-download = Download
 
 # Servers
 
