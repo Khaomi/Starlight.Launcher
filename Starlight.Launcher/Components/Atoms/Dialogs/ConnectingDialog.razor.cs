@@ -3,6 +3,7 @@ using System.Globalization;
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
 using Starlight.Launcher.Services;
+using Starlight.Launcher.Services.Localization;
 using static Starlight.Launcher.Services.Connector;
 using static Starlight.Launcher.Services.Updater;
 
@@ -10,6 +11,7 @@ namespace Starlight.Launcher.Components.Atoms.Dialogs;
 
 public sealed partial class ConnectingDialog : ComponentBase, IDisposable
 {
+    [Inject] private LocalizationManager _localization { get; set; } = default!;
     [Inject] private Connector _connector { get; set; } = default!;
     [Inject] private Updater _updater { get; set; } = default!;
     [CascadingParameter] private IMudDialogInstance _mudDialog { get; set; } = default!;

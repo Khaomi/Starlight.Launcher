@@ -104,11 +104,11 @@
         }
         else if (_isTerminal)
         {
-            <MudButton OnClick="Close">Close</MudButton>
+            <MudButton OnClick="Close">@_localization["general-close"]</MudButton>
         }
         else
         {
-            <MudButton Color="Color.Error" OnClick="Cancel">Cancel</MudButton>
+            <MudButton Color="Color.Error" OnClick="Cancel">@_localization["general-cancel"]</MudButton>
         }
     </DialogActions>
 </MudDialog>

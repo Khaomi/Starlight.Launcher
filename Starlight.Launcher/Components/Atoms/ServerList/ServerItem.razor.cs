@@ -5,6 +5,7 @@ using Robust.Launcher.Api.Models.ServerStatus;
 using Starlight.Launcher.Components.Atoms.Dialogs;
 using Starlight.Launcher.Components.Pages;
 using Starlight.Launcher.Services;
+using Starlight.Launcher.Services.Auth;
 using Starlight.Launcher.Services.Localization;
 using Starlight.Launcher.Services.ServerStatus;
 
@@ -15,6 +16,7 @@ public partial class ServerItem : ComponentBase, IDisposable
     [Inject] private LocalizationManager _localization { get; set; } = default!;
     [Inject] private ServerInfoLoader _infoLoader { get; set; } = default!;
     [Inject] private IDialogService _dialogService { get; set; } = default!;
+    [Inject] private LoginManager _loginManager { get; set; } = default!;
     [Inject] private UiTicker _ticker { get; set; } = default!;
     [Parameter, EditorRequired] public ServerStatusData Data { get; set; } = default!;
     [Parameter] public EventCallback<ServerStatusData> OnInfoNeeded { get; set; }
@@ -97,22 +99,44 @@ public partial class ServerItem : ComponentBase, IDisposable
 
     private async Task Play()
     {
-        var parameters = new DialogParameters<ConnectingDialog>
+        if (_loginManager.ActiveAccount == null)
         {
-            { x => x.Address, Data.Address },
-            { x => x.Title, Data.Name }
-        };
+            var noaccountParams = new DialogParameters<NoAccountDialog>
+            {
+                { x => x.Address, Data.Address },
+                { x => x.Title, Data.Name }
+            };
 
-        var options = new DialogOptions
+            var noaccountOptions = new DialogOptions
+            {
+                BackdropClick = false,
+                CloseOnEscapeKey = false,
+                CloseButton = false,
+                MaxWidth = MaxWidth.ExtraSmall,
+                FullWidth = true
+            };
+
+            await _dialogService.ShowAsync<NoAccountDialog>(_localization["no-account-dialog-title"], noaccountParams, noaccountOptions);
+        }
+        else
         {
-            BackdropClick = false,
-            CloseOnEscapeKey = false,
-            CloseButton = false,
-            MaxWidth = MaxWidth.ExtraSmall,
-            FullWidth = true
-        };
+            var parameters = new DialogParameters<ConnectingDialog>
+            {
+                { x => x.Address, Data.Address },
+                { x => x.Title, Data.Name }
+            };
 
-        await _dialogService.ShowAsync<ConnectingDialog>("Connecting", parameters, options);
+            var options = new DialogOptions
+            {
+                BackdropClick = false,
+                CloseOnEscapeKey = false,
+                CloseButton = false,
+                MaxWidth = MaxWidth.ExtraSmall,
+                FullWidth = true
+            };
+
+            await _dialogService.ShowAsync<ConnectingDialog>("Connecting", parameters, options);
+        }
     }
 
     private int? _pingMs => Data.Ping is { } p ? (int)Math.Round(p.TotalMilliseconds) : null;
