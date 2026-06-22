@@ -430,3 +430,74 @@ h1:focus {
 .server-bar--side .server-toolbar__searchbar-right {
     justify-content: flex-end;
 }
+
+#app {
+    min-height: 100vh;
+    background-color: oklch(var(--c-bg));
+}
+
+.sl-splash {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    background-color: oklch(var(--c-bg));
+    z-index: 9999;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: opacity 0.3s ease;
+}
+
+#app.loaded .sl-splash {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.sl-splash__brand {
+    font-family: "Cormorant Garamond", serif;
+    font-weight: 600;
+    font-size: 2.4rem;
+    letter-spacing: 0.03em;
+    color: oklch(var(--c-primary));
+}
+
+.sl-splash__spinner {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 3px solid oklch(from oklch(var(--c-primary)) l c h / 0.18);
+    border-top-color: oklch(var(--c-primary));
+    animation: mud-spin 0.8s linear infinite;
+}
+
+.sl-splash__text {
+    font-family: "Inter", sans-serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: oklch(from oklch(var(--c-text)) l c h / 0.65);
+    animation: sl-splash-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes sl-splash-pulse {
+    0%, 100% {
+        opacity: 0.4;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sl-splash__spinner {
+        animation-duration: 2s;
+    }
+
+    .sl-splash__text {
+        animation: none;
+    }
+}

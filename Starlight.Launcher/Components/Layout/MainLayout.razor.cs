@@ -167,6 +167,7 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowse
         if (firstRender)
         {
             await _browserViewportService.SubscribeAsync(this, fireImmediately: true);
+            await _jS.InvokeVoidAsync("eval", "document.getElementById('app')?.classList.add('loaded')");
         }
 
         await base.OnAfterRenderAsync(firstRender);
