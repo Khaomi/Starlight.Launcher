@@ -42,7 +42,7 @@ public sealed class AuthApi
                     UserId = respJson.UserId,
                     Token = token,
                     Username = respJson.Username,
-                    AuthServerUrl = authUrl.GetMostSuccessfulUrl(),
+                    AuthServerUrl = authSet.GetMostSuccessfulUrl(),
                 });
             }
 
