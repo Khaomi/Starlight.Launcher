@@ -52,7 +52,10 @@ public partial class Settings : ComponentBase, IDisposable
         if (confirmed != true)
             return;
 
-        await _settings.WriteSettingsAsync(new AppSettings());
+        var settings = new AppSettings();
+        settings.LastSeenChangelogVersion = LauncherUpdater.GetVersion();
+
+        await _settings.WriteSettingsAsync(settings);
 
         _appSettingsCache = null;
         _state.CallUpdate();

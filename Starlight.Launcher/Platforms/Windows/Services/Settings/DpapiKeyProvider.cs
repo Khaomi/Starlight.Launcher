@@ -6,7 +6,7 @@ namespace Starlight.Launcher.Services.Settings;
 public sealed class DpapiKeyProvider : ILoginKeyProvider
 {
     private readonly ILogger<DpapiKeyProvider> _logger;
-    private readonly string _keyPath = Path.Combine(FileSystem.AppDataDirectory, "logins.key");
+    private readonly string _keyPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Starlight.Launcher", "logins.key");
     private static readonly byte[] _entropy = "starlight.logins.v1"u8.ToArray();
 
     public DpapiKeyProvider(ILogger<DpapiKeyProvider> logger) => _logger = logger;

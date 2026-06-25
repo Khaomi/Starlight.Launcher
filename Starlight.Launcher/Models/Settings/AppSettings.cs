@@ -89,6 +89,12 @@ public partial record AppSettings
     /// Prevents launch of multiple game instances
     /// </summary>
     public bool PreventMultipleClients { get; set; } = true;
+
+    /// <summary>
+    /// Last version for which the changelog popup was shown to the user.
+    /// Empty means never shown.
+    /// </summary>
+    public string LastSeenChangelogVersion { get; set; } = "";
     #endregion
 
     #region Cache

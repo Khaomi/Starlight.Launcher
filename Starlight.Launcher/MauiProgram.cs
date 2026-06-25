@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using MudBlazor;
 using MudBlazor.Services;
 using Robust.Launcher.Api.Api;
 using Robust.Launcher.Api.Models.ServerStatus;
@@ -131,6 +132,7 @@ public static class MauiProgram
             builder.Services.AddSingleton<LauncherUpdater>();
             builder.Services.AddMauiBlazorWebView();
             builder.Services.AddMudServices();
+            builder.Services.AddMudMarkdownServices();
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();

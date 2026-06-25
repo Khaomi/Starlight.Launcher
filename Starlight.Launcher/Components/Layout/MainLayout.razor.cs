@@ -70,7 +70,39 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowse
             _tray.HideWindow(); // If layout is initialized - window exists, so we can hide it right away if the user wants that.
 
         _launcherUpdater.CleanupOldInstallers();
-        CheckUpdate();
+        await ShowChangelogIfNeeded();
+        await CheckUpdate();
+    }
+
+    private async Task ShowChangelogIfNeeded()
+    {
+        if (!_launcherUpdater.ShouldShowChangelog())
+            return;
+
+        var notes = await _launcherUpdater.GetChangelogForCurrentVersion();
+        var version = LauncherUpdater.GetVersion();
+
+        _launcherUpdater.MarkChangelogSeen();
+
+        if (string.IsNullOrWhiteSpace(notes))
+            return;
+
+        var parameters = new DialogParameters<ChangelogDialog>
+        {
+            { x => x.Version, version },
+            { x => x.Notes, notes! }
+        };
+
+        await _dialogService.ShowAsync<ChangelogDialog>(
+            null,
+            parameters,
+            new DialogOptions
+            {
+                CloseOnEscapeKey = true,
+                BackdropClick = true,
+                MaxWidth = MaxWidth.Medium,
+                FullWidth = true
+            });
     }
 
     private async Task CheckUpdate()

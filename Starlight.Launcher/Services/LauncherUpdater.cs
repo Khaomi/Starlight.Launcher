@@ -22,6 +22,7 @@ public partial class LauncherUpdater
         string CurrentVersion,
         string LatestVersion,
         string ReleasePageUrl,
+        string ReleaseNotes,
         ReleaseAsset? Asset);
 
     // Progress reporting for the download. (downloaded, total) — total == 0 means unknown.
@@ -29,7 +30,7 @@ public partial class LauncherUpdater
 
     public async Task<UpdateInfo> IsUpdateAvailable()
     {
-        var (tagName, htmlUrl, assets) = await GetLatestRelease();
+        var (tagName, htmlUrl, body, assets) = await GetLatestRelease();
         var currentVersion = NormalizeVersion(GetVersion());
         var latestVersion = NormalizeVersion(tagName);
 
@@ -43,7 +44,54 @@ public partial class LauncherUpdater
             currentVersion,
             latestVersion,
             htmlUrl ?? string.Empty,
+            body ?? string.Empty,
             asset);
+    }
+
+    /// <summary>
+    /// True if the currently running version differs from the last version
+    /// for which we showed the changelog. Used to show "what's new" after an update.
+    /// </summary>
+    public bool ShouldShowChangelog()
+    {
+        var current = NormalizeVersion(GetVersion());
+        if (string.IsNullOrEmpty(current))
+            return false;
+
+        var lastSeen = NormalizeVersion(_settings.GetSettings().LastSeenChangelogVersion);
+        return !string.Equals(current, lastSeen, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public void MarkChangelogSeen()
+    {
+        var settings = _settings.GetSettings();
+        settings.LastSeenChangelogVersion = NormalizeVersion(GetVersion());
+        _settings.WriteSettings(settings);
+    }
+
+    public async Task<string?> GetChangelogForCurrentVersion()
+    {
+        var current = NormalizeVersion(GetVersion());
+        if (string.IsNullOrEmpty(current))
+            return null;
+
+        using var httpClient = new HttpClient();
+        httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Starlight.Launcher");
+
+        foreach (var tag in new[] { $"v{current}", current })
+        {
+            using var response = await httpClient.GetAsync(
+                $"https://api.github.com/repos/ss14Starlight/Starlight.Launcher/releases/tags/{tag}",
+                HttpCompletionOption.ResponseHeadersRead);
+            if (!response.IsSuccessStatusCode)
+                continue;
+
+            var json = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("body", out var b))
+                return b.GetString();
+        }
+        return null;
     }
 
     private static string NormalizeVersion(string? version)
@@ -65,7 +113,7 @@ public partial class LauncherUpdater
         return null;
     }
 
-    private async Task<(string? TagName, string? HtmlUrl, IReadOnlyList<ReleaseAsset> Assets)> GetLatestRelease()
+    private async Task<(string? TagName, string? HtmlUrl, string? Body, IReadOnlyList<ReleaseAsset> Assets)> GetLatestRelease()
     {
         using var httpClient = new HttpClient();
         httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Starlight.Launcher");
@@ -80,6 +128,7 @@ public partial class LauncherUpdater
 
         document.RootElement.TryGetProperty("tag_name", out var tagName);
         document.RootElement.TryGetProperty("html_url", out var htmlUrl);
+        document.RootElement.TryGetProperty("body", out var body);
 
         var assets = new List<ReleaseAsset>();
         if (document.RootElement.TryGetProperty("assets", out var assetsEl) &&
@@ -96,7 +145,7 @@ public partial class LauncherUpdater
             }
         }
 
-        return (tagName.GetString(), htmlUrl.GetString(), assets);
+        return (tagName.GetString(), htmlUrl.GetString(), body.GetString(), assets);
     }
 
     /// <summary>
