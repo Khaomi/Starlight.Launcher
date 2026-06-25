@@ -88,4 +88,4 @@ auth-menu-link-account-title = Account Linking
 auth-menu-link-account-hint     = Log in to your authentication server account to play without Discord
 auth-menu-link-account-confirm  = Link
 auth-menu-link-account-busy     = Linking...
-auth-menu-account-linked        = The {account} account was linked
+auth-menu-account-linked        = The { $account } account was linked

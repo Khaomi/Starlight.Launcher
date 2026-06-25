@@ -192,8 +192,7 @@ public partial class Auth : ComponentBase, IDisposable
             {
                 _loginManager.LinkAuthToken(_linkUserId.Value, result.LoginInfo.UserId, result.LoginInfo);
 
-                _snackbar.Add(_localization.GetString("auth-menu-account-linked",
-                    ("account", result.LoginInfo.Username)), Severity.Success);
+                _snackbar.Add(_localization.GetString("auth-menu-account-linked", ("account", result.LoginInfo.Username)), Severity.Success);
 
                 BackToAccountList();
                 return;

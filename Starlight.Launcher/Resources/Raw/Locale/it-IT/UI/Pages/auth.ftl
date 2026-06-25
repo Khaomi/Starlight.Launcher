@@ -88,5 +88,5 @@ auth-menu-link-account-title = Collegamento account
 auth-menu-link-account-hint     = Accedi con il tuo account del server di autenticazione per giocare senza Discord
 auth-menu-link-account-confirm  = Collega
 auth-menu-link-account-busy     = Collegamento...
-auth-menu-account-linked        = L'account {account} è collegato
+auth-menu-account-linked        = L'account { $account } è collegato
 

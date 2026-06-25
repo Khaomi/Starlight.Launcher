@@ -102,7 +102,11 @@ public class LauncherMessaging
     public void StopAndWait()
     {
         _pipeServerSelfDestruct.Cancel();
-        _serverTask?.Wait();
+        try
+        {
+            _serverTask?.Wait(TimeSpan.FromSeconds(2));
+        }
+        catch (AggregateException) { }
     }
 
     /// <summary>
