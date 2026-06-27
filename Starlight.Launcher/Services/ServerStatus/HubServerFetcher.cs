@@ -84,7 +84,7 @@ public sealed partial class HubServerFetcher(HubApi hub, SettingsService setting
     {
         if (_disposed) return;
 
-        var newCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var newCts = new CancellationTokenSource();
         var oldCts = Interlocked.Exchange(ref _refreshCancel, newCts);
 
         try { oldCts?.Cancel(); }
@@ -114,9 +114,14 @@ public sealed partial class HubServerFetcher(HubApi hub, SettingsService setting
         var entries = new Dictionary<string, HubServerListEntry>(StringComparer.OrdinalIgnoreCase);
         var allSucceeded = true;
         var skippedDueToBackoff = 0;
+        var skippedDueToFailure = 0;
 
         var settings = await _settings.GetSettingsAsync().ConfigureAwait(false);
         Log.Information("Refreshing server list from {Count} hubs", settings.Hubs.Count);
+
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancel);
+        timeoutCts.CancelAfter(TimeSpan.FromSeconds(10));
+        var requestToken = timeoutCts.Token;
 
         var requests = new List<(Task<HubApi.ServerListEntry[]> Task, Uri Hub)>();
 
@@ -131,7 +136,7 @@ public sealed partial class HubServerFetcher(HubApi hub, SettingsService setting
                 allSucceeded = false;
                 continue;
             }
-            requests.Add((_hubApi.GetServers(UrlFallbackSet.FromSingle(hub.HubUri), cancel), hub.HubUri));
+            requests.Add((_hubApi.GetServers(UrlFallbackSet.FromSingle(hub.HubUri), requestToken), hub.HubUri));
         }
 
         foreach (var (task, _) in requests)
@@ -148,6 +153,7 @@ public sealed partial class HubServerFetcher(HubApi hub, SettingsService setting
             if (!task.IsCompletedSuccessfully)
             {
                 allSucceeded = false;
+                skippedDueToFailure++;
                 HandleHubFailure(task, hub, cancel);
                 continue;
             }
@@ -159,7 +165,7 @@ public sealed partial class HubServerFetcher(HubApi hub, SettingsService setting
             foreach (var entry in hubEntries)
             {
                 var maybeNewEntry = new HubServerListEntry(entry.Address, hub.AbsoluteUri, entry.StatusData);
-                if (!entries.TryAdd(entry.Address, maybeNewEntry))
+                if (entry.Address != null && !entries.TryAdd(entry.Address, maybeNewEntry))
                 {
                     Log.Verbose("Skipping {Entry} from {ThisHub}: already from {PreviousHub}",
                         entry.Address, hub.AbsoluteUri, entries[entry.Address].HubAddress);
@@ -183,8 +189,8 @@ public sealed partial class HubServerFetcher(HubApi hub, SettingsService setting
 
         var totalCount = entries.Count;
         Log.Information(
-            "Refresh done in {Elapsed}ms: {Total} servers, {Skipped} hubs skipped, success={Success}",
-            sw.ElapsedMilliseconds, totalCount, skippedDueToBackoff, allSucceeded);
+            "Refresh done in {Elapsed}ms: {Total} servers, {SkippedBackoff} hubs skipped due to backoff, {Skipped} skipped due to failure, success={Success}",
+            sw.ElapsedMilliseconds, totalCount, skippedDueToBackoff, skippedDueToFailure, allSucceeded);
 
         if (totalCount == 0)
             SetStatus(RefreshListStatus.Error);

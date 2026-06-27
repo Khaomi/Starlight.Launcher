@@ -24,13 +24,18 @@ public sealed class HubApi
 
     public async Task<ServerListEntry[]> GetServers(UrlFallbackSet hubUri, CancellationToken cancel)
     {
-        if (!hubUri.Urls.All(u => u.EndsWith('/')))
-            throw new ArgumentException("URI doesn't have trailing slash", nameof(hubUri));
-
         HubApiException? lastError = null;
         foreach (var url in hubUri.Urls)
         {
-            var finalUrl = url + "api/servers";
+            var baseUrl = url;
+            if (!baseUrl.EndsWith('/'))
+            {
+                _logger.LogWarning(
+                    "Hub URL {Url} is missing a trailing slash; appending one", baseUrl);
+                baseUrl += '/';
+            }
+
+            var finalUrl = baseUrl + "api/servers";
             try
             {
                 _logger.LogDebug("Fetching server list from {Url}", finalUrl);
@@ -114,12 +119,19 @@ public sealed class HubApi
 
             try
             {
-                return await response.Content.ReadFromJsonAsync<T>(cancellationToken: cancel).ConfigureAwait(false) ?? throw new HubApiException($"Response body was null for {url}", requestUrl: url);
+                return await response.Content.ReadFromJsonAsync<T>(cancellationToken: cancel).ConfigureAwait(false)
+                    ?? throw new HubApiException($"Response body was null for {url}", requestUrl: url);
             }
             catch (JsonException ex)
             {
                 throw new HubApiException(
                     $"Failed to parse JSON from {url}: {ex.Message}",
+                    requestUrl: url, inner: ex);
+            }
+            catch (NotSupportedException ex)
+            {
+                throw new HubApiException(
+                    $"Hub at {url} returned non-JSON content ({response.Content.Headers.ContentType}): {ex.Message}",
                     requestUrl: url, inner: ex);
             }
         }
