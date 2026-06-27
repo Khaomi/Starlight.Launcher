@@ -45,10 +45,16 @@ public sealed class DiscordAuthService(StarlightAuthApi api, LoginManager loginM
     public async Task<LoggedInAccount> LoginAsync(CancellationToken cancel = default)
     {
         var (handoff, info) = await AuthorizeAsync(cancel);
+
+        var moderation = UsernameModerator.Moderate(info.Username);
+        if (!moderation.IsUsable)
+            throw new DiscordAuthException(
+                moderation.Reason ?? "Your Discord username can't be used. Please set a normal name and try again.");
+
         var newLoginInfo = new LoginInfo
         {
             UserId = info.UserId,
-            Username = info.Username,
+            Username = moderation.Username,
             Token = null,
             DiscordToken = new LoginToken { Token = handoff.Token, ExpireTime = DateTime.UtcNow.AddDays(2) },
             DiscordRefreshToken = handoff.RefreshToken,

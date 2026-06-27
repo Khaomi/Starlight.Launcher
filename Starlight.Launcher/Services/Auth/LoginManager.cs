@@ -169,6 +169,8 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
 
     public void Initialize()
     {
+        FixStoredDiscordUsernames();
+
         _cts = new CancellationTokenSource();
         _refreshTask = RunRefreshLoop(_cts.Token);
 
@@ -461,5 +463,57 @@ public sealed partial class LoginManager : ObservableObject, IAsyncDisposable
 
             OnPropertyChanged(nameof(Status));
         }
+
+        public void SetUsername(string username)
+        {
+            if (string.Equals(LoginInfo.Username, username, StringComparison.Ordinal))
+                return;
+
+            LoginInfo.Username = username;
+            OnPropertyChanged(nameof(Username));
+        }
     }
+
+    public void FixStoredDiscordUsernames()
+    {
+        List<ActiveLoginData> candidates;
+        lock (_loginsLock)
+        {
+            candidates = _logins.Values
+                .Where(d => d.LoginInfo is { Token: null, DiscordToken: not null })
+                .ToList();
+        }
+
+        var changed = new List<LoginInfo>();
+
+        foreach (var data in candidates)
+        {
+            var current = data.LoginInfo.Username;
+            var result = UsernameModerator.Moderate(current);
+
+            var fixedName = result.Outcome switch
+            {
+                UsernameModerationOutcome.Accepted => current,
+                UsernameModerationOutcome.Sanitized => result.Username,
+                _ => FallbackUsername(data.UserId),
+            };
+
+            if (string.Equals(fixedName, current, StringComparison.Ordinal))
+                continue;
+
+            data.SetUsername(fixedName);
+            changed.Add(data.LoginInfo);
+            Log.Information("Auto-fixed Discord username {Old} -> {New}", current, fixedName);
+        }
+
+        if (changed.Count == 0)
+            return;
+
+        foreach (var info in changed)
+            _settings.UpdateLogin(info);
+
+        LoginsChanged?.Invoke();
+    }
+
+    private static string FallbackUsername(Guid userId) => $"Player{userId:N}"[..10]; // e.g. "Player3fa85f"
 }
