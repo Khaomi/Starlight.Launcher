@@ -65,6 +65,7 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowse
         _elementPosition = settings.Navigation;
         _state.OnChange += AppCalledRepaint;
         _navigation.LocationChanged += OnLocationChanged;
+        _settings.LoginsUnrecoverable += OnLoginsUnrecover;
 
         if (settings.CollapseInTrayOnStart)
             _tray.HideWindow(); // If layout is initialized - window exists, so we can hide it right away if the user wants that.
@@ -73,6 +74,32 @@ public partial class MainLayout : LayoutComponentBase, IAsyncDisposable, IBrowse
         await ShowChangelogIfNeeded();
         await CheckUpdate();
     }
+
+    private void OnLoginsUnrecover() =>
+        _snackbar.Add(
+            _localization["settings-logins-unrecoverable"],
+            Severity.Error,
+            config =>
+            {
+                config.Action = _localization["settings-logins-unrecoverable-action"];
+                config.ActionColor = MudBlazor.Color.Primary;
+                config.OnClick = _ =>
+                {
+                    _dialogService.ShowAsync<LoginsUnrecoverableDialog>(
+                        null,
+                        new DialogParameters<LoginsUnrecoverableDialog>
+                        {
+                            { nameof(LoginsUnrecoverableDialog.Logins), _settings.GetLogins() }
+                        },
+                        new DialogOptions
+                        {
+                            CloseOnEscapeKey = false,
+                            BackdropClick = false,
+                            CloseButton = false
+                        });
+                    return Task.CompletedTask;
+                };
+            });
 
     private async Task ShowChangelogIfNeeded()
     {

@@ -9,7 +9,7 @@ namespace Starlight.Launcher.Services.Settings;
 public sealed partial class SettingsService
 {
     private volatile bool _loginsLoaded;
-    private volatile bool _loginsLoadFailed;
+    public event Action? LoginsUnrecoverable;
 
     public async Task InitializeLoginsAsync()
     {
@@ -119,11 +119,6 @@ public sealed partial class SettingsService
             _logger.LogWarning("Skipped logins save before load completed");
             return;
         }
-        if (_loginsLoadFailed)
-        {
-            _logger.LogWarning("Skipped logins save: last load failed, refusing to overwrite existing file");
-            return;
-        }
 
         await _loginsLock.WaitAsync();
         try { await WriteLoginsCoreAsync(); }
@@ -155,8 +150,10 @@ public sealed partial class SettingsService
             }
             catch (CryptographicException ex)
             {
-                _loginsLoadFailed = true;
-                _logger.LogError(ex, "Cannot decrypt logins; keeping file intact, saving disabled");
+                var backup = _loginsPath + $".undecryptable-{DateTime.UtcNow:yyyyMMddHHmmss}";
+                try { File.Move(_loginsPath, backup, true); } catch { /* best effort */ }
+                _logger.LogError(ex, "Logins could not be decrypted (key mismatch). Backed up to {backup}; re-auth required.", backup);
+                LoginsUnrecoverable?.Invoke();   // surface a toast/dialog
                 return new();
             }
         }

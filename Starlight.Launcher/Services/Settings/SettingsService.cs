@@ -29,6 +29,7 @@ public sealed partial class SettingsService : IAsyncDisposable
     private Dictionary<Guid, LoginInfo> _logins = new();
     private readonly SemaphoreSlim _loginsLock = new(1, 1);
     private readonly string _loginsPath;
+    private readonly string _loginKeyPath;
 
     // Version to engine version info(signature)
     private Dictionary<string, InstalledEngineVersion> _engineInstallations;
@@ -64,6 +65,7 @@ public sealed partial class SettingsService : IAsyncDisposable
         _filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Starlight.Launcher", "settings.json");
         _settings = LoadJson(_filePath, new AppSettings());
         _loginsPath = Path.Combine(_settings.DirLauncherData, "logins.json");
+        _loginKeyPath = Path.Combine(_settings.DirLauncherData, "logins.key");
         _favoritesPath = Path.Combine(_settings.DirLauncherData, "favorites.json");
         _enginesPath = Path.Combine(_settings.DirLauncherData, "engines.json");
         _modulesPath = Path.Combine(_settings.DirLauncherData, "modules.json");

@@ -2,5 +2,5 @@ namespace Starlight.Launcher.Services.Settings;
 
 public interface ILoginKeyProvider
 {
-    Task<byte[]> GetOrCreateKeyAsync();
+    Task<byte[]> GetOrCreateKeyAsync(string keyPath);
 }

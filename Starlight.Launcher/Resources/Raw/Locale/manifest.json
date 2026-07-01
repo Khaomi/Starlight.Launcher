@@ -1,6 +1,7 @@
 {
   "en-US": [
     "UI/Atoms/Dialog/changelog-dialog.ftl",
+    "UI/Atoms/Dialog/logins-unrecoveralbe-dialog.ftl",
     "UI/Atoms/no-account-dialog.ftl",
     "UI/Atoms/servers-list-item.ftl",
     "UI/Atoms/servers-list-search-bar.ftl",

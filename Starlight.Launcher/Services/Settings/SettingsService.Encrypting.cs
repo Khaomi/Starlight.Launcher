@@ -16,7 +16,7 @@ public sealed partial class SettingsService
         await _keyLock.WaitAsync();
         try
         {
-            return _loginKey ??= await _keyProvider.GetOrCreateKeyAsync();
+            return _loginKey ??= await _keyProvider.GetOrCreateKeyAsync(_loginKeyPath);
         }
         finally { _keyLock.Release(); }
     }
